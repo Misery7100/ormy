@@ -13,6 +13,8 @@ pydantic = "^2.8.2"
 pymongo = "^4.8.0"
 motor = "^3.5.1"
 pydantic-settings = "^2.4.0"
+pendulum = "^3.0.0"
+firebase-admin = "^6.5.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
