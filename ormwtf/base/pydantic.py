@@ -1,6 +1,18 @@
-from typing import Any, ClassVar, List, Optional, Type, TypeVar  # noqa: F401
+from typing import (  # noqa: F401
+    Annotated,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Type,
+    TypeVar,
+)
 
-from pydantic import BaseModel, ConfigDict  # noqa: F401
+from pydantic import BaseModel, ConfigDict
+
+from ormwtf.base.typing import FieldDataType, FieldName, Wildcard
 
 # ----------------------- #
 
@@ -10,27 +22,40 @@ T = TypeVar("T", bound="Base")
 
 
 class Base(BaseModel):
+    """
+    Base class for all Pydantic models within the package
+
+    TODO: write about the `specific_fields` attribute
+    """
+
     model_config = ConfigDict(
         use_enum_values=True,
         validate_assignment=True,
         validate_default=True,
     )
 
-    datetime_fields: ClassVar[List[str]] = [
-        "created_at",
-        "last_update_at",
-        "deadline",
-        "timestamp",
-    ]
+    specific_fields: ClassVar[Dict[FieldDataType, List[FieldName]]] = {
+        "datetime": [
+            "created_at",
+            "last_update_at",
+            "deadline",
+            "timestamp",
+        ]
+    }
 
     # ....................... #
 
     @classmethod
     def model_simple_schema(
         cls: Type[T],
-        include: List[str] = ["*"],
-        exclude: List[str] = [],
+        include: List[FieldName | Wildcard] = ["*"],
+        exclude: List[FieldName] = [],
     ):
+        """
+        Generate a simple schema for flat data models including
+        field name (`key`), field title (`title`) and field data type (`type`)
+        """
+
         schema = cls.model_json_schema()
 
         if not exclude and include == ["*"]:
@@ -72,13 +97,16 @@ class Base(BaseModel):
     @classmethod
     def _define_type(
         cls: Type[T],
-        key: str,
-        pydantic_dtype: Optional[Any] = None,
-    ) -> str:
-        if key in cls.datetime_fields:
-            return "datetime"
+        key: FieldName,
+        pydantic_dtype: Optional[FieldDataType] = None,
+    ) -> FieldDataType:
+        """Determine field data type"""
 
-        elif pydantic_dtype is not None:
+        for k, v in cls.specific_fields.items():
+            if key in v:
+                return k
+
+        if pydantic_dtype is not None:
             return pydantic_dtype
 
         else:
