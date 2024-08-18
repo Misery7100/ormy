@@ -1,2 +1,3 @@
 # ormwtf
-Python ORM wrappers
+
+Python ORM wrappers for pydantic data models.
