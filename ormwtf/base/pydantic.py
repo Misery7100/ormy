@@ -1,18 +1,8 @@
-from typing import (  # noqa: F401
-    Annotated,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Type,
-    TypeVar,
-)
+from typing import ClassVar, Dict, List, Optional, Sequence, Type, TypeVar, get_args
 
 from pydantic import BaseModel, ConfigDict
 
-from ormwtf.base.typing import FieldDataType, FieldName, Wildcard
+from .typing import Field, FieldDataType, FieldName, Wildcard
 
 # ----------------------- #
 
@@ -28,11 +18,7 @@ class Base(BaseModel):
     TODO: write about the `specific_fields` attribute
     """
 
-    model_config = ConfigDict(
-        use_enum_values=True,
-        validate_assignment=True,
-        validate_default=True,
-    )
+    model_config = ConfigDict(validate_assignment=True, validate_default=True)
 
     specific_fields: ClassVar[Dict[FieldDataType, List[FieldName]]] = {
         "datetime": [
@@ -48,66 +34,68 @@ class Base(BaseModel):
     @classmethod
     def model_simple_schema(
         cls: Type[T],
-        include: List[FieldName | Wildcard] = ["*"],
-        exclude: List[FieldName] = [],
-    ):
+        include: Sequence[FieldName] | Wildcard = ["*"],
+        exclude: Sequence[FieldName] = [],
+    ) -> Sequence[Field]:
         """
-        Generate a simple schema for flat data models including
-        field name (`key`), field title (`title`) and field data type (`type`)
+        Generate a simple schema for the model
+
+        Args:
+            include (Sequence[FieldName], optional): The fields to include in the schema. Defaults to "*".
+            exclude (Sequence[FieldName], optional): The fields to exclude from the schema. Defaults to [].
+
+        Returns:
+            schema (Sequence[Field]): The simple schema for the model
         """
 
         schema = cls.model_json_schema()
 
-        if not exclude and include == ["*"]:
-            schema = [
-                {
-                    "key": k,
-                    "title": v["title"],
-                    "type": cls.define_type(k, v.get("type", None)),
-                }
-                for k, v in schema["properties"].items()
-            ]
-
-        elif not exclude:
-            schema = [
-                {
-                    "key": k,
-                    "title": v["title"],
-                    "type": cls.define_type(k, v.get("type", None)),
-                }
-                for k, v in schema["properties"].items()
-                if k in include
-            ]
+        if include in get_args(Wildcard):
+            keys = [k for k, _ in schema["properties"].items()]
 
         else:
-            schema = [
-                {
-                    "key": k,
-                    "title": v["title"],
-                    "type": cls.define_type(k, v.get("type", None)),
-                }
-                for k, v in schema["properties"].items()
-                if k not in exclude
-            ]
+            keys = include
 
-        return schema
+        if exclude:
+            keys = [k for k in keys if k not in exclude]
+
+        simple_schema = [
+            {
+                "key": k,
+                "title": v["title"],
+                "type": cls._define_dtype(k, v.get("type", None)),
+            }
+            for k, v in schema["properties"].items()
+            if k in keys
+        ]
+
+        return simple_schema
 
     # ....................... #
 
     @classmethod
-    def _define_type(
+    def _define_dtype(
         cls: Type[T],
         key: FieldName,
-        pydantic_dtype: Optional[FieldDataType] = None,
+        dtype: Optional[FieldDataType] = None,
     ) -> FieldDataType:
-        """Determine field data type"""
+        """
+        Define the data type of a given key
+
+        Args:
+            key (FieldName): The key to define the type for
+            dtype (FieldDataType, optional): The dtype corresponding to the key. Defaults to None.
+
+        Returns:
+            type (FieldDataType): The data type of the given key
+        """
 
         for k, v in cls.specific_fields.items():
             if key in v:
                 return k
 
-        if pydantic_dtype is not None:
-            return pydantic_dtype
+        if dtype is not None:
+            return dtype
 
         else:
             return "string"
