@@ -7,7 +7,7 @@ from typing_extensions import TypedDict
 # ----------------------- #
 
 
-class MongoConfigDict(TypedDict):
+class MongoConfig(TypedDict):
     database: str
     collection: str
     streaming: bool

@@ -1,5 +1,10 @@
-from .config import FirestoreConfigDict
+from .config import FirestoreConfig, FirestoreCredentials
+from .wrapper import FirestoreBase
 
 # ----------------------- #
 
-__all__ = ["FirestoreConfigDict"]
+__all__ = [
+    "FirestoreCredentials",
+    "FirestoreConfig",
+    "FirestoreBase",
+]

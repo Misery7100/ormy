@@ -16,24 +16,23 @@ from motor.motor_asyncio import (
     AsyncIOMotorCollection,
     AsyncIOMotorDatabase,
 )
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pymongo import InsertOne, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from ormwtf.base import Base
 from ormwtf.base.func import hex_uuid4
-from ormwtf.base.typing import DocumentID, Settings
+from ormwtf.base.pydantic import Base
+from ormwtf.base.typing import AbstractData, DocumentID
 
-from .config import MongoConfigDict
+from .config import MongoConfig
 
 # ----------------------- #
 
 T = TypeVar("T", bound="MongoBase")
 
 MongoRequest = Annotated[Dict[str, Any], "MongoDB request"]
-AbstractData = Annotated[Base | BaseModel, "data"]  # TODO: update, use
 
 # ....................... #
 
@@ -49,7 +48,8 @@ class MongoBase(Base):
     `_get_settings` method.
     """
 
-    config: ClassVar[MongoConfigDict] = MongoConfigDict()
+    # TODO: refactor config according to the firestore config
+    config: ClassVar[MongoConfig] = MongoConfig()
 
     # ....................... #
 
@@ -65,7 +65,7 @@ class MongoBase(Base):
 
     @staticmethod
     @abstractmethod
-    def _get_settings() -> Settings:
+    def _get_settings():
         """
         Get settings for the client
 
@@ -198,13 +198,12 @@ class MongoBase(Base):
 
         _id = document["id"]
 
-        if not collection.find_one({"_id": _id}):
-            collection.insert_one({**document, "_id": _id})
-
-        else:
+        if collection.find_one({"_id": _id}):
             raise ValueError("Document already exists")
 
-        return cls(**document)
+        collection.insert_one({**document, "_id": _id})
+
+        return data
 
     # ....................... #
 
@@ -220,18 +219,17 @@ class MongoBase(Base):
             res (MongoBase): Created data model
         """
 
-        acollection = cls._aget_collection()
+        collection = cls._aget_collection()
         document = data.model_dump()
 
         _id: DocumentID = document["id"]
 
-        if not await acollection.find_one({"_id": _id}):
-            await acollection.insert_one({**document, "_id": _id})
-
-        else:
+        if await collection.find_one({"_id": _id}):
             raise ValueError("Document already exists")
 
-        return cls(**document)
+        await collection.insert_one({**document, "_id": _id})
+
+        return data
 
     # ....................... #
 
@@ -262,16 +260,16 @@ class MongoBase(Base):
         Document will be updated if exists
         """
 
-        acollection = self._aget_collection()
+        collection = self._aget_collection()
         document = self.model_dump()
 
         _id: DocumentID = document["id"]
 
-        if await acollection.find_one({"_id": _id}):
-            await acollection.update_one({"_id": _id}, {"$set": document})
+        if await collection.find_one({"_id": _id}):
+            await collection.update_one({"_id": _id}, {"$set": document})
 
         else:
-            await acollection.insert_one({**document, "_id": _id})
+            await collection.insert_one({**document, "_id": _id})
 
         return self
 
@@ -282,6 +280,8 @@ class MongoBase(Base):
         cls: Type[T],
         id: DocumentID,
         data: AbstractData,
+        ignore_none: bool = True,
+        ignore_deleted: bool = True,  # TODO: create `extra` model from this one
         autosave: bool = True,
     ) -> T:
         """
@@ -298,23 +298,26 @@ class MongoBase(Base):
 
         instance = cls.find(value=id, autoerror=True)
 
-        if instance.is_deleted:
+        if instance.is_deleted and ignore_deleted:
             keys = ["is_deleted"]
+
+        elif isinstance(data, dict):
+            keys = data.keys()
 
         else:
             keys = data.model_fields.keys()
+            data = data.model_dump()
 
         for k in keys:
-            val = getattr(data, k, None)
+            val = data.get(k, None)
 
-            if val is not None and hasattr(instance, k):
+            if not (val is None and ignore_none) and hasattr(instance, k):
                 setattr(instance, k, val)
 
         if autosave:
             return instance.save()
 
-        else:
-            return instance
+        return instance
 
     # ....................... #
 
@@ -323,6 +326,8 @@ class MongoBase(Base):
         cls: Type[T],
         id: DocumentID,
         data: AbstractData,
+        ignore_none: bool = True,
+        ignore_deleted: bool = True,  # TODO: create `extra` model from this one
         autosave: bool = True,
     ) -> T:
         """
@@ -342,20 +347,23 @@ class MongoBase(Base):
         if instance.is_deleted:
             keys = ["is_deleted"]
 
+        elif isinstance(data, dict):
+            keys = data.keys()
+
         else:
             keys = data.model_fields.keys()
+            data = data.model_dump()
 
         for k in keys:
-            val = getattr(data, k, None)
+            val = data.get(k, None)
 
-            if val is not None and hasattr(instance, k):
+            if not (val is None and ignore_none) and hasattr(instance, k):
                 setattr(instance, k, val)
 
         if autosave:
             return await instance.asave()
 
-        else:
-            return instance
+        return instance
 
     # ....................... #
 
@@ -384,16 +392,38 @@ class MongoBase(Base):
         data: Sequence[T],
         ordered: bool = False,
     ):
-        acollection = cls._aget_collection()
+        collection = cls._aget_collection()
 
         data = [item.model_dump() for item in data]
         operations = [InsertOne({**d, "_id": d["id"]}) for d in data]
 
         try:
-            await acollection.bulk_write(operations, ordered=ordered)
+            await collection.bulk_write(operations, ordered=ordered)
 
         except BulkWriteError as e:
             return e
+
+    # ....................... #
+
+    # ....................... #
+
+    @classmethod
+    def update_many(
+        cls: Type[T],
+        data: Sequence[T],
+        autosave: bool = True,
+    ):
+        pass
+
+    # ....................... #
+
+    @classmethod
+    async def aupdate_many(
+        cls: Type[T],
+        data: Sequence[T],
+        autosave: bool = True,
+    ):
+        pass
 
     # ....................... #
 
@@ -430,7 +460,7 @@ class MongoBase(Base):
         request: MongoRequest = {},
         autoerror: bool = False,
     ) -> Optional[T]:
-        acollection = cls._aget_collection()
+        collection = cls._aget_collection()
 
         if not (request and id):
             # TODO: raise a specific error (ormwtf.base.error)
@@ -439,7 +469,7 @@ class MongoBase(Base):
         elif not request:
             request = {"_id": id}
 
-        document = await acollection.find_one(request)
+        document = await collection.find_one(request)
 
         if document:
             return cls(**document)
@@ -470,10 +500,32 @@ class MongoBase(Base):
         limit: int = 100,
         offset: int = 0,
     ) -> List[T]:
-        acollection = cls._aget_collection()
-        cursor = acollection.find(request).limit(limit).skip(offset)
+        collection = cls._aget_collection()
+        cursor = collection.find(request).limit(limit).skip(offset)
 
         return [cls(**doc) async for doc in cursor]
+
+    # ....................... #
+
+    @classmethod
+    def count(
+        cls: Type[T],
+        request: MongoRequest = {},
+    ) -> int:
+        collection = cls._get_collection()
+
+        return collection.count_documents(request)
+
+    # ....................... #
+
+    @classmethod
+    async def acount(
+        cls: Type[T],
+        request: MongoRequest = {},
+    ) -> int:
+        collection = cls._aget_collection()
+
+        return await collection.count_documents(request)
 
     # ....................... #
 
@@ -483,13 +535,12 @@ class MongoBase(Base):
         request: MongoRequest = {},
         batch_size: int = 100,
     ) -> List[T]:
-        cnt = cls.count(request)
-        collection = cls._get_collection()
+        cnt = cls.count(request=request)
         found = []
 
         for j in range(0, cnt, batch_size):
-            res = collection.find(request).skip(j).limit(batch_size)
-            found.extend([cls(**doc) for doc in res])
+            docs = cls.find_many(request, limit=batch_size, offset=j)
+            found.extend(docs)
 
         return found
 
@@ -501,35 +552,14 @@ class MongoBase(Base):
         request: MongoRequest = {},
         batch_size: int = 100,
     ) -> List[T]:
-        cnt = await cls.acount(request)
-        acollection = cls._aget_collection()
+        cnt = await cls.acount(request=request)
         found = []
 
         for j in range(0, cnt, batch_size):
-            res = acollection.find(request).skip(j).limit(batch_size)
-            found.extend([cls(**doc) async for doc in res])
+            docs = await cls.afind_many(request, limit=batch_size, offset=j)
+            found.extend(docs)
 
         return found
-
-    # ....................... #
-
-    @classmethod
-    def count(
-        cls: Type[T],
-        request: MongoRequest = {},
-    ) -> int:
-        collection = cls._get_collection()
-        return collection.count_documents(request)
-
-    # ....................... #
-
-    @classmethod
-    async def acount(
-        cls: Type[T],
-        request: MongoRequest = {},
-    ) -> int:
-        acollection = cls._aget_collection()
-        return await acollection.count_documents(request)
 
     # ....................... #
 

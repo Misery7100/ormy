@@ -1,12 +1,13 @@
 import hashlib
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 import pendulum
 
 # ----------------------- #
+# Time utils
 
 
 def get_current_timezone() -> str:
@@ -31,13 +32,13 @@ def current_datetime() -> int:
         int: The current datetime as a Unix timestamp.
     """
 
-    return int(datetime.now().timestamp())
+    return int(datetime.now(UTC).timestamp())
 
 
 # ....................... #
 
 
-def datetime_from_timestamp(dt: int) -> datetime:
+def datetime_from_timestamp(timestamp: int | float) -> datetime:
     """
     Converts a Unix timestamp to a datetime object.
 
@@ -48,7 +49,7 @@ def datetime_from_timestamp(dt: int) -> datetime:
         datetime: The datetime object representing the given timestamp.
     """
 
-    return datetime.fromtimestamp(dt)
+    return datetime.fromtimestamp(timestamp=timestamp, tz=UTC)
 
 
 # ....................... #
@@ -68,7 +69,8 @@ def datetime_to_timestamp(dt: datetime) -> int:
     return int(dt.timestamp())
 
 
-# ....................... #
+# ----------------------- #
+# Hash utils
 
 
 def hash_from_any(val: Any) -> str:
@@ -124,3 +126,7 @@ def hex_uuid4(val: str = None) -> str:
     """
 
     return hex_uuid4_from_string(val) if val else uuid4().hex
+
+
+# ----------------------- #
+# ... utils

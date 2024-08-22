@@ -2,7 +2,7 @@ from typing import ClassVar, Dict, List, Optional, Sequence, Type, TypeVar, get_
 
 from pydantic import BaseModel, ConfigDict
 
-from .typing import Field, FieldDataType, FieldName, Wildcard
+from .typing import FieldDataType, FieldName, FieldSchema, Wildcard
 
 # ----------------------- #
 
@@ -36,7 +36,7 @@ class Base(BaseModel):
         cls: Type[T],
         include: Sequence[FieldName] | Wildcard = ["*"],
         exclude: Sequence[FieldName] = [],
-    ) -> Sequence[Field]:
+    ) -> Sequence[FieldSchema]:
         """
         Generate a simple schema for the model
 

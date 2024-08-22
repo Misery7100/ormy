@@ -1,10 +1,10 @@
-from .config import MongoConfigDict, MongoSettings
+from .config import MongoConfig, MongoSettings
 from .wrapper import MongoBase
 
 # ----------------------- #
 
 __all__ = [
-    "MongoConfigDict",
+    "MongoConfig",
     "MongoSettings",
     "MongoBase",
 ]
