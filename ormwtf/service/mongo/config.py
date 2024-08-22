@@ -1,24 +1,65 @@
 from typing import Optional
 
-from pydantic import Field
-from pydantic_settings import BaseSettings
 from typing_extensions import TypedDict
 
 # ----------------------- #
 
 
+class MongoCredentials(TypedDict):
+    host: str
+    port: Optional[int]
+    username: str
+    password: str
+    replicaset: str
+
+    # ....................... #
+
+    @classmethod
+    def with_defaults(
+        cls,
+        host: str = "localhost",
+        port: Optional[int] = None,
+        username: str = "root",
+        password: str = "password",
+        replicaset: str = "rs0",
+        directConnection: bool = False,
+    ):
+        return cls(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            replicaset=replicaset,
+            directConnection=directConnection,
+        )
+
+
+# ....................... #
+
+
 class MongoConfig(TypedDict):
+
+    # Local configuration
     database: str
     collection: str
     streaming: bool
 
+    # Global configuration
+    credentials: MongoCredentials
 
-# ----------------------- #
+    # ....................... #
 
-
-class MongoSettings(BaseSettings):
-    host: Optional[str] = Field("localhost", alias="mongo_host")
-    port: Optional[int] = Field(None, alias="mongo_external_port")
-    username: str = Field(alias="mongo_initdb_root_username")
-    password: str = Field(alias="mongo_initdb_root_password")
-    replicaset: str = Field("rs0")
+    @classmethod
+    def with_defaults(
+        cls,
+        database: str = "default",
+        collection: str = "default",
+        streaming: bool = True,
+        credentials: MongoCredentials = MongoCredentials.with_defaults(),
+    ):
+        return cls(
+            database=database,
+            collection=collection,
+            streaming=streaming,
+            credentials=credentials,
+        )

@@ -53,9 +53,9 @@ class FirestoreBase(Base):
         """Get syncronous Firestore client"""
 
         database = cls.config["database"]
-        creds_dict = cls.config.get("credentials", {})
-        project_id = creds_dict.get("project_id", None)
-        credentials = creds_dict.get("credentials", None)
+        creds_dict = cls.config["credentials"]
+        project_id = creds_dict["project_id"]
+        credentials = creds_dict["credentials"]
 
         client = Client(
             project=project_id,
@@ -77,9 +77,9 @@ class FirestoreBase(Base):
         """Get asyncronous Firestore client"""
 
         database = cls.config["database"]
-        creds_dict = cls.config.get("credentials", {})
-        project_id = creds_dict.get("project_id", None)
-        credentials = creds_dict.get("credentials", None)
+        creds_dict = cls.config["credentials"]
+        project_id = creds_dict["project_id"]
+        credentials = creds_dict["credentials"]
 
         client = AsyncClient(
             project=project_id,
@@ -235,7 +235,7 @@ class FirestoreBase(Base):
         ...
         """
 
-        instance = cls.find(id_, autoerror=True)
+        instance = cls.find(id_)
 
         if isinstance(data, dict):
             keys = data.keys()
@@ -269,7 +269,7 @@ class FirestoreBase(Base):
         ...
         """
 
-        instance = await cls.afind(id_, autoerror=True)
+        instance = await cls.afind(id_)
 
         if isinstance(data, dict):
             keys = data.keys()
@@ -298,6 +298,7 @@ class FirestoreBase(Base):
         cls: Type[T],
         data: Sequence[T],
         autosave: bool = True,
+        bypass: bool = False,
     ) -> Optional[WriteBatch]:
         """
         ...
@@ -312,9 +313,10 @@ class FirestoreBase(Base):
             snapshot = ref.get()
 
             if snapshot.exists:
-                raise ValueError(f"Document with ID {_id} already exists")
-
-            batch.set(ref, document)
+                if not bypass:
+                    raise ValueError(f"Document with ID {_id} already exists")
+            else:
+                batch.set(ref, document)
 
         if autosave:
             batch.commit()
@@ -331,6 +333,7 @@ class FirestoreBase(Base):
         cls: Type[T],
         data: Sequence[T],
         autosave: bool = True,
+        bypass: bool = False,
     ) -> Optional[AsyncWriteBatch]:
         """
         ...
@@ -345,9 +348,11 @@ class FirestoreBase(Base):
             snapshot = await ref.get()
 
             if snapshot.exists:
-                raise ValueError(f"Document with ID {_id} already exists")
+                if not bypass:
+                    raise ValueError(f"Document with ID {_id} already exists")
 
-            batch.set(ref, document)
+            else:
+                batch.set(ref, document)
 
         if autosave:
             await batch.commit()
@@ -363,6 +368,10 @@ class FirestoreBase(Base):
         data: Sequence[T],
         autosave: bool = True,
     ) -> Optional[WriteBatch]:
+        """
+        ...
+        """
+
         pass
 
     # ....................... #
@@ -373,12 +382,16 @@ class FirestoreBase(Base):
         data: Sequence[T],
         autosave: bool = True,
     ) -> Optional[AsyncWriteBatch]:
+        """
+        ...
+        """
+
         pass
 
     # ....................... #
 
     @classmethod
-    def find(cls: Type[T], id_: DocumentID, autoerror: bool = False) -> T:
+    def find(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
         """
         ...
         """
@@ -386,7 +399,10 @@ class FirestoreBase(Base):
         ref = cls._ref(id_)
         snapshot = ref.get()
 
-        if not snapshot.exists and autoerror:
+        if not snapshot.exists:
+            if bypass:
+                return
+
             raise ValueError(f"Document with ID {id_} not found")
 
         return cls(**snapshot.to_dict())
@@ -394,7 +410,7 @@ class FirestoreBase(Base):
     # ....................... #
 
     @classmethod
-    async def afind(cls: Type[T], id_: DocumentID, autoerror: bool = False) -> T:
+    async def afind(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
         """
         ...
         """
@@ -402,7 +418,10 @@ class FirestoreBase(Base):
         ref = await cls._aref(id_)
         snapshot = await ref.get()
 
-        if not snapshot.exists and autoerror:
+        if not snapshot.exists:
+            if bypass:
+                return
+
             raise ValueError(f"Document with ID {id_} not found")
 
         return cls(**snapshot.to_dict())

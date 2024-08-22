@@ -34,7 +34,7 @@ class FirestoreConfig(TypedDict):
     collection: str
 
     # Global configuration
-    credentials: FirestoreCredentials = FirestoreCredentials.with_defaults()
+    credentials: FirestoreCredentials
 
     # ....................... #
 

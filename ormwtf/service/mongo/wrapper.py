@@ -1,4 +1,4 @@
-from abc import abstractmethod
+import inspect
 from typing import (
     Annotated,
     Any,
@@ -38,18 +38,8 @@ MongoRequest = Annotated[Dict[str, Any], "MongoDB request"]
 
 
 class MongoBase(Base):
-    """
-    ORM Wrapper for MongoDB based data models.
 
-    This class provides basic CRUD operations for MongoDB collections.
-    Make sure to override the `_get_settings` method to provide the
-    necessary settings for the client, a good option to do this is to
-    create a generic subclass of this class and override the
-    `_get_settings` method.
-    """
-
-    # TODO: refactor config according to the firestore config
-    config: ClassVar[MongoConfig] = MongoConfig()
+    config: ClassVar[MongoConfig] = MongoConfig.with_defaults()
 
     # ....................... #
 
@@ -58,22 +48,15 @@ class MongoBase(Base):
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):
+        """Initialize subclass with config inheritance"""
+
         super().__init_subclass__(**kwargs)
+        superclass = inspect.getmro(cls)[1]
+        values = {**superclass.config, **cls.config}
+        cls.config = MongoConfig.with_defaults(**values)
+
+        # Additional initialization steps
         cls._enable_streaming()
-
-    # ....................... #
-
-    @staticmethod
-    @abstractmethod
-    def _get_settings():
-        """
-        Get settings for the client
-
-        Returns:
-            settings (Settings): Settings for the client including: host, port, username, password,
-                                       replicaset, directConnection
-        """
-        pass
 
     # ....................... #
 
@@ -81,10 +64,9 @@ class MongoBase(Base):
     def _client(cls: Type[T]) -> MongoClient:
         """Get syncronous client"""
 
-        settings = cls._get_settings()
-        # TODO: check settings content
+        creds_dict = cls.config["credentials"]
 
-        return MongoClient(**settings)
+        return MongoClient(**creds_dict)
 
     # ....................... #
 
@@ -92,10 +74,9 @@ class MongoBase(Base):
     def _aclient(cls: Type[T]) -> AsyncIOMotorClient:
         """Get asyncronous client"""
 
-        settings = cls._get_settings()
-        # TODO: check settings content
+        creds_dict = cls.config["credentials"]
 
-        return AsyncIOMotorClient(**settings)
+        return AsyncIOMotorClient(**creds_dict)
 
     # ....................... #
 
@@ -104,9 +85,7 @@ class MongoBase(Base):
         """Get assigned database in syncronous mode"""
 
         client = cls._client()
-        database = cls.config.get("database", None)
-
-        assert database, "Database name is required"
+        database = cls.config["database"]
 
         return client.get_database(database)
 
@@ -117,9 +96,7 @@ class MongoBase(Base):
         """Get assigned database in asyncronous mode"""
 
         client = cls._aclient()
-        database = cls.config.get("database", None)
-
-        assert database, "Database name is required"
+        database = cls.config["database"]
 
         return client.get_database(database)
 
@@ -130,9 +107,7 @@ class MongoBase(Base):
         """Get assigned collection in syncronous mode"""
 
         database = cls._get_database()
-        collection = cls.config.get("collection", None)
-
-        assert collection, "Collection name is required"
+        collection = cls.config["collection"]
 
         return database.get_collection(collection)
 
@@ -143,9 +118,7 @@ class MongoBase(Base):
         """Get assigned collection in asyncronous mode"""
 
         database = cls._aget_database()
-        collection = cls.config.get("collection", None)
-
-        assert collection, "Collection name is required"
+        collection = cls.config["collection"]
 
         return database.get_collection(collection)
 
@@ -155,7 +128,7 @@ class MongoBase(Base):
     def _enable_streaming(cls: Type[T]):
         """Enable watch streams for the collection"""
 
-        is_streaming = cls.config.get("streaming", True)
+        is_streaming = cls.config["streaming"]
 
         if is_streaming:
             database = cls._get_database()
@@ -373,6 +346,10 @@ class MongoBase(Base):
         data: Sequence[T],
         ordered: bool = False,
     ):
+        """
+        ...
+        """
+
         collection = cls._get_collection()
 
         data = [item.model_dump() for item in data]
@@ -381,6 +358,7 @@ class MongoBase(Base):
         try:
             collection.bulk_write(operations, ordered=ordered)
 
+        # Bypass errors ????
         except BulkWriteError as e:
             return e
 
@@ -392,6 +370,10 @@ class MongoBase(Base):
         data: Sequence[T],
         ordered: bool = False,
     ):
+        """
+        ...
+        """
+
         collection = cls._aget_collection()
 
         data = [item.model_dump() for item in data]
@@ -400,10 +382,9 @@ class MongoBase(Base):
         try:
             await collection.bulk_write(operations, ordered=ordered)
 
+        # Bypass errors ????
         except BulkWriteError as e:
             return e
-
-    # ....................... #
 
     # ....................... #
 
@@ -413,6 +394,10 @@ class MongoBase(Base):
         data: Sequence[T],
         autosave: bool = True,
     ):
+        """
+        ...
+        """
+
         pass
 
     # ....................... #
@@ -423,6 +408,10 @@ class MongoBase(Base):
         data: Sequence[T],
         autosave: bool = True,
     ):
+        """
+        ...
+        """
+
         pass
 
     # ....................... #
@@ -434,6 +423,10 @@ class MongoBase(Base):
         request: MongoRequest = {},
         autoerror: bool = False,
     ) -> Optional[T]:
+        """
+        ...
+        """
+
         collection = cls._get_collection()
 
         if not (request and id):
@@ -460,6 +453,10 @@ class MongoBase(Base):
         request: MongoRequest = {},
         autoerror: bool = False,
     ) -> Optional[T]:
+        """
+        ...
+        """
+
         collection = cls._aget_collection()
 
         if not (request and id):
@@ -486,6 +483,10 @@ class MongoBase(Base):
         limit: int = 100,
         offset: int = 0,
     ) -> List[T]:
+        """
+        ...
+        """
+
         collection = cls.get_collection()
         documents = collection.find(request).limit(limit).skip(offset)
 
@@ -500,6 +501,10 @@ class MongoBase(Base):
         limit: int = 100,
         offset: int = 0,
     ) -> List[T]:
+        """
+        ...
+        """
+
         collection = cls._aget_collection()
         cursor = collection.find(request).limit(limit).skip(offset)
 
@@ -512,6 +517,10 @@ class MongoBase(Base):
         cls: Type[T],
         request: MongoRequest = {},
     ) -> int:
+        """
+        ...
+        """
+
         collection = cls._get_collection()
 
         return collection.count_documents(request)
@@ -523,6 +532,10 @@ class MongoBase(Base):
         cls: Type[T],
         request: MongoRequest = {},
     ) -> int:
+        """
+        ...
+        """
+
         collection = cls._aget_collection()
 
         return await collection.count_documents(request)
@@ -535,6 +548,10 @@ class MongoBase(Base):
         request: MongoRequest = {},
         batch_size: int = 100,
     ) -> List[T]:
+        """
+        ...
+        """
+
         cnt = cls.count(request=request)
         found = []
 
@@ -552,6 +569,10 @@ class MongoBase(Base):
         request: MongoRequest = {},
         batch_size: int = 100,
     ) -> List[T]:
+        """
+        ...
+        """
+
         cnt = await cls.acount(request=request)
         found = []
 
@@ -563,6 +584,8 @@ class MongoBase(Base):
 
     # ....................... #
 
+    #! TODO: refactor
+
     @classmethod
     def patch_records(
         cls: Type[T],
@@ -570,6 +593,9 @@ class MongoBase(Base):
         fields: List[str],
         prefix: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
+        """
+        ...
+        """
 
         prefix = "" if prefix is None else f"{prefix}_"
         id_field = prefix + "id"
@@ -592,6 +618,8 @@ class MongoBase(Base):
 
     # ....................... #
 
+    #! TODO: refactor
+
     @classmethod  # TODO: rewrite
     def patch_schema(
         cls: Type[T],
@@ -599,6 +627,9 @@ class MongoBase(Base):
         fields: List[str],
         prefix: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
+        """
+        ...
+        """
 
         model_schema = cls.model_json_schema()
         upd = []
