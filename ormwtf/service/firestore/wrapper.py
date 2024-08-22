@@ -32,7 +32,7 @@ class FirestoreBase(Base):
 
     # ....................... #
 
-    id: str = Field(title="ID", default_factory=hex_uuid4)
+    id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
 
     # ....................... #
 

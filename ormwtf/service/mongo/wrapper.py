@@ -1,6 +1,5 @@
 import inspect
 from typing import (
-    Annotated,
     Any,
     ClassVar,
     Dict,
@@ -27,12 +26,11 @@ from ormwtf.base.pydantic import Base
 from ormwtf.base.typing import AbstractData, DocumentID
 
 from .config import MongoConfig
+from .typing import MongoRequest
 
 # ----------------------- #
 
 T = TypeVar("T", bound="MongoBase")
-
-MongoRequest = Annotated[Dict[str, Any], "MongoDB request"]
 
 # ....................... #
 
@@ -43,7 +41,7 @@ class MongoBase(Base):
 
     # ....................... #
 
-    id: DocumentID = Field(title="ID", default_factory=hex_uuid4)
+    id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
 
     # ....................... #
 
@@ -57,6 +55,36 @@ class MongoBase(Base):
 
         # Additional initialization steps
         cls._enable_streaming()
+
+    # ....................... #
+
+    @classmethod
+    def _enable_streaming(cls: Type[T]):
+        """Enable watch streams for the collection"""
+
+        is_streaming = cls.config["streaming"]
+
+        if is_streaming:
+            database = cls._get_database()
+            collection = cls._get_collection()
+
+            collection_info = database.command(
+                {"listCollections": 1, "filter": {"name": collection.name}}
+            )
+            options = collection_info["cursor"]["firstBatch"][0].get("options", {})
+            change_stream_enabled = options.get("changeStreamPreAndPostImages", {}).get(
+                "enabled", False
+            )
+
+            if not change_stream_enabled:
+                collection.insert_one({"_id": f"{collection.name}_dummy"})
+                database.command(
+                    {
+                        "collMod": collection.name,
+                        "changeStreamPreAndPostImages": {"enabled": True},
+                    }
+                )
+                collection.delete_one({"_id": f"{collection.name}_dummy"})
 
     # ....................... #
 
@@ -121,36 +149,6 @@ class MongoBase(Base):
         collection = cls.config["collection"]
 
         return database.get_collection(collection)
-
-    # ....................... #
-
-    @classmethod
-    def _enable_streaming(cls: Type[T]):
-        """Enable watch streams for the collection"""
-
-        is_streaming = cls.config["streaming"]
-
-        if is_streaming:
-            database = cls._get_database()
-            collection = cls._get_collection()
-
-            collection_info = database.command(
-                {"listCollections": 1, "filter": {"name": collection.name}}
-            )
-            options = collection_info["cursor"]["firstBatch"][0].get("options", {})
-            change_stream_enabled = options.get("changeStreamPreAndPostImages", {}).get(
-                "enabled", False
-            )
-
-            if not change_stream_enabled:
-                collection.insert_one({"_id": f"{collection.name}_dummy"})
-                database.command(
-                    {
-                        "collMod": collection.name,
-                        "changeStreamPreAndPostImages": {"enabled": True},
-                    }
-                )
-                collection.delete_one({"_id": f"{collection.name}_dummy"})
 
     # ....................... #
 
@@ -584,7 +582,7 @@ class MongoBase(Base):
 
     # ....................... #
 
-    #! TODO: refactor
+    #! TODO: refactor or remove
 
     @classmethod
     def patch_records(
@@ -618,7 +616,7 @@ class MongoBase(Base):
 
     # ....................... #
 
-    #! TODO: refactor
+    #! TODO: refactor or remove
 
     @classmethod  # TODO: rewrite
     def patch_schema(
