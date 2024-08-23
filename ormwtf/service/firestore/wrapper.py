@@ -28,6 +28,14 @@ class FirestoreBase(DocumentOrmABC):
 
     # ....................... #
 
+    def __init_subclass__(cls, **kwargs):
+        """Initialize subclass"""
+
+        super().__init_subclass__(**kwargs)
+        cls.config.credentials.validate_app()
+
+    # ....................... #
+
     @classmethod
     @contextmanager
     def _client(cls: Type[T]):

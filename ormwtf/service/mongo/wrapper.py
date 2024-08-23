@@ -30,7 +30,7 @@ class MongoBase(DocumentOrmABC):
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):
-        """Initialize subclass with config inheritance"""
+        """Initialize subclass with extra features"""
 
         super().__init_subclass__(**kwargs)
         cls._enable_streaming()
