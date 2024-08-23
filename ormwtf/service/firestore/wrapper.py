@@ -11,11 +11,9 @@ from google.cloud.firestore_v1.batch import WriteBatch
 from google.cloud.firestore_v1.client import Client
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
-from pydantic import Field
 
-from ormwtf.base.func import hex_uuid4
-from ormwtf.base.pydantic import Base
-from ormwtf.base.typing import AbstractData, DocumentID
+from ormwtf.base.abc import DocumentOrmABC
+from ormwtf.base.typing import DocumentID
 
 from .config import FirestoreConfig
 
@@ -26,13 +24,9 @@ T = TypeVar("T", bound="FirestoreBase")
 # ....................... #
 
 
-class FirestoreBase(Base):
+class FirestoreBase(DocumentOrmABC):
 
     config: ClassVar[FirestoreConfig] = FirestoreConfig.with_defaults()
-
-    # ....................... #
-
-    id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
 
     # ....................... #
 
@@ -54,8 +48,8 @@ class FirestoreBase(Base):
 
         database = cls.config["database"]
         creds_dict = cls.config["credentials"]
-        project_id = creds_dict["project_id"]
-        credentials = creds_dict["credentials"]
+        project_id = creds_dict.get("project_id", None)
+        credentials = creds_dict.get("credentials", None)
 
         client = Client(
             project=project_id,
@@ -78,8 +72,8 @@ class FirestoreBase(Base):
 
         database = cls.config["database"]
         creds_dict = cls.config["credentials"]
-        project_id = creds_dict["project_id"]
-        credentials = creds_dict["credentials"]
+        project_id = creds_dict.get("project_id", None)
+        credentials = creds_dict.get("credentials", None)
 
         client = AsyncClient(
             project=project_id,
@@ -97,6 +91,10 @@ class FirestoreBase(Base):
 
     @classmethod
     def _batch(cls: Type[T]) -> WriteBatch:
+        """
+        ...
+        """
+
         with cls._client() as client:
             return client.batch()
 
@@ -104,6 +102,10 @@ class FirestoreBase(Base):
 
     @classmethod
     async def _abatch(cls: Type[T]) -> AsyncWriteBatch:
+        """
+        ...
+        """
+
         async with cls._aclient() as client:
             return client.batch()
 
@@ -130,8 +132,7 @@ class FirestoreBase(Base):
     @classmethod
     def _ref(cls: Type[T], id_: DocumentID) -> DocumentReference:
         """
-        Get a document reference from assigned Firestore collection
-        in syncronous mode
+        Get a document reference from assigned collection in syncronous mode
         """
 
         collection = cls._get_collection()
@@ -144,8 +145,7 @@ class FirestoreBase(Base):
     @classmethod
     async def _aref(cls: Type[T], id_: DocumentID) -> AsyncDocumentReference:
         """
-        Get a document reference from assigned Firestore collection
-        in asyncronous mode
+        Get a document reference from assigned collection in asyncronous mode
         """
 
         collection = await cls._aget_collection()
@@ -220,74 +220,6 @@ class FirestoreBase(Base):
         await ref.set(document)
 
         return self
-
-    # ....................... #
-
-    @classmethod
-    def update(
-        cls: Type[T],
-        id_: DocumentID,
-        data: AbstractData,
-        ignore_none: bool = True,
-        autosave: bool = True,
-    ) -> T:
-        """
-        ...
-        """
-
-        instance = cls.find(id_)
-
-        if isinstance(data, dict):
-            keys = data.keys()
-
-        else:
-            keys = data.model_fields.keys()
-            data = data.model_dump()
-
-        for k in keys:
-            val = data.get(k, None)
-
-            if not (val is None and ignore_none) and hasattr(instance, k):
-                setattr(instance, k, val)
-
-        if autosave:
-            return instance.save()
-
-        return instance
-
-    # ....................... #
-
-    @classmethod
-    async def aupdate(
-        cls: Type[T],
-        id_: DocumentID,
-        data: AbstractData,
-        ignore_none: bool = True,
-        autosave: bool = True,
-    ) -> T:
-        """
-        ...
-        """
-
-        instance = await cls.afind(id_)
-
-        if isinstance(data, dict):
-            keys = data.keys()
-
-        else:
-            keys = data.model_fields.keys()
-            data = data.model_dump()
-
-        for k in keys:
-            val = data.get(k, None)
-
-            if not (val is None and ignore_none) and hasattr(instance, k):
-                setattr(instance, k, val)
-
-        if autosave:
-            return await instance.asave()
-
-        return instance
 
     # ....................... #
 

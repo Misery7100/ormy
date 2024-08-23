@@ -1,13 +1,13 @@
 from typing import Optional
 
-from typing_extensions import TypedDict
+from ormwtf.base.abc import TypedDictWithDefaults
 
 # ----------------------- #
 
 
-class MongoCredentials(TypedDict):
+class MongoCredentials(TypedDictWithDefaults):
     """
-    MongoDB Connect Credentials
+    MongoDB connect credentials
 
     Attributes:
         host (str): MongoDB host
@@ -15,8 +15,7 @@ class MongoCredentials(TypedDict):
         username (str): MongoDB username
         password (str): MongoDB password
         replicaset (str): MongoDB replicaset
-        directConnection (bool): MongoDB direct connection
-
+        directConnection (bool): Whether to connect to replica directly
     """
 
     host: str
@@ -38,7 +37,10 @@ class MongoCredentials(TypedDict):
         replicaset: str = "rs0",
         directConnection: bool = False,
     ) -> "MongoCredentials":
-        """Returns a new instance of MongoCredentials with overridable default values:"""
+        """
+        Returns a new instance of MongoCredentials with overridable defaults
+        """
+
         return cls(
             host=host,
             port=port,
@@ -52,7 +54,16 @@ class MongoCredentials(TypedDict):
 # ....................... #
 
 
-class MongoConfig(TypedDict):
+class MongoConfig(TypedDictWithDefaults):
+    """
+    Mongo Configuration for ORM WTF Base Model
+
+    Attributes:
+        database (str): Database name to assign
+        collection (str): Collection name to assign
+        streaming (bool): Whether to enable watch on collection
+        credentials (MongoCredentials): Connection credentials
+    """
 
     # Local configuration
     database: str
@@ -72,6 +83,10 @@ class MongoConfig(TypedDict):
         streaming: bool = True,
         credentials: MongoCredentials = MongoCredentials.with_defaults(),
     ):
+        """
+        Returns a new instance of MongoConfig with overridable defaults
+        """
+
         return cls(
             database=database,
             collection=collection,

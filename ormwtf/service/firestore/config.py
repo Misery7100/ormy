@@ -1,12 +1,21 @@
 from typing import Optional
 
 from google.auth.credentials import Credentials
-from typing_extensions import TypedDict
+
+from ormwtf.base.abc import TypedDictWithDefaults
 
 # ----------------------- #
 
 
-class FirestoreCredentials(TypedDict):
+class FirestoreCredentials(TypedDictWithDefaults):
+    """
+    Firestore connect credentials
+
+    Attributes:
+        project_id (str): Firestore project ID
+        credentials (Credentials): Firestore credentials instance
+    """
+
     project_id: Optional[str]
     credentials: Optional[Credentials]
 
@@ -18,6 +27,10 @@ class FirestoreCredentials(TypedDict):
         project_id: Optional[str] = None,
         credentials: Optional[Credentials] = None,
     ):
+        """
+        Returns a new instance of FirestoreCredentials with overridable defaults
+        """
+
         return cls(
             project_id=project_id,
             credentials=credentials,
@@ -27,7 +40,15 @@ class FirestoreCredentials(TypedDict):
 # ....................... #
 
 
-class FirestoreConfig(TypedDict):
+class FirestoreConfig(TypedDictWithDefaults):
+    """
+    Firestore Configuration for ORM WTF Base Model
+
+    Attributes:
+        database (str): Database name to assign
+        collection (str): Collection name to assign
+        credentials (FirestoreCredentials): Connection credentials
+    """
 
     # Local configuration
     database: Optional[str]
@@ -45,6 +66,10 @@ class FirestoreConfig(TypedDict):
         collection: str = "default",
         credentials: FirestoreCredentials = FirestoreCredentials.with_defaults(),
     ):
+        """
+        Returns a new instance of FirestoreConfig with overridable defaults
+        """
+
         return cls(
             database=database,
             collection=collection,

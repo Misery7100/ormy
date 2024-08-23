@@ -1,14 +1,5 @@
 import inspect
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, TypeVar
 
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
@@ -90,7 +81,7 @@ class MongoBase(Base):
 
     @classmethod
     def _client(cls: Type[T]) -> MongoClient:
-        """Get syncronous client"""
+        """Get syncronous MongoDB client"""
 
         creds_dict = cls.config["credentials"]
 
@@ -100,7 +91,7 @@ class MongoBase(Base):
 
     @classmethod
     def _aclient(cls: Type[T]) -> AsyncIOMotorClient:
-        """Get asyncronous client"""
+        """Get asyncronous MongoDB client"""
 
         creds_dict = cls.config["credentials"]
 
@@ -110,7 +101,7 @@ class MongoBase(Base):
 
     @classmethod
     def _get_database(cls: Type[T]) -> Database:
-        """Get assigned database in syncronous mode"""
+        """Get assigned MongoDB database in syncronous mode"""
 
         client = cls._client()
         database = cls.config["database"]
@@ -121,7 +112,7 @@ class MongoBase(Base):
 
     @classmethod
     def _aget_database(cls: Type[T]) -> AsyncIOMotorDatabase:
-        """Get assigned database in asyncronous mode"""
+        """Get assigned MongoDB database in asyncronous mode"""
 
         client = cls._aclient()
         database = cls.config["database"]
@@ -132,7 +123,7 @@ class MongoBase(Base):
 
     @classmethod
     def _get_collection(cls: Type[T]) -> Collection:
-        """Get assigned collection in syncronous mode"""
+        """Get assigned MongoDB collection in syncronous mode"""
 
         database = cls._get_database()
         collection = cls.config["collection"]
@@ -143,7 +134,7 @@ class MongoBase(Base):
 
     @classmethod
     def _aget_collection(cls: Type[T]) -> AsyncIOMotorCollection:
-        """Get assigned collection in asyncronous mode"""
+        """Get assigned MongoDB collection in asyncronous mode"""
 
         database = cls._aget_database()
         collection = cls.config["collection"]
@@ -249,7 +240,7 @@ class MongoBase(Base):
     @classmethod
     def update(
         cls: Type[T],
-        id: DocumentID,
+        id_: DocumentID,
         data: AbstractData,
         ignore_none: bool = True,
         ignore_deleted: bool = True,  # TODO: create `extra` model from this one
@@ -259,7 +250,7 @@ class MongoBase(Base):
         Update a document in the collection
 
         Args:
-            id (str): Document ID
+            id_ (str): Document ID
             data (AbstractData): Data model to be updated
             autosave (bool, optional): Save the document after update
 
@@ -267,7 +258,7 @@ class MongoBase(Base):
             res (MongoBase): Updated data model
         """
 
-        instance = cls.find(value=id, autoerror=True)
+        instance = cls.find(value=id_, autoerror=True)
 
         if instance.is_deleted and ignore_deleted:
             keys = ["is_deleted"]
@@ -295,7 +286,7 @@ class MongoBase(Base):
     @classmethod
     async def aupdate(
         cls: Type[T],
-        id: DocumentID,
+        id_: DocumentID,
         data: AbstractData,
         ignore_none: bool = True,
         ignore_deleted: bool = True,  # TODO: create `extra` model from this one
@@ -305,7 +296,7 @@ class MongoBase(Base):
         Update a document in the collection in asyncronous mode
 
         Args:
-            id (str): Document ID
+            id_ (str): Document ID
             data (AbstractData): Data model to be updated
             autosave (bool, optional): Save the document after update
 
@@ -313,9 +304,9 @@ class MongoBase(Base):
             res (MongoBase): Updated data model
         """
 
-        instance = await cls.afind(value=id, autoerror=True)
+        instance = await cls.afind(value=id_, autoerror=True)
 
-        if instance.is_deleted:
+        if instance.is_deleted and ignore_deleted:
             keys = ["is_deleted"]
 
         elif isinstance(data, dict):
@@ -417,7 +408,7 @@ class MongoBase(Base):
     @classmethod
     def find(
         cls: Type[T],
-        id: Optional[DocumentID] = None,
+        id_: Optional[DocumentID] = None,
         request: MongoRequest = {},
         autoerror: bool = False,
     ) -> Optional[T]:
@@ -427,12 +418,12 @@ class MongoBase(Base):
 
         collection = cls._get_collection()
 
-        if not (request and id):
+        if not (request and id_):
             # TODO: raise a specific error (ormwtf.base.error)
             raise ValueError("Request or value is required")
 
         elif not request:
-            request = {"_id": id}
+            request = {"_id": id_}
 
         document = collection.find_one(request)
 
@@ -447,7 +438,7 @@ class MongoBase(Base):
     @classmethod
     async def afind(
         cls: Type[T],
-        id: Optional[DocumentID] = None,
+        id_: Optional[DocumentID] = None,
         request: MongoRequest = {},
         autoerror: bool = False,
     ) -> Optional[T]:
@@ -457,12 +448,12 @@ class MongoBase(Base):
 
         collection = cls._aget_collection()
 
-        if not (request and id):
+        if not (request and id_):
             # TODO: raise a specific error (ormwtf.base.error)
             raise ValueError("Request or value is required")
 
         elif not request:
-            request = {"_id": id}
+            request = {"_id": id_}
 
         document = await collection.find_one(request)
 
