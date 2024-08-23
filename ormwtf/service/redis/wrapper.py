@@ -1,7 +1,7 @@
 import inspect
 import json
 from contextlib import asynccontextmanager, contextmanager
-from typing import ClassVar, Type, TypeVar
+from typing import ClassVar, Optional, Type, TypeVar
 
 from redis import Redis
 from redis import asyncio as aioredis
@@ -148,7 +148,7 @@ class RedisBase(DocumentOrmABC):
     # ....................... #
 
     @classmethod
-    def find(cls: Type[T], id_: DocumentID, bypass: bool = False) -> T:
+    def find(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
         key = cls._build_key(id_)
 
         with cls._client() as client:
@@ -160,12 +160,10 @@ class RedisBase(DocumentOrmABC):
             elif not bypass:
                 raise ValueError(f"Document with ID {id_} not found")
 
-            return cls.model_validate_json(res)
-
     # ....................... #
 
     @classmethod
-    async def afind(cls: Type[T], id_: DocumentID, bypass: bool = False) -> T:
+    async def afind(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
         key = cls._build_key(id_)
 
         async with cls._aclient() as client:
@@ -176,7 +174,5 @@ class RedisBase(DocumentOrmABC):
 
             elif not bypass:
                 raise ValueError(f"Document with ID {id_} not found")
-
-            return cls.model_validate_json(res)
 
     # ....................... #

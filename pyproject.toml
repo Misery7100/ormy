@@ -25,7 +25,7 @@ vcs = "git"
 bump = true
 
 [tool.poetry-dynamic-versioning.files."ormwtf/__version__.py"]
-# persistent-substitution = true
+persistent-substitution = true
 initial-content = """
   # These version placeholders will be replaced later during substitution.
   __version__ = "0.0.0"
