@@ -22,7 +22,6 @@ ipykernel = "^6.29.5"
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
-bump = true
 
 [tool.poetry-dynamic-versioning.files."ormwtf/__version__.py"]
 persistent-substitution = true

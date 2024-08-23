@@ -78,7 +78,13 @@ class RedisBase(DocumentOrmABC):
     @classmethod
     def create(cls: Type[T], data: T) -> T:
         """
-        ...
+        Create a new document in the collection (meta)
+
+        Args:
+            data (RedisBase): Data model to be created
+
+        Returns:
+            res (RedisBase): Created data model
         """
 
         document = data.model_dump()
@@ -98,7 +104,13 @@ class RedisBase(DocumentOrmABC):
     @classmethod
     async def acreate(cls: Type[T], data: T) -> T:
         """
-        ...
+        Create a new document in the collection (meta) in async mode
+
+        Args:
+            data (RedisBase): Data model to be created
+
+        Returns:
+            res (RedisBase): Created data model
         """
 
         document = data.model_dump()
