@@ -1,7 +1,7 @@
-from typing import Any, Optional
+from typing import Optional
 
 import firebase_admin
-from pydantic import ConfigDict, model_validator
+from pydantic import ConfigDict
 
 from ormwtf.base.pydantic import Base
 
@@ -27,27 +27,15 @@ class FirestoreCredentials(Base):
 
     # ....................... #
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_app(cls, v: Any):
+    def validate_app(self):
         """Validate Firebase app"""
-        app: Optional[firebase_admin.App] = v.get("app", None)
-        app_name = v.get("app_name", None)
-        pid = v.get("project_id", None)
-
-        if app is None:
-            app: firebase_admin.App = firebase_admin.get_app(
-                name=app_name or firebase_admin._DEFAULT_APP_NAME
+        if self.app is None:
+            self.app = firebase_admin.get_app(
+                name=self.app_name or firebase_admin._DEFAULT_APP_NAME
             )
 
-        if pid is None:
-            pid = app.project_id
-
-        v["project_id"] = pid
-        v["app"] = app
-        v["app_name"] = app.name
-
-        return v
+        if self.project_id is None:
+            self.project_id = self.app.project_id
 
 
 # ....................... #
