@@ -3,13 +3,11 @@ import json
 from contextlib import asynccontextmanager, contextmanager
 from typing import ClassVar, Type, TypeVar
 
-from pydantic import Field
 from redis import Redis
 from redis import asyncio as aioredis
 
-from ormwtf.base.func import hex_uuid4
-from ormwtf.base.pydantic import Base
-from ormwtf.base.typing import AbstractData, DocumentID
+from ormwtf.base.abc import DocumentOrmABC
+from ormwtf.base.typing import DocumentID
 
 from .config import RedisConfig
 
@@ -20,13 +18,9 @@ T = TypeVar("T", bound="RedisBase")
 # ....................... #
 
 
-class RedisBase(Base):
+class RedisBase(DocumentOrmABC):
 
     config: ClassVar[RedisConfig] = RedisConfig.with_defaults()
-
-    # ....................... #
-
-    id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
 
     # ....................... #
 
@@ -154,40 +148,16 @@ class RedisBase(Base):
     # ....................... #
 
     @classmethod
-    def update(
-        cls: Type[T],
-        id_: DocumentID,
-        data: AbstractData,
-        ignore_none: bool = True,
-        autosave: bool = True,
-    ) -> T:
-        pass
-
-    # ....................... #
-
-    @classmethod
-    async def aupdate(
-        cls: Type[T],
-        id_: DocumentID,
-        data: AbstractData,
-        ignore_none: bool = True,
-        autosave: bool = True,
-    ) -> T:
-        pass
-
-    # ....................... #
-
-    @classmethod
     def find(cls: Type[T], id_: DocumentID, bypass: bool = False) -> T:
         key = cls._build_key(id_)
 
         with cls._client() as client:
             res = client.get(key)
 
-            if not res:
-                if bypass:
-                    return
+            if res:
+                return cls.model_validate_json(res)
 
+            elif not bypass:
                 raise ValueError(f"Document with ID {id_} not found")
 
             return cls.model_validate_json(res)
@@ -201,10 +171,10 @@ class RedisBase(Base):
         async with cls._aclient() as client:
             res = await client.get(key)
 
-            if not res:
-                if bypass:
-                    return
+            if res:
+                return cls.model_validate_json(res)
 
+            elif not bypass:
                 raise ValueError(f"Document with ID {id_} not found")
 
             return cls.model_validate_json(res)

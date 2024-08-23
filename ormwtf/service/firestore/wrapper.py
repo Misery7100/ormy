@@ -331,13 +331,11 @@ class FirestoreBase(DocumentOrmABC):
         ref = cls._ref(id_)
         snapshot = ref.get()
 
-        if not snapshot.exists:
-            if bypass:
-                return
+        if snapshot.exists:
+            return cls(**snapshot.to_dict())
 
+        elif not bypass:
             raise ValueError(f"Document with ID {id_} not found")
-
-        return cls(**snapshot.to_dict())
 
     # ....................... #
 
@@ -350,13 +348,11 @@ class FirestoreBase(DocumentOrmABC):
         ref = await cls._aref(id_)
         snapshot = await ref.get()
 
-        if not snapshot.exists:
-            if bypass:
-                return
+        if snapshot.exists:
+            return cls(**snapshot.to_dict())
 
+        elif not bypass:
             raise ValueError(f"Document with ID {id_} not found")
-
-        return cls(**snapshot.to_dict())
 
     # ....................... #
 

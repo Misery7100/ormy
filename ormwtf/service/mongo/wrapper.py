@@ -6,15 +6,13 @@ from motor.motor_asyncio import (
     AsyncIOMotorCollection,
     AsyncIOMotorDatabase,
 )
-from pydantic import Field
 from pymongo import InsertOne, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from ormwtf.base.func import hex_uuid4
-from ormwtf.base.pydantic import Base
-from ormwtf.base.typing import AbstractData, DocumentID
+from ormwtf.base.abc import DocumentOrmABC
+from ormwtf.base.typing import DocumentID
 
 from .config import MongoConfig
 from .typing import MongoRequest
@@ -26,13 +24,9 @@ T = TypeVar("T", bound="MongoBase")
 # ....................... #
 
 
-class MongoBase(Base):
+class MongoBase(DocumentOrmABC):
 
     config: ClassVar[MongoConfig] = MongoConfig.with_defaults()
-
-    # ....................... #
-
-    id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
 
     # ....................... #
 
@@ -237,95 +231,95 @@ class MongoBase(Base):
 
     # ....................... #
 
-    @classmethod
-    def update(
-        cls: Type[T],
-        id_: DocumentID,
-        data: AbstractData,
-        ignore_none: bool = True,
-        ignore_deleted: bool = True,  # TODO: create `extra` model from this one
-        autosave: bool = True,
-    ) -> T:
-        """
-        Update a document in the collection
+    # @classmethod
+    # def update(
+    #     cls: Type[T],
+    #     id_: DocumentID,
+    #     data: AbstractData,
+    #     ignore_none: bool = True,
+    #     ignore_deleted: bool = True,  # TODO: create `extra` model from this one
+    #     autosave: bool = True,
+    # ) -> T:
+    #     """
+    #     Update a document in the collection
 
-        Args:
-            id_ (str): Document ID
-            data (AbstractData): Data model to be updated
-            autosave (bool, optional): Save the document after update
+    #     Args:
+    #         id_ (str): Document ID
+    #         data (AbstractData): Data model to be updated
+    #         autosave (bool, optional): Save the document after update
 
-        Returns:
-            res (MongoBase): Updated data model
-        """
+    #     Returns:
+    #         res (MongoBase): Updated data model
+    #     """
 
-        instance = cls.find(value=id_, autoerror=True)
+    #     instance = cls.find(id_, autoerror=True)
 
-        if instance.is_deleted and ignore_deleted:
-            keys = ["is_deleted"]
+    #     if instance.is_deleted and ignore_deleted:
+    #         keys = ["is_deleted"]
 
-        elif isinstance(data, dict):
-            keys = data.keys()
+    #     elif isinstance(data, dict):
+    #         keys = data.keys()
 
-        else:
-            keys = data.model_fields.keys()
-            data = data.model_dump()
+    #     else:
+    #         keys = data.model_fields.keys()
+    #         data = data.model_dump()
 
-        for k in keys:
-            val = data.get(k, None)
+    #     for k in keys:
+    #         val = data.get(k, None)
 
-            if not (val is None and ignore_none) and hasattr(instance, k):
-                setattr(instance, k, val)
+    #         if not (val is None and ignore_none) and hasattr(instance, k):
+    #             setattr(instance, k, val)
 
-        if autosave:
-            return instance.save()
+    #     if autosave:
+    #         return instance.save()
 
-        return instance
+    #     return instance
 
-    # ....................... #
+    # # ....................... #
 
-    @classmethod
-    async def aupdate(
-        cls: Type[T],
-        id_: DocumentID,
-        data: AbstractData,
-        ignore_none: bool = True,
-        ignore_deleted: bool = True,  # TODO: create `extra` model from this one
-        autosave: bool = True,
-    ) -> T:
-        """
-        Update a document in the collection in asyncronous mode
+    # @classmethod
+    # async def aupdate(
+    #     cls: Type[T],
+    #     id_: DocumentID,
+    #     data: AbstractData,
+    #     ignore_none: bool = True,
+    #     ignore_deleted: bool = True,  # TODO: create `extra` model from this one
+    #     autosave: bool = True,
+    # ) -> T:
+    #     """
+    #     Update a document in the collection in asyncronous mode
 
-        Args:
-            id_ (str): Document ID
-            data (AbstractData): Data model to be updated
-            autosave (bool, optional): Save the document after update
+    #     Args:
+    #         id_ (str): Document ID
+    #         data (AbstractData): Data model to be updated
+    #         autosave (bool, optional): Save the document after update
 
-        Returns:
-            res (MongoBase): Updated data model
-        """
+    #     Returns:
+    #         res (MongoBase): Updated data model
+    #     """
 
-        instance = await cls.afind(value=id_, autoerror=True)
+    #     instance = await cls.afind(value=id_, autoerror=True)
 
-        if instance.is_deleted and ignore_deleted:
-            keys = ["is_deleted"]
+    #     if instance.is_deleted and ignore_deleted:
+    #         keys = ["is_deleted"]
 
-        elif isinstance(data, dict):
-            keys = data.keys()
+    #     elif isinstance(data, dict):
+    #         keys = data.keys()
 
-        else:
-            keys = data.model_fields.keys()
-            data = data.model_dump()
+    #     else:
+    #         keys = data.model_fields.keys()
+    #         data = data.model_dump()
 
-        for k in keys:
-            val = data.get(k, None)
+    #     for k in keys:
+    #         val = data.get(k, None)
 
-            if not (val is None and ignore_none) and hasattr(instance, k):
-                setattr(instance, k, val)
+    #         if not (val is None and ignore_none) and hasattr(instance, k):
+    #             setattr(instance, k, val)
 
-        if autosave:
-            return await instance.asave()
+    #     if autosave:
+    #         return await instance.asave()
 
-        return instance
+    #     return instance
 
     # ....................... #
 
@@ -410,7 +404,7 @@ class MongoBase(Base):
         cls: Type[T],
         id_: Optional[DocumentID] = None,
         request: MongoRequest = {},
-        autoerror: bool = False,
+        bypass: bool = False,
     ) -> Optional[T]:
         """
         ...
@@ -430,8 +424,8 @@ class MongoBase(Base):
         if document:
             return cls(**document)
 
-        elif autoerror:
-            raise ValueError("Not found")
+        elif not bypass:
+            raise ValueError(f"Document with ID {id_} not found")
 
     # ....................... #
 
@@ -440,7 +434,7 @@ class MongoBase(Base):
         cls: Type[T],
         id_: Optional[DocumentID] = None,
         request: MongoRequest = {},
-        autoerror: bool = False,
+        bypass: bool = False,
     ) -> Optional[T]:
         """
         ...
@@ -460,8 +454,8 @@ class MongoBase(Base):
         if document:
             return cls(**document)
 
-        elif autoerror:
-            raise ValueError("Not found")
+        elif not bypass:
+            raise ValueError(f"Document with ID {id_} not found")
 
     # ....................... #
 
