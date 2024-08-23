@@ -2,25 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Optional, Type, TypeVar
 
 from pydantic import Field
-from typing_extensions import TypedDict
 
 from .func import hex_uuid4
 from .pydantic import Base
 from .typing import AbstractData, DocumentID
-
-# ----------------------- #
-
-
-class TypedDictWithDefaults(TypedDict):
-    @classmethod
-    @abstractmethod
-    def with_defaults(cls, **kwargs) -> "TypedDictWithDefaults":
-        """
-        Returns a new instance of TypedDictWithDefaults with overridable defaults
-        """
-
-        pass
-
 
 # ----------------------- #
 
@@ -42,41 +27,43 @@ class DocumentOrmABC(Base, ABC):
 
     @classmethod
     @abstractmethod
-    def create(cls: Type[T], data: T) -> T:
-        pass
+    def create(cls: Type[T], data: T) -> T: ...
 
     # ....................... #
 
     @classmethod
     @abstractmethod
-    async def acreate(cls: Type[T], data: T) -> T:
-        pass
+    async def acreate(cls: Type[T], data: T) -> T: ...
 
     # ....................... #
 
     @abstractmethod
-    def save(self: T) -> T:
-        pass
+    def save(self: T) -> T: ...
 
     # ....................... #
 
     @abstractmethod
-    async def asave(self: T) -> T:
-        pass
+    async def asave(self: T) -> T: ...
 
     # ....................... #
 
     @classmethod
     @abstractmethod
-    def find(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
-        pass
+    def find(
+        cls: Type[T],
+        id_: DocumentID,
+        bypass: bool = False,
+    ) -> Optional[T]: ...
 
     # ....................... #
 
     @classmethod
     @abstractmethod
-    async def afind(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
-        pass
+    async def afind(
+        cls: Type[T],
+        id_: DocumentID,
+        bypass: bool = False,
+    ) -> Optional[T]: ...
 
     # ....................... #
 

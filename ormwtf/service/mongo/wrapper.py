@@ -26,7 +26,7 @@ T = TypeVar("T", bound="MongoBase")
 
 class MongoBase(DocumentOrmABC):
 
-    config: ClassVar[MongoConfig] = MongoConfig.with_defaults()
+    config: ClassVar[MongoConfig] = MongoConfig()
 
     # ....................... #
 
@@ -35,8 +35,8 @@ class MongoBase(DocumentOrmABC):
 
         super().__init_subclass__(**kwargs)
         superclass = inspect.getmro(cls)[1]
-        values = {**superclass.config, **cls.config}
-        cls.config = MongoConfig.with_defaults(**values)
+        values = {**superclass.config.model_dump(), **cls.config.model_dump()}
+        cls.config = MongoConfig(**values)
 
         # Additional initialization steps
         cls._enable_streaming()
@@ -47,7 +47,7 @@ class MongoBase(DocumentOrmABC):
     def _enable_streaming(cls: Type[T]):
         """Enable watch streams for the collection"""
 
-        is_streaming = cls.config["streaming"]
+        is_streaming = cls.config.streaming
 
         if is_streaming:
             database = cls._get_database()
@@ -77,7 +77,7 @@ class MongoBase(DocumentOrmABC):
     def _client(cls: Type[T]) -> MongoClient:
         """Get syncronous MongoDB client"""
 
-        creds_dict = cls.config["credentials"]
+        creds_dict = cls.config.credentials.model_dump_with_secrets()
 
         return MongoClient(**creds_dict)
 
@@ -87,7 +87,7 @@ class MongoBase(DocumentOrmABC):
     def _aclient(cls: Type[T]) -> AsyncIOMotorClient:
         """Get asyncronous MongoDB client"""
 
-        creds_dict = cls.config["credentials"]
+        creds_dict = cls.config.credentials.model_dump_with_secrets()
 
         return AsyncIOMotorClient(**creds_dict)
 
@@ -98,9 +98,8 @@ class MongoBase(DocumentOrmABC):
         """Get assigned MongoDB database in syncronous mode"""
 
         client = cls._client()
-        database = cls.config["database"]
 
-        return client.get_database(database)
+        return client.get_database(cls.config.database)
 
     # ....................... #
 
@@ -109,9 +108,8 @@ class MongoBase(DocumentOrmABC):
         """Get assigned MongoDB database in asyncronous mode"""
 
         client = cls._aclient()
-        database = cls.config["database"]
 
-        return client.get_database(database)
+        return client.get_database(cls.config.database)
 
     # ....................... #
 
@@ -120,9 +118,8 @@ class MongoBase(DocumentOrmABC):
         """Get assigned MongoDB collection in syncronous mode"""
 
         database = cls._get_database()
-        collection = cls.config["collection"]
 
-        return database.get_collection(collection)
+        return database.get_collection(cls.config.collection)
 
     # ....................... #
 
@@ -131,9 +128,8 @@ class MongoBase(DocumentOrmABC):
         """Get assigned MongoDB collection in asyncronous mode"""
 
         database = cls._aget_database()
-        collection = cls.config["collection"]
 
-        return database.get_collection(collection)
+        return database.get_collection(cls.config.collection)
 
     # ....................... #
 

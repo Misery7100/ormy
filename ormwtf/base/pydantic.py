@@ -1,6 +1,16 @@
-from typing import ClassVar, Dict, List, Optional, Sequence, Type, TypeVar, get_args
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    get_args,
+)
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, SecretStr
 
 from .typing import FieldDataType, FieldName, FieldSchema, Wildcard
 
@@ -70,6 +80,39 @@ class Base(BaseModel):
         ]
 
         return simple_schema
+
+    # ....................... #
+
+    @staticmethod
+    def _handle_secret(x: Any) -> Any:
+        if isinstance(x, SecretStr):
+            return x.get_secret_value()
+
+        elif isinstance(x, dict):
+            return {k: Base._handle_secret(v) for k, v in x.items()}
+
+        elif isinstance(x, (list, set, tuple)):
+            return [Base._handle_secret(v) for v in x]
+
+        else:
+            return x
+
+    # ....................... #
+
+    def model_dump_with_secrets(self: T) -> Dict[str, Any]:
+        """
+        Dump the model with secrets
+
+        Returns:
+            data (Dict[str, Any]): The model data with secrets
+        """
+
+        res = self.model_dump()
+
+        for k, v in res.items():
+            res[k] = self._handle_secret(v)
+
+        return res
 
     # ....................... #
 

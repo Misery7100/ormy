@@ -26,7 +26,7 @@ T = TypeVar("T", bound="FirestoreBase")
 
 class FirestoreBase(DocumentOrmABC):
 
-    config: ClassVar[FirestoreConfig] = FirestoreConfig.with_defaults()
+    config: ClassVar[FirestoreConfig] = FirestoreConfig()
 
     # ....................... #
 
@@ -35,9 +35,9 @@ class FirestoreBase(DocumentOrmABC):
 
         super().__init_subclass__(**kwargs)
         superclass = inspect.getmro(cls)[1]
-        values = {**superclass.config, **cls.config}
+        values = {**superclass.config.model_dump(), **cls.config.model_dump()}
 
-        cls.config = FirestoreConfig.with_defaults(**values)
+        cls.config = FirestoreConfig(**values)
 
     # ....................... #
 
@@ -46,10 +46,9 @@ class FirestoreBase(DocumentOrmABC):
     def _client(cls: Type[T]):
         """Get syncronous Firestore client"""
 
-        database = cls.config["database"]
-        creds_dict = cls.config["credentials"]
-        project_id = creds_dict.get("project_id", None)
-        credentials = creds_dict.get("credentials", None)
+        database = cls.config.database
+        project_id = cls.config.credentials.project_id
+        credentials = cls.config.credentials.credentials
 
         client = Client(
             project=project_id,
@@ -70,10 +69,9 @@ class FirestoreBase(DocumentOrmABC):
     async def _aclient(cls: Type[T]):
         """Get asyncronous Firestore client"""
 
-        database = cls.config["database"]
-        creds_dict = cls.config["credentials"]
-        project_id = creds_dict.get("project_id", None)
-        credentials = creds_dict.get("credentials", None)
+        database = cls.config.database
+        project_id = cls.config.credentials.project_id
+        credentials = cls.config.credentials.credentials
 
         client = AsyncClient(
             project=project_id,
@@ -116,7 +114,7 @@ class FirestoreBase(DocumentOrmABC):
         """Get assigned Firestore collection in syncronous mode"""
 
         with cls._client() as client:
-            return client.collection(cls.config["collection"])
+            return client.collection(cls.config.collection)
 
     # ....................... #
 
@@ -125,7 +123,7 @@ class FirestoreBase(DocumentOrmABC):
         """Get assigned Firestore collection in asyncronous mode"""
 
         async with cls._aclient() as client:
-            return client.collection(cls.config["collection"])
+            return client.collection(cls.config.collection)
 
     # ....................... #
 

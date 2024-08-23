@@ -29,8 +29,8 @@ class RedisBase(DocumentOrmABC):
 
         super().__init_subclass__(**kwargs)
         superclass = inspect.getmro(cls)[1]
-        values = {**superclass.config, **cls.config}
-        cls.config = RedisConfig.with_defaults(**values)
+        values = {**superclass.config.model_dump(), **cls.config.model_dump()}
+        cls.config = RedisConfig(**values)
 
     # ....................... #
 
@@ -70,7 +70,7 @@ class RedisBase(DocumentOrmABC):
     def _build_key(cls: Type[T], key: str) -> str:
         """Build key for Redis storage"""
 
-        collection = cls.config["collection"]
+        collection = cls.config.collection
         return f"{collection}:{key}"
 
     # ....................... #

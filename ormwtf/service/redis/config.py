@@ -1,11 +1,13 @@
 from typing import Optional
 
-from ormwtf.base.abc import TypedDictWithDefaults
+from pydantic import SecretStr
+
+from ormwtf.base.pydantic import Base
 
 # ----------------------- #
 
 
-class RedisCredentials(TypedDictWithDefaults):
+class RedisCredentials(Base):
     """
     Redis connect credentials
 
@@ -16,40 +18,16 @@ class RedisCredentials(TypedDictWithDefaults):
         password (str): Redis password
     """
 
-    host: str
-    port: Optional[int]
-    username: Optional[str]
-    password: Optional[str]
-
-    # ....................... #
-
-    @classmethod
-    def with_defaults(
-        cls,
-        host: str = "localhost",
-        port: Optional[int] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-    ) -> "RedisCredentials":
-        """
-        Returns a new instance of RedisCredentials with overridable defaults
-        """
-
-        return cls(
-            host=host,
-            port=port,
-            username=username,
-            password=password,
-        )
+    host: str = "localhost"
+    port: Optional[int] = None
+    username: Optional[SecretStr] = None
+    password: Optional[SecretStr] = None
 
 
 # ....................... #
 
 
-#! TODO: check if possible to specify a particular database ?
-
-
-class RedisConfig(TypedDictWithDefaults):
+class RedisConfig(Base):
     """
     Redis Configuration for ORM WTF Base Model
 
@@ -60,30 +38,11 @@ class RedisConfig(TypedDictWithDefaults):
     """
 
     # Local configuration
-    database: int
-    collection: str
+    database: int = 0
+    collection: str = "default"
 
     # Global configuration
-    credentials: RedisCredentials
-
-    # ....................... #
-
-    @classmethod
-    def with_defaults(
-        cls,
-        database: int = 0,
-        collection: str = "default",
-        credentials: RedisCredentials = RedisCredentials.with_defaults(),
-    ) -> "RedisConfig":
-        """
-        Returns a new instance of RedisConfig with overridable defaults
-        """
-
-        return cls(
-            database=database,
-            collection=collection,
-            credentials=credentials,
-        )
+    credentials: RedisCredentials = RedisCredentials()
 
     # ....................... #
 
@@ -92,7 +51,7 @@ class RedisConfig(TypedDictWithDefaults):
         Returns the Redis URL
         """
 
-        creds = self.credentials
+        creds = self.credentials.model_dump_with_secrets()
         password = creds.get("password", None)
         user = creds.get("username", None)
         host = creds.get("host", None)

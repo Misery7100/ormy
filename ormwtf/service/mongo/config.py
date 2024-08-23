@@ -1,11 +1,13 @@
 from typing import Optional
 
-from ormwtf.base.abc import TypedDictWithDefaults
+from pydantic import SecretStr
+
+from ormwtf.base.pydantic import Base
 
 # ----------------------- #
 
 
-class MongoCredentials(TypedDictWithDefaults):
+class MongoCredentials(Base):
     """
     MongoDB connect credentials
 
@@ -18,43 +20,18 @@ class MongoCredentials(TypedDictWithDefaults):
         directConnection (bool): Whether to connect to replica directly
     """
 
-    host: str
-    port: Optional[int]
-    username: str
-    password: str
-    replicaset: str
-    directConnection: bool
-
-    # ....................... #
-
-    @classmethod
-    def with_defaults(
-        cls,
-        host: str = "localhost",
-        port: Optional[int] = None,
-        username: str = "root",
-        password: str = "password",
-        replicaset: str = "rs0",
-        directConnection: bool = False,
-    ) -> "MongoCredentials":
-        """
-        Returns a new instance of MongoCredentials with overridable defaults
-        """
-
-        return cls(
-            host=host,
-            port=port,
-            username=username,
-            password=password,
-            replicaset=replicaset,
-            directConnection=directConnection,
-        )
+    host: str = "localhost"
+    port: Optional[int] = None
+    username: SecretStr = ""
+    password: SecretStr = ""
+    replicaset: str = "rs0"
+    directConnection: bool = False
 
 
 # ....................... #
 
 
-class MongoConfig(TypedDictWithDefaults):
+class MongoConfig(Base):
     """
     Mongo Configuration for ORM WTF Base Model
 
@@ -66,30 +43,9 @@ class MongoConfig(TypedDictWithDefaults):
     """
 
     # Local configuration
-    database: str
-    collection: str
-    streaming: bool
+    database: str = "default"
+    collection: str = "default"
+    streaming: bool = True
 
     # Global configuration
-    credentials: MongoCredentials
-
-    # ....................... #
-
-    @classmethod
-    def with_defaults(
-        cls,
-        database: str = "default",
-        collection: str = "default",
-        streaming: bool = True,
-        credentials: MongoCredentials = MongoCredentials.with_defaults(),
-    ):
-        """
-        Returns a new instance of MongoConfig with overridable defaults
-        """
-
-        return cls(
-            database=database,
-            collection=collection,
-            streaming=streaming,
-            credentials=credentials,
-        )
+    credentials: MongoCredentials = MongoCredentials()
