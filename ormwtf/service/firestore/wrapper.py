@@ -1,13 +1,12 @@
 from contextlib import asynccontextmanager, contextmanager
 from typing import ClassVar, Optional, Sequence, Type, TypeVar
 
+from firebase_admin import firestore, firestore_async
 from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
-from google.cloud.firestore_v1.async_client import AsyncClient
 from google.cloud.firestore_v1.async_collection import AsyncCollectionReference
 from google.cloud.firestore_v1.async_document import AsyncDocumentReference
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.batch import WriteBatch
-from google.cloud.firestore_v1.client import Client
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
 
@@ -34,10 +33,12 @@ class FirestoreBase(DocumentOrmABC):
     def _client(cls: Type[T]):
         """Get syncronous Firestore client"""
 
-        client = Client(
-            database=cls.config.database,
-            **cls.config.credentials.model_dump(),
-        )
+        project_id = cls.config.credentials.project_id
+        app = cls.config.credentials.app
+        database = cls.config.database
+
+        client = firestore.client(app)
+        client._database_string_internal = f"projects/{project_id}/databases/{database}"
 
         try:
             yield client
@@ -52,10 +53,12 @@ class FirestoreBase(DocumentOrmABC):
     async def _aclient(cls: Type[T]):
         """Get asyncronous Firestore client"""
 
-        client = AsyncClient(
-            database=cls.config.database,
-            **cls.config.credentials.model_dump(),
-        )
+        project_id = cls.config.credentials.project_id
+        app = cls.config.credentials.app
+        database = cls.config.database
+
+        client = firestore_async.client(app)
+        client._database_string_internal = f"projects/{project_id}/databases/{database}"
 
         try:
             yield client
