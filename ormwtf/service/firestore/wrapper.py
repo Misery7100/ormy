@@ -1,4 +1,3 @@
-import inspect
 from contextlib import asynccontextmanager, contextmanager
 from typing import ClassVar, Optional, Sequence, Type, TypeVar
 
@@ -27,17 +26,6 @@ T = TypeVar("T", bound="FirestoreBase")
 class FirestoreBase(DocumentOrmABC):
 
     config: ClassVar[FirestoreConfig] = FirestoreConfig()
-
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass with config inheritance"""
-
-        super().__init_subclass__(**kwargs)
-        superclass = inspect.getmro(cls)[1]
-        values = {**superclass.config.model_dump(), **cls.config.model_dump()}
-
-        cls.config = FirestoreConfig(**values)
 
     # ....................... #
 

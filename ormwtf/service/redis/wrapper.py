@@ -1,4 +1,3 @@
-import inspect
 import json
 from contextlib import asynccontextmanager, contextmanager
 from typing import ClassVar, Optional, Type, TypeVar
@@ -23,27 +22,6 @@ class RedisBase(DocumentOrmABC):
 
     config: ClassVar[RedisConfig] = RedisConfig()
     model_config = ConfigDict(ignored_types=(RedisConfig,))
-
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass with config inheritance"""
-
-        super().__init_subclass__(**kwargs)
-        parents = inspect.getmro(cls)[1:]
-        nearest = None
-
-        for p in parents:
-            cfg = getattr(p, "config", None)
-            mcfg: ConfigDict = getattr(p, "model_config", {})
-            ignored_types = mcfg.get("ignored_types", tuple())
-
-            if type(cfg) in ignored_types:
-                nearest = p
-
-        if nearest is not None:
-            values = {**nearest.config.model_dump(), **cls.config.model_dump()}
-            cls.config = RedisConfig(**values)
 
     # ....................... #
 

@@ -1,4 +1,3 @@
-import inspect
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, TypeVar
 
 from motor.motor_asyncio import (
@@ -34,11 +33,6 @@ class MongoBase(DocumentOrmABC):
         """Initialize subclass with config inheritance"""
 
         super().__init_subclass__(**kwargs)
-        superclass = inspect.getmro(cls)[1]
-        values = {**superclass.config.model_dump(), **cls.config.model_dump()}
-        cls.config = MongoConfig(**values)
-
-        # Additional initialization steps
         cls._enable_streaming()
 
     # ....................... #
