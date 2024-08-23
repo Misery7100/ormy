@@ -13,7 +13,7 @@ class FirestoreCredentials(Base):
     Firestore connect credentials
 
     Attributes:
-        project_id (str): Firestore project ID
+        project (str): Firestore project ID
         credentials (Credentials): Firestore credentials instance
     """
 
@@ -21,7 +21,7 @@ class FirestoreCredentials(Base):
 
     # ....................... #
 
-    project_id: Optional[str] = None
+    project: Optional[str] = None
     credentials: Optional[Credentials] = None
 
 

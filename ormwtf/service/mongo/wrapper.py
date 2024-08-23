@@ -56,10 +56,15 @@ class MongoBase(DocumentOrmABC):
             collection_info = database.command(
                 {"listCollections": 1, "filter": {"name": collection.name}}
             )
-            options = collection_info["cursor"]["firstBatch"][0].get("options", {})
-            change_stream_enabled = options.get("changeStreamPreAndPostImages", {}).get(
-                "enabled", False
-            )
+            firstBatch = collection_info["cursor"]["firstBatch"]
+
+            if firstBatch:
+                options = firstBatch[0].get("options", {})
+                change_stream_enabled = options.get(
+                    "changeStreamPreAndPostImages", {}
+                ).get("enabled", False)
+            else:
+                change_stream_enabled = False
 
             if not change_stream_enabled:
                 collection.insert_one({"_id": f"{collection.name}_dummy"})
@@ -408,7 +413,7 @@ class MongoBase(DocumentOrmABC):
 
         collection = cls._get_collection()
 
-        if not (request and id_):
+        if not (request or id_):
             # TODO: raise a specific error (ormwtf.base.error)
             raise ValueError("Request or value is required")
 
@@ -438,7 +443,7 @@ class MongoBase(DocumentOrmABC):
 
         collection = cls._aget_collection()
 
-        if not (request and id_):
+        if not (request or id_):
             # TODO: raise a specific error (ormwtf.base.error)
             raise ValueError("Request or value is required")
 

@@ -164,3 +164,4 @@ cython_debug/
 internal/
 secrets/
 docker-compose.yml
+*.key

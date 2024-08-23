@@ -46,14 +46,9 @@ class FirestoreBase(DocumentOrmABC):
     def _client(cls: Type[T]):
         """Get syncronous Firestore client"""
 
-        database = cls.config.database
-        project_id = cls.config.credentials.project_id
-        credentials = cls.config.credentials.credentials
-
         client = Client(
-            project=project_id,
-            credentials=credentials,
-            database=database,
+            database=cls.config.database,
+            **cls.config.credentials.model_dump(),
         )
 
         try:
@@ -69,14 +64,9 @@ class FirestoreBase(DocumentOrmABC):
     async def _aclient(cls: Type[T]):
         """Get asyncronous Firestore client"""
 
-        database = cls.config.database
-        project_id = cls.config.credentials.project_id
-        credentials = cls.config.credentials.credentials
-
         client = AsyncClient(
-            project=project_id,
-            credentials=credentials,
-            database=database,
+            database=cls.config.database,
+            **cls.config.credentials.model_dump(),
         )
 
         try:

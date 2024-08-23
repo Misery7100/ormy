@@ -20,7 +20,7 @@ T = TypeVar("T", bound="RedisBase")
 
 class RedisBase(DocumentOrmABC):
 
-    config: ClassVar[RedisConfig] = RedisConfig.with_defaults()
+    config: ClassVar[RedisConfig] = RedisConfig()
 
     # ....................... #
 
