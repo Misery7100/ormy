@@ -19,6 +19,7 @@ T = TypeVar("T", bound="RedisBase")
 
 
 class RedisBase(DocumentOrmABC):  # TODO: add docstrings
+    """Base ORM document model class for Redis"""
 
     config: ClassVar[RedisConfig] = RedisConfig()
     model_config = ConfigDict(ignored_types=(RedisConfig,))
