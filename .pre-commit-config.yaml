@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: run-tox
         name: Run tox
-        entry: ./.venv/bin/tox
+        entry: ./tests/run.sh
         language: system
         pass_filenames: false
         always_run: true
