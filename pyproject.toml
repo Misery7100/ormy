@@ -30,6 +30,14 @@ ruff = "^0.6.2"
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
+pattern  = "^(?P<base>\\d+\\.\\d+\\.\\d+)(-?((?P<stage>[a-zA-Z]+)\\.?(?P<revision>\\d+)?))?"
+format-jinja = """
+    {%- if distance == 0 -%}
+        {{- base -}}
+    {%- else -%}
+        {{- base }}.dev{{ distance }}+g{{commit}}
+    {%- endif -%}
+"""
 
 # TODO: check for the substitution to avoid if then run `tox` or `poetry build`
 [tool.poetry-dynamic-versioning.files."ormwtf/__version__.py"]
