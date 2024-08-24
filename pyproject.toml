@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ormwtf"
-version = "0.1.0"
+version = "0.1.1-pre.1+73b265f"
 description = "Python ORM wrappers"
 authors = ["Lev Litvinov <misery7100@gmail.com>"]
 license = "MIT"
@@ -30,7 +30,10 @@ ruff = "^0.6.2"
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
-# pattern  = "^(?P<base>\\d+\\.\\d+\\.\\d+)(-?((?P<stage>[a-zA-Z]+)\\.?(?P<revision>\\d+)?))?"
+style = "semver"
+latest-tag = true
+bump = "auto"
+
 # format-jinja = """
 #     {%- if distance == 0 -%}
 #         {{- base -}}
