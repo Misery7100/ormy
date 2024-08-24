@@ -14,8 +14,8 @@ class RedisCredentials(Base):
     Attributes:
         host (str): Redis host
         port (int): Redis port
-        username (str): Redis username (applicable only for Redis with ACL)
-        password (str): Redis password
+        username (SecretStr): Redis username (applicable only for Redis with ACL)
+        password (SecretStr): Redis password
     """
 
     host: str = "localhost"

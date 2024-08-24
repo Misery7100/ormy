@@ -158,11 +158,13 @@ class RedisBase(DocumentOrmABC):  # TODO: add docstrings
         with cls._client() as client:
             res = client.get(key)
 
-            if res:
-                return cls.model_validate_json(res)
+        if res:
+            return cls.model_validate_json(res)
 
-            elif not bypass:
-                raise ValueError(f"Document with ID {id_} not found")
+        elif not bypass:
+            raise ValueError(f"Document with ID {id_} not found")
+
+        return res
 
     # ....................... #
 
@@ -173,10 +175,12 @@ class RedisBase(DocumentOrmABC):  # TODO: add docstrings
         async with cls._aclient() as client:
             res = await client.get(key)
 
-            if res:
-                return cls.model_validate_json(res)
+        if res:
+            return cls.model_validate_json(res)
 
-            elif not bypass:
-                raise ValueError(f"Document with ID {id_} not found")
+        elif not bypass:
+            raise ValueError(f"Document with ID {id_} not found")
+
+        return res
 
     # ....................... #

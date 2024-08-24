@@ -1,18 +1,8 @@
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-    get_args,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ConfigDict, SecretStr
 
-from .typing import FieldDataType, FieldName, FieldSchema, Wildcard
+from .typing import FieldDataType, FieldName, FieldSchema
 
 # ----------------------- #
 
@@ -44,24 +34,24 @@ class Base(BaseModel):
     @classmethod
     def model_simple_schema(
         cls: Type[T],
-        include: Sequence[FieldName] | Wildcard = ["*"],
-        exclude: Sequence[FieldName] = [],
-    ) -> Sequence[FieldSchema]:
+        include: Optional[List[FieldName]] = None,
+        exclude: Optional[List[FieldName]] = None,
+    ) -> List[FieldSchema]:
         """
         Generate a simple schema for the model
 
         Args:
-            include (Sequence[FieldName], optional): The fields to include in the schema. Defaults to "*".
-            exclude (Sequence[FieldName], optional): The fields to exclude from the schema. Defaults to [].
+            include (List[FieldName], optional): The fields to include in the schema.
+            exclude (List[FieldName], optional): The fields to exclude from the schema.
 
         Returns:
-            schema (Sequence[Field]): The simple schema for the model
+            schema (List[FieldSchema]): The simple schema for the model
         """
 
         schema = cls.model_json_schema()
 
-        if include in get_args(Wildcard):
-            keys = [k for k, _ in schema["properties"].items()]
+        if include is None:
+            keys: List[FieldName] = [k for k, _ in schema["properties"].items()]
 
         else:
             keys = include

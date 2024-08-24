@@ -14,16 +14,16 @@ class MongoCredentials(Base):
     Attributes:
         host (str): MongoDB host
         port (int): MongoDB port
-        username (str): MongoDB username
-        password (str): MongoDB password
+        username (SecretStr): MongoDB username
+        password (SecretStr): MongoDB password
         replicaset (str): MongoDB replicaset
         directConnection (bool): Whether to connect to replica directly
     """
 
     host: str = "localhost"
     port: Optional[int] = None
-    username: SecretStr = ""
-    password: SecretStr = ""
+    username: Optional[SecretStr] = None
+    password: Optional[SecretStr] = None
     replicaset: str = "rs0"
     directConnection: bool = False
 

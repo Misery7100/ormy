@@ -1,10 +1,11 @@
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
     AsyncIOMotorCollection,
     AsyncIOMotorDatabase,
 )
+from pydantic import ConfigDict
 from pymongo import InsertOne, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
@@ -26,6 +27,7 @@ T = TypeVar("T", bound="MongoBase")
 class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     config: ClassVar[MongoConfig] = MongoConfig()
+    model_config = ConfigDict(ignored_types=(MongoConfig,))
 
     # ....................... #
 
@@ -321,7 +323,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     def create_many(
         cls: Type[T],
-        data: Sequence[T],
+        data: List[T],
         ordered: bool = False,
     ):
         """
@@ -330,8 +332,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
         collection = cls._get_collection()
 
-        data = [item.model_dump() for item in data]
-        operations = [InsertOne({**d, "_id": d["id"]}) for d in data]
+        _data = [item.model_dump() for item in data]
+        operations = [InsertOne({**d, "_id": d["id"]}) for d in _data]
 
         try:
             collection.bulk_write(operations, ordered=ordered)
@@ -345,7 +347,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     async def acreate_many(
         cls: Type[T],
-        data: Sequence[T],
+        data: List[T],
         ordered: bool = False,
     ):
         """
@@ -354,8 +356,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
         collection = cls._aget_collection()
 
-        data = [item.model_dump() for item in data]
-        operations = [InsertOne({**d, "_id": d["id"]}) for d in data]
+        _data = [item.model_dump() for item in data]
+        operations = [InsertOne({**d, "_id": d["id"]}) for d in _data]
 
         try:
             await collection.bulk_write(operations, ordered=ordered)
@@ -369,7 +371,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     def update_many(
         cls: Type[T],
-        data: Sequence[T],
+        data: List[T],
         autosave: bool = True,
     ):
         """
@@ -383,7 +385,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     async def aupdate_many(
         cls: Type[T],
-        data: Sequence[T],
+        data: List[T],
         autosave: bool = True,
     ):
         """
@@ -422,6 +424,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
         elif not bypass:
             raise ValueError(f"Document with ID {id_} not found")
 
+        return document
+
     # ....................... #
 
     @classmethod
@@ -452,6 +456,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
         elif not bypass:
             raise ValueError(f"Document with ID {id_} not found")
 
+        return document
+
     # ....................... #
 
     @classmethod
@@ -465,7 +471,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
         ...
         """
 
-        collection = cls.get_collection()
+        collection = cls._get_collection()
         documents = collection.find(request).limit(limit).skip(offset)
 
         return [cls(**doc) for doc in documents]
@@ -578,11 +584,10 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
         prefix = "" if prefix is None else f"{prefix}_"
         id_field = prefix + "id"
 
-        rows = [x.model_dump() if not isinstance(x, dict) else x for x in records]
-        unique_ids = list(set([x[id_field] for x in rows]))
+        unique_ids = list(set([x[id_field] for x in records]))
         res = cls.find_all({"_id": {"$in": unique_ids}})
 
-        for x in rows:
+        for x in records:
             try:
                 r = next((y for y in res if y.id == x[id_field]))
                 for k in fields:
@@ -592,7 +597,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
                 print(res, x, id_field)  # TODO: rewrite
                 raise e
 
-        return rows
+        return records
 
     # ....................... #
 

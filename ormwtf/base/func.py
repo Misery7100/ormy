@@ -1,32 +1,15 @@
 import hashlib
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Optional
 from uuid import UUID, uuid4
 
-import pendulum
-
 # ----------------------- #
-# Time utils
 
 
-def get_current_timezone() -> str:
+def utcnow() -> int:
     """
-    Get the name of the current timezone.
-
-    Returns:
-        str: The name of the current timezone.
-    """
-
-    return pendulum.now().timezone_name
-
-
-# ....................... #
-
-
-def current_datetime() -> int:
-    """
-    Returns the current datetime as a Unix timestamp.
+    Returns the current UTC datetime as a Unix timestamp.
 
     Returns:
         int: The current datetime as a Unix timestamp.
@@ -38,7 +21,7 @@ def current_datetime() -> int:
 # ....................... #
 
 
-def datetime_from_timestamp(timestamp: int | float) -> datetime:
+def timestamp_to_datetime(t: int | float) -> datetime:
     """
     Converts a Unix timestamp to a datetime object.
 
@@ -49,7 +32,7 @@ def datetime_from_timestamp(timestamp: int | float) -> datetime:
         datetime: The datetime object representing the given timestamp.
     """
 
-    return datetime.fromtimestamp(timestamp=timestamp, tz=UTC)
+    return datetime.fromtimestamp(float(t), tz=UTC)
 
 
 # ....................... #
@@ -73,7 +56,7 @@ def datetime_to_timestamp(dt: datetime) -> int:
 # Hash utils
 
 
-def hash_from_any(val: Any) -> str:
+def hash_from_any(val: str | dict) -> str:
     """
     Calculate the MD5 hash of a given value.
 
@@ -113,7 +96,7 @@ def hex_uuid4_from_string(val: str) -> str:
 # ....................... #
 
 
-def hex_uuid4(val: str = None) -> str:
+def hex_uuid4(val: Optional[str] = None) -> str:
     """
     Generate a hexadecimal representation of a UUID version 4.
 

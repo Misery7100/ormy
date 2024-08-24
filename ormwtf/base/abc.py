@@ -74,7 +74,8 @@ class DocumentOrmABC(Base, ABC):
     def find(
         cls: Type[T],
         id_: DocumentID,
-        bypass: bool = False,
+        *args,
+        **kwargs,
     ) -> Optional[T]: ...
 
     # ....................... #
@@ -84,7 +85,8 @@ class DocumentOrmABC(Base, ABC):
     async def afind(
         cls: Type[T],
         id_: DocumentID,
-        bypass: bool = False,
+        *args,
+        **kwargs,
     ) -> Optional[T]: ...
 
     # ....................... #
@@ -94,9 +96,11 @@ class DocumentOrmABC(Base, ABC):
         cls: Type[T],
         id_: DocumentID,
         data: AbstractData,
+        *args,
         ignore_none: bool = True,
         autosave: bool = True,
-    ) -> T:
+        **kwargs,
+    ) -> Optional[T]:
         """
         ...
         """
@@ -116,7 +120,7 @@ class DocumentOrmABC(Base, ABC):
             if not (val is None and ignore_none) and hasattr(instance, k):
                 setattr(instance, k, val)
 
-        if autosave:
+        if autosave and instance is not None:
             return instance.save()
 
         return instance
@@ -128,9 +132,11 @@ class DocumentOrmABC(Base, ABC):
         cls: Type[T],
         id_: DocumentID,
         data: AbstractData,
+        *args,
         ignore_none: bool = True,
         autosave: bool = True,
-    ) -> T:
+        **kwargs,
+    ) -> Optional[T]:
         """
         ...
         """
@@ -150,7 +156,7 @@ class DocumentOrmABC(Base, ABC):
             if not (val is None and ignore_none) and hasattr(instance, k):
                 setattr(instance, k, val)
 
-        if autosave:
+        if autosave and instance is not None:
             return await instance.asave()
 
         return instance

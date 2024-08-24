@@ -1,6 +1,6 @@
 from typing import Optional
 
-import firebase_admin
+import firebase_admin  # type: ignore
 from pydantic import ConfigDict
 
 from ormwtf.base.pydantic import Base

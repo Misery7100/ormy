@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import ClassVar, Optional, Sequence, Type, TypeVar
+from typing import ClassVar, List, Optional, Type, TypeVar
 
-from firebase_admin import firestore, firestore_async
+from firebase_admin import firestore, firestore_async  # type: ignore
+from google.cloud.firestore_v1.aggregation import AggregationQuery
+from google.cloud.firestore_v1.async_aggregation import AsyncAggregationQuery
 from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
 from google.cloud.firestore_v1.async_collection import AsyncCollectionReference
 from google.cloud.firestore_v1.async_document import AsyncDocumentReference
@@ -9,6 +11,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.batch import WriteBatch
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
+from pydantic import ConfigDict
 
 from ormwtf.base.abc import DocumentOrmABC
 from ormwtf.base.typing import DocumentID
@@ -25,6 +28,7 @@ T = TypeVar("T", bound="FirestoreBase")
 class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
 
     config: ClassVar[FirestoreConfig] = FirestoreConfig()
+    model_config = ConfigDict(ignored_types=(FirestoreConfig,))
 
     # ....................... #
 
@@ -215,10 +219,10 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     def create_many(
         cls: Type[T],
-        data: Sequence[T],
+        data: List[T],
         autosave: bool = True,
         bypass: bool = False,
-    ) -> Optional[WriteBatch]:
+    ) -> WriteBatch:
         """
         ...
         """
@@ -240,8 +244,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         if autosave:
             batch.commit()
 
-        else:
-            return batch
+        return batch
 
     # ....................... #
 
@@ -250,10 +253,10 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     async def acreate_many(
         cls: Type[T],
-        data: Sequence[T],
+        data: List[T],
         autosave: bool = True,
         bypass: bool = False,
-    ) -> Optional[AsyncWriteBatch]:
+    ) -> AsyncWriteBatch:
         """
         ...
         """
@@ -276,15 +279,14 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         if autosave:
             await batch.commit()
 
-        else:
-            return batch
+        return batch
 
     # ....................... #
 
     @classmethod
     def update_many(
         cls: Type[T],
-        data: Sequence[T],
+        data: List[T],
         autosave: bool = True,
     ) -> Optional[WriteBatch]:
         """
@@ -298,7 +300,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     async def aupdate_many(
         cls: Type[T],
-        data: Sequence[T],
+        data: List[T],
         autosave: bool = True,
     ) -> Optional[AsyncWriteBatch]:
         """
@@ -319,10 +321,12 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         snapshot = ref.get()
 
         if snapshot.exists:
-            return cls(**snapshot.to_dict())
+            return cls(**snapshot.to_dict())  # type: ignore
 
         elif not bypass:
             raise ValueError(f"Document with ID {id_} not found")
+
+        return None
 
     # ....................... #
 
@@ -336,10 +340,12 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         snapshot = await ref.get()
 
         if snapshot.exists:
-            return cls(**snapshot.to_dict())
+            return cls(**snapshot.to_dict())  # type: ignore
 
         elif not bypass:
             raise ValueError(f"Document with ID {id_} not found")
+
+        return None
 
     # ....................... #
 
@@ -348,24 +354,25 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     def find_many(
         cls: Type[T],
-        filters: Optional[Sequence[FieldFilter]] = None,
+        filters: Optional[List[FieldFilter]] = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> Sequence[T]:
+    ) -> List[T]:
         """
         ...
         """
 
-        collection = cls._get_collection()
+        collection = cls._get_collection().where()
+        query = collection.where()
 
         if filters:
             for f in filters:
-                collection = collection.where(filter=f)
+                query = query.where(filter=f)
 
-        collection = collection.limit(limit).offset(offset)
-        docs = collection.get()
+        query = query.limit(limit).offset(offset)
+        docs = query.get()
 
-        return [cls(**doc.to_dict()) for doc in docs]
+        return [cls(**doc.to_dict()) for doc in docs]  # type: ignore
 
     # ....................... #
 
@@ -374,44 +381,47 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     async def afind_many(
         cls: Type[T],
-        filters: Optional[Sequence[FieldFilter]] = None,
+        filters: Optional[List[FieldFilter]] = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> T:
+    ) -> List[T]:
         """
         ...
         """
 
         collection = await cls._aget_collection()
+        query = collection.where()
 
         if filters:
             for f in filters:
-                collection = collection.where(filter=f)
+                query = query.where(filter=f)
 
-        collection = collection.limit(limit).offset(offset)
-        docs = await collection.get()
+        query = query.limit(limit).offset(offset)
+        docs = await query.get()
 
-        return [cls(**doc.to_dict()) for doc in docs]
+        return [cls(**doc.to_dict()) for doc in docs]  # type: ignore
 
     # ....................... #
 
     @classmethod
     def count(
         cls: Type[T],
-        filters: Optional[Sequence[FieldFilter]] = None,
+        filters: Optional[List[FieldFilter]] = None,
     ) -> int:
         """
         ...
         """
 
         collection = cls._get_collection()
+        query = collection.where()
 
         if filters:
             for f in filters:
-                collection = collection.where(filter=f)
+                query = query.where(filter=f)
 
-        number = collection.count().get()
-        number: int = number[0][0].value
+        aq: AggregationQuery = query.count()  # type: ignore
+        res = aq.get()
+        number: int = res[0][0].value  # type: ignore
 
         return number
 
@@ -420,20 +430,22 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     async def acount(
         cls: Type[T],
-        filters: Optional[Sequence[FieldFilter]] = None,
+        filters: Optional[List[FieldFilter]] = None,
     ) -> int:
         """
         ...
         """
 
         collection = await cls._aget_collection()
+        query = collection.where()
 
         if filters:
             for f in filters:
-                collection = collection.where(filter=f)
+                query = query.where(filter=f)
 
-        number = await collection.count().get()
-        number: int = number[0][0].value
+        aq: AsyncAggregationQuery = query.count()  # type: ignore
+        res = await aq.get()
+        number: int = res[0][0].value  # type: ignore
 
         return number
 
@@ -442,15 +454,15 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     def find_all(
         cls: Type[T],
-        filters: Optional[Sequence[FieldFilter]] = None,
+        filters: Optional[List[FieldFilter]] = None,
         batch_size: int = 100,
-    ) -> Sequence[T]:
+    ) -> List[T]:
         """
         ...
         """
 
         cnt = cls.count(filters=filters)
-        found = []
+        found: List[T] = []
 
         for j in range(0, cnt, batch_size):
             docs = cls.find_many(filters=filters, limit=batch_size, offset=j)
@@ -463,15 +475,15 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     async def afind_all(
         cls: Type[T],
-        filters: Optional[Sequence[FieldFilter]] = None,
+        filters: Optional[List[FieldFilter]] = None,
         batch_size: int = 100,
-    ) -> Sequence[T]:
+    ) -> List[T]:
         """
         ...
         """
 
         cnt = await cls.acount(filters=filters)
-        found = []
+        found: List[T] = []
 
         for j in range(0, cnt, batch_size):
             docs = await cls.afind_many(filters=filters, limit=batch_size, offset=j)
@@ -486,19 +498,20 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     def stream(
         cls: Type[T],
-        filters: Optional[Sequence[FieldFilter]] = None,
+        filters: Optional[List[FieldFilter]] = None,
     ):
         """
         ...
         """
 
         collection = cls._get_collection()
+        query = collection.where()
 
         if filters:
             for f in filters:
-                collection = collection.where(filter=f)
+                query = query.where(filter=f)
 
-        return collection.stream()
+        return query.stream()
 
     # ....................... #
 
@@ -507,18 +520,19 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     @classmethod
     async def astream(
         cls: Type[T],
-        filters: Optional[Sequence[FieldFilter]] = None,
+        filters: Optional[List[FieldFilter]] = None,
     ):
         """
         ...
         """
 
         collection = await cls._aget_collection()
+        query = collection.where()
 
         if filters:
             for f in filters:
-                collection = collection.where(filter=f)
+                query = query.where(filter=f)
 
-        return collection.stream()
+        return query.stream()
 
     # ....................... #
