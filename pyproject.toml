@@ -31,6 +31,7 @@ ruff = "^0.6.2"
 enable = true
 vcs = "git"
 
+# TODO: check for the substitution to avoid if then run `tox` or `poetry build`
 [tool.poetry-dynamic-versioning.files."ormwtf/__version__.py"]
 persistent-substitution = true
 initial-content = """
