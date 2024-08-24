@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ormwtf"
-version = "0.1.1-pre.1+73b265f"
+version = "0.1.1-pre.2+2078320"
 description = "Python ORM wrappers"
 authors = ["Lev Litvinov <misery7100@gmail.com>"]
 license = "MIT"
@@ -34,15 +34,6 @@ style = "semver"
 latest-tag = true
 bump = "auto"
 
-# format-jinja = """
-#     {%- if distance == 0 -%}
-#         {{- base -}}
-#     {%- else -%}
-#         {{- base }}.dev{{ distance }}+g{{commit}}
-#     {%- endif -%}
-# """
-
-# TODO: check for the substitution to avoid if then run `tox` or `poetry build`
 [tool.poetry-dynamic-versioning.files."ormwtf/__version__.py"]
 persistent-substitution = true
 initial-content = """

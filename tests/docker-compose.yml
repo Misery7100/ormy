@@ -1,0 +1,112 @@
+x-base-variables: &base-variables
+  environment:
+    MEILI_MASTER_KEY: master_key
+    MEILI_ENV: development
+    MEILI_DB_PATH: /data.ms
+    MEILI_NO_ANALYTICS: "true"
+    MONGO_INITDB_ROOT_USERNAME: user
+    MONGO_INITDB_ROOT_PASSWORD: password
+    CLICKHOUSE_USER: user
+    CLICKHOUSE_PASSWORD: password
+    RABBITMQ_DEFAULT_USER: user
+    RABBITMQ_DEFAULT_PASS: password
+
+services:
+  firebase:
+    <<: *base-variables
+    build:
+      context: ./firebase-emulator
+      dockerfile: Dockerfile
+      args:
+        - FIREBASE_VERSION=13.3.0
+    stop_grace_period: 1m
+    environment:
+      FIREBASE_PROJECT: "test-project"
+      GCLOUD_PROJECT: "test-project"
+      FORCE_COLOR: 'true'
+      DATA_DIRECTORY: "data"
+    ports:
+      - "8095:8081" # Firestore
+      - "8096:9081" # Firestore (gRPC)
+      - "4016:4001" # Auth
+    volumes:
+      - ./firebase-emulator/firebase:/srv/firebase:rw
+      - ./firebase-emulator/firebase/data:/srv/firebase/data:rw
+
+  mongodb:
+    <<: *base-variables
+    image: mongo:7.0
+    ports:
+      - "27117:27017"
+    entrypoint:
+            - bash
+            - -c
+            - |
+                chmod 400 /data/replica.key
+                chown 999:999 /data/replica.key
+                exec docker-entrypoint.sh $$@
+    command: "mongod --quiet --replSet rs0 --bind_ip_all --port 27017 --keyFile /data/replica.key"
+    volumes:
+      - mongodata:/data/db
+      - mongoconfig:/data/configdb
+      - ./replica.key:/data/replica.key
+    restart: unless-stopped
+  
+  mongoinit:
+    <<: *base-variables
+    image: mongo:7.0
+    restart: "no"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./internal/bash/init-replica-set.sh:/init-replica-set.sh
+    entrypoint: ["/bin/bash", "-c", "/init-replica-set.sh"]
+  
+  meilisearch:
+    <<: *base-variables
+    image: getmeili/meilisearch:v1.5
+    ports:
+      - 7700:7700
+    volumes:
+      - msdata:/data.ms
+    restart: unless-stopped
+
+  clickhouse:
+    <<: *base-variables
+    image: clickhouse/clickhouse-server:23.8-alpine
+    ports:
+      - "8223:8123"
+      - "9100:9000"
+      - "9109:9009"
+    volumes:
+      - clickdata:/var/lib/clickhouse
+    restart: unless-stopped
+
+  redis:
+    <<: *base-variables
+    image: redis:7.2.3-alpine
+    ports:
+      - "6479:6379"
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+  
+  rabbitmq:
+    <<: *base-variables
+    image: rabbitmq:3.9.5-management-alpine
+    ports:
+      - "5772:5672"
+      - "15772:15672"
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
+      - rabbitmqconfig:/etc/rabbitmq
+    restart: unless-stopped
+
+volumes:
+  mongodata:
+  mongoconfig:
+  clickdata:
+  redisdata:
+  msdata:
+  rabbitmqdata:
+  rabbitmqconfig:
