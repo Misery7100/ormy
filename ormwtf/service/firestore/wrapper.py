@@ -22,7 +22,7 @@ T = TypeVar("T", bound="FirestoreBase")
 # ....................... #
 
 
-class FirestoreBase(DocumentOrmABC):
+class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
 
     config: ClassVar[FirestoreConfig] = FirestoreConfig()
 

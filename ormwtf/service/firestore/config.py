@@ -29,6 +29,7 @@ class FirestoreCredentials(Base):
 
     def validate_app(self):
         """Validate Firebase app"""
+
         if self.app is None:
             self.app = firebase_admin.get_app(
                 name=self.app_name or firebase_admin._DEFAULT_APP_NAME

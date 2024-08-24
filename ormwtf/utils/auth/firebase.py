@@ -5,7 +5,7 @@ from pydantic import BaseModel
 # ----------------------- #
 
 
-class FirebaseUserInfo(BaseModel):
+class FirebaseUserInfo(BaseModel):  # TODO: add docstring
     kind: str
     localId: str
     email: str
@@ -20,7 +20,7 @@ class FirebaseUserInfo(BaseModel):
 # ....................... #
 
 
-class FirebaseAccessCredentials(BaseModel):
+class FirebaseAccessCredentials(BaseModel):  # TODO: add docstring
     sub: str
     email: str
     name: str
@@ -34,7 +34,7 @@ class FirebaseAccessCredentials(BaseModel):
 # ....................... #
 
 
-class FirebaseRefreshCredentials(BaseModel):
+class FirebaseRefreshCredentials(BaseModel):  # TODO: add docstring
     localId: str
     idToken: str
     refreshToken: str

@@ -165,3 +165,4 @@ internal/
 secrets/
 docker-compose.yml
 *.key
+*.zip

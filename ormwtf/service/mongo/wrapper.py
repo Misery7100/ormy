@@ -23,7 +23,7 @@ T = TypeVar("T", bound="MongoBase")
 # ....................... #
 
 
-class MongoBase(DocumentOrmABC):
+class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     config: ClassVar[MongoConfig] = MongoConfig()
 

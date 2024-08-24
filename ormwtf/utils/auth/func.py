@@ -3,7 +3,7 @@ import bcrypt
 # ----------------------- #
 
 
-def hash_secret(value: str):
+def hash_secret(value: str):  # TODO: add docstring
     value_bytes = value.encode("utf-8")
     salt = bcrypt.gensalt()
     hashed_value = bcrypt.hashpw(password=value_bytes, salt=salt).decode("utf-8")
@@ -14,7 +14,7 @@ def hash_secret(value: str):
 # ....................... #
 
 
-def verify_secret(plain: str, hashed: str):
+def verify_secret(plain: str, hashed: str):  # TODO: add docstring
     plain_enc = plain.encode("utf-8")
     hashed_enc = hashed.encode("utf-8")
 

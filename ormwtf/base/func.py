@@ -126,7 +126,3 @@ def hex_uuid4(val: str = None) -> str:
     """
 
     return hex_uuid4_from_string(val) if val else uuid4().hex
-
-
-# ----------------------- #
-# ... utils
