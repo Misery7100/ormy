@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # ----------------------- #
 
@@ -20,6 +20,10 @@ class FirebaseUserInfo(BaseModel):
         expires_in (str): The expiration time of the user.
         expires_at (int, optional): The expiration timestamp of the user.
     """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    # ....................... #
 
     kind: str = Field(
         ...,
@@ -82,6 +86,10 @@ class FirebaseAccessCredentials(BaseModel):
         uid (str): The user ID of the credentials.
     """
 
+    model_config = ConfigDict(populate_by_name=True)
+
+    # ....................... #
+
     sub: str = Field(
         ...,
         title="Subject",
@@ -132,6 +140,10 @@ class FirebaseRefreshCredentials(BaseModel):
         expires_in (str): The expiration time of the credentials.
         expires_at (int): The expiration timestamp of the credentials.
     """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    # ....................... #
 
     local_id: str = Field(
         ...,

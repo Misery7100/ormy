@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Any, Dict, List, Optional
 
 from meilisearch_python_sdk.types import Filter
-from pydantic import BaseModel, Field  # noqa: F401
+from pydantic import BaseModel, ConfigDict, Field
 
 # ----------------------- #
 
@@ -26,6 +26,11 @@ class SearchRequest(BaseModel):
 
 
 class SearchResponse(BaseModel):
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    # ....................... #
+
     hits: List[Dict[str, Any]] = []
     size: int = Field(validation_alias="hits_per_page")
     page: int
