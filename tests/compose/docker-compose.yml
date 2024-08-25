@@ -1,15 +1,13 @@
 x-base-variables: &base-variables
   environment:
     MEILI_MASTER_KEY: master_key
-    MEILI_ENV: development
     MEILI_DB_PATH: /data.ms
-    MEILI_NO_ANALYTICS: "true"
     MONGO_INITDB_ROOT_USERNAME: user
     MONGO_INITDB_ROOT_PASSWORD: password
-    CLICKHOUSE_USER: user
-    CLICKHOUSE_PASSWORD: password
-    RABBITMQ_DEFAULT_USER: user
-    RABBITMQ_DEFAULT_PASS: password
+    # CLICKHOUSE_USER: user
+    # CLICKHOUSE_PASSWORD: password
+    # RABBITMQ_DEFAULT_USER: user
+    # RABBITMQ_DEFAULT_PASS: password
 
 services:
   firebase:
@@ -65,21 +63,21 @@ services:
     <<: *base-variables
     image: getmeili/meilisearch:v1.5
     ports:
-      - 7700:7700
+      - "7700:7700"
     volumes:
       - msdata:/data.ms
     restart: unless-stopped
 
-  clickhouse:
-    <<: *base-variables
-    image: clickhouse/clickhouse-server:23.8-alpine
-    ports:
-      - "8223:8123"
-      - "9100:9000"
-      - "9109:9009"
-    volumes:
-      - clickdata:/var/lib/clickhouse
-    restart: unless-stopped
+  # clickhouse:
+  #   <<: *base-variables
+  #   image: clickhouse/clickhouse-server:23.8-alpine
+  #   ports:
+  #     - "8223:8123"
+  #     - "9100:9000"
+  #     - "9109:9009"
+  #   volumes:
+  #     - clickdata:/var/lib/clickhouse
+  #   restart: unless-stopped
 
   redis:
     <<: *base-variables
@@ -90,23 +88,23 @@ services:
       - redisdata:/data
     restart: unless-stopped
   
-  rabbitmq:
-    <<: *base-variables
-    image: rabbitmq:3.9.5-management-alpine
-    ports:
-      - "5772:5672"
-      - "15772:15672"
-    volumes:
-      - rabbitmqdata:/var/lib/rabbitmq
-      - rabbitmqconfig:/etc/rabbitmq
-    restart: unless-stopped
+  # rabbitmq:
+  #   <<: *base-variables
+  #   image: rabbitmq:3.9.5-management-alpine
+  #   ports:
+  #     - "5772:5672"
+  #     - "15772:15672"
+  #   volumes:
+  #     - rabbitmqdata:/var/lib/rabbitmq
+  #     - rabbitmqconfig:/etc/rabbitmq
+  #   restart: unless-stopped
 
 volumes:
   mongodata:
   mongoconfig:
-  clickdata:
+  # clickdata:
   redisdata:
   msdata:
-  rabbitmqdata:
-  rabbitmqconfig:
+  # rabbitmqdata:
+  # rabbitmqconfig:
   fbdata:

@@ -32,6 +32,8 @@ class DocumentOrmABC(Base, ABC):
         """Initialize subclass with config inheritance"""
 
         super().__init_subclass__(**kwargs)
+
+        # TODO: move to base utils ?
         parents = inspect.getmro(cls)[1:]
         nearest = None
 
@@ -42,6 +44,7 @@ class DocumentOrmABC(Base, ABC):
 
             if type(cfg) in ignored_types:
                 nearest = p
+                break
 
         if (nearest is not None) and (
             (nearest_config := getattr(nearest, "config", None)) is not None

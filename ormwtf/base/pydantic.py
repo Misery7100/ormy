@@ -1,7 +1,6 @@
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ConfigDict, SecretStr
-from pydantic.alias_generators import to_camel
 
 from .typing import FieldDataType, FieldName, FieldSchema
 
@@ -22,7 +21,6 @@ class Base(BaseModel):
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,
-        alias_generator=to_camel,
     )
 
     specific_fields: ClassVar[Dict[FieldDataType, List[FieldName]]] = {

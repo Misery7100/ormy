@@ -1,5 +1,6 @@
 from .config import MeilisearchConfig, MeilisearchCredentials
-from .provider import MeilisearchExtension
+from .schema import SearchRequest, SearchResponse, SortOrder
+from .wrapper import MeilisearchExtension
 
 # ----------------------- #
 
@@ -7,4 +8,7 @@ __all__ = [
     "MeilisearchConfig",
     "MeilisearchCredentials",
     "MeilisearchExtension",
+    "SortOrder",
+    "SearchRequest",
+    "SearchResponse",
 ]
