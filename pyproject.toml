@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ormwtf"
-version = "0.1.1-pre.12+4c5f195"
+version = "0.1.1-pre.13+c5bddaf"
 description = "Python ORM wrappers"
 authors = ["Lev Litvinov <misery7100@gmail.com>"]
 license = "MIT"
