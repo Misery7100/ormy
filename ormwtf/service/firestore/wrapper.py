@@ -1,16 +1,20 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import ClassVar, List, Optional, Type, TypeVar
+from typing import ClassVar, List, Optional, Type, TypeVar, cast
 
 from firebase_admin import firestore, firestore_async  # type: ignore
+from google.cloud.firestore_v1 import (
+    AsyncCollectionReference,
+    AsyncDocumentReference,
+    AsyncQuery,
+    AsyncWriteBatch,
+    CollectionReference,
+    DocumentReference,
+    FieldFilter,
+    Query,
+    WriteBatch,
+)
 from google.cloud.firestore_v1.aggregation import AggregationQuery
 from google.cloud.firestore_v1.async_aggregation import AsyncAggregationQuery
-from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
-from google.cloud.firestore_v1.async_collection import AsyncCollectionReference
-from google.cloud.firestore_v1.async_document import AsyncDocumentReference
-from google.cloud.firestore_v1.base_query import FieldFilter
-from google.cloud.firestore_v1.batch import WriteBatch
-from google.cloud.firestore_v1.collection import CollectionReference
-from google.cloud.firestore_v1.document import DocumentReference
 from pydantic import ConfigDict
 
 from ormwtf.base.abc import DocumentOrmABC
@@ -363,7 +367,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = cls._get_collection()
-        query = collection.where(filter=None)
+        query = cast(Query, collection)
 
         if filters:
             for f in filters:
@@ -390,7 +394,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = await cls._aget_collection()
-        query = collection.where(filter=None)
+        query = cast(AsyncQuery, collection)
 
         if filters:
             for f in filters:
@@ -413,7 +417,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = cls._get_collection()
-        query = collection.where(filter=None)
+        query = cast(Query, collection)
 
         if filters:
             for f in filters:
@@ -437,7 +441,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = await cls._aget_collection()
-        query = collection.where(filter=None)
+        query = cast(AsyncQuery, collection)
 
         if filters:
             for f in filters:
@@ -505,7 +509,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = cls._get_collection()
-        query = collection.where(filter=None)
+        query = cast(Query, collection)
 
         if filters:
             for f in filters:
@@ -527,7 +531,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = await cls._aget_collection()
-        query = collection.where(filter=None)
+        query = cast(AsyncQuery, collection)
 
         if filters:
             for f in filters:
