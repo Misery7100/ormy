@@ -88,4 +88,15 @@ class TestMongoBase(unittest.TestCase):
             "Should return an instance",
         )
 
-    # ....................... #
+
+# ----------------------- #
+
+
+class TestMongoBaseAsync(unittest.IsolatedAsyncioTestCase):
+    pass
+
+
+# ----------------------- #
+
+if __name__ == "__main__":
+    unittest.main()

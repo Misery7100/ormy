@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ormwtf"
-version = "0.1.1-pre.15+540533f"
+version = "0.1.1-pre.16+3b39d23"
 description = "Python ORM wrappers"
 authors = ["Lev Litvinov <misery7100@gmail.com>"]
 license = "MIT"
@@ -27,6 +27,7 @@ pytest = "^8.3.2"
 tox = "^4.18.0"
 mypy = "^1.11.1"
 ruff = "^0.6.2"
+pytest-xdist = "^3.6.1"
 
 [tool.poetry-dynamic-versioning]
 enable = true

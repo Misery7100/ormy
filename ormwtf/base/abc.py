@@ -99,7 +99,7 @@ class DocumentOrmABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    async def update(
+    def update(
         cls: Type[T],
         id_: DocumentID,
         data: AbstractData,
