@@ -30,8 +30,7 @@ services:
       - "8096:9081" # Firestore (gRPC)
       - "4016:4001" # Auth
     volumes:
-      - ./firebase-emulator/firebase:/srv/firebase:rw
-      - ./firebase-emulator/firebase/data:/srv/firebase/data:rw
+      - fbdata:/srv/firebase/data:rw
 
   mongodb:
     <<: *base-variables
@@ -59,7 +58,7 @@ services:
     depends_on:
       - mongodb
     volumes:
-      - ./internal/bash/init-replica-set.sh:/init-replica-set.sh
+      - ./bash/init-replica-set.sh:/init-replica-set.sh
     entrypoint: ["/bin/bash", "-c", "/init-replica-set.sh"]
   
   meilisearch:
@@ -110,3 +109,4 @@ volumes:
   msdata:
   rabbitmqdata:
   rabbitmqconfig:
+  fbdata:

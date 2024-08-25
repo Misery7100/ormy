@@ -10,5 +10,6 @@ COPY serve.sh /usr/bin/
 RUN chmod +x /usr/bin/serve.sh
 
 WORKDIR /srv/firebase
+COPY firebase .
 
 ENTRYPOINT ["/usr/bin/serve.sh"]
