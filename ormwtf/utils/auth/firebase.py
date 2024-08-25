@@ -21,21 +21,45 @@ class FirebaseUserInfo(BaseModel):
         expires_at (int, optional): The expiration timestamp of the user.
     """
 
-    kind: str = Field(..., title="Kind")
-    local_id: str = Field(..., alias="localId")
-    email: str = Field(..., title="Email")
+    kind: str = Field(
+        ...,
+        title="Kind",
+    )
+    local_id: str = Field(
+        ...,
+        validation_alias="localId",
+    )
+    email: str = Field(
+        ...,
+        title="Email",
+    )
     display_name: Optional[str] = Field(
         default=None,
         alias="displayName",
         title="Display Name",
     )
-    id_token: str = Field(..., alias="idToken", title="ID Token")
-    registered: Optional[bool] = Field(default=None, title="Registered")
-    refresh_token: str = Field(..., alias="refreshToken", title="Refresh Token")
-    expires_in: str = Field(..., alias="expiresIn", title="Expires In")
+    id_token: str = Field(
+        ...,
+        validation_alias="idToken",
+        title="ID Token",
+    )
+    registered: Optional[bool] = Field(
+        default=None,
+        title="Registered",
+    )
+    refresh_token: str = Field(
+        ...,
+        validation_alias="refreshToken",
+        title="Refresh Token",
+    )
+    expires_in: str = Field(
+        ...,
+        validation_alias="expiresIn",
+        title="Expires In",
+    )
     expires_at: Optional[int] = Field(
         default=None,
-        alias="expiresAt",
+        validation_alias="expiresAt",
         title="Expires At",
     )
 
@@ -58,14 +82,40 @@ class FirebaseAccessCredentials(BaseModel):
         uid (str): The user ID of the credentials.
     """
 
-    sub: str = Field(..., title="Subject")
-    email: str = Field(..., title="Email")
-    name: str = Field(..., title="Name")
-    email_verified: bool = Field(..., alias="emailVerified", title="Email Verified")
-    exp: int = Field(..., title="Expiration Time")
-    iat: int = Field(..., title="Issued At")
-    auth_time: int = Field(..., alias="authTime", title="Authentication Time")
-    uid: str = Field(..., title="User ID")
+    sub: str = Field(
+        ...,
+        title="Subject",
+    )
+    email: str = Field(
+        ...,
+        title="Email",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+    )
+    email_verified: bool = Field(
+        ...,
+        validation_alias="emailVerified",
+        title="Email Verified",
+    )
+    exp: int = Field(
+        ...,
+        title="Expiration Time",
+    )
+    iat: int = Field(
+        ...,
+        title="Issued At",
+    )
+    auth_time: int = Field(
+        ...,
+        validation_alias="authTime",
+        title="Authentication Time",
+    )
+    uid: str = Field(
+        ...,
+        title="User ID",
+    )
 
 
 # ....................... #
@@ -83,8 +133,28 @@ class FirebaseRefreshCredentials(BaseModel):
         expires_at (int): The expiration timestamp of the credentials.
     """
 
-    local_id: str = Field(..., alias="localId", title="Local ID")
-    id_token: str = Field(..., alias="idToken", title="ID Token")
-    refresh_token: str = Field(..., alias="refreshToken", title="Refresh Token")
-    expires_in: str = Field(..., alias="expiresIn", title="Expires In")
-    expires_at: int = Field(..., alias="expiresAt", title="Expires At")
+    local_id: str = Field(
+        ...,
+        validation_alias="localId",
+        title="Local ID",
+    )
+    id_token: str = Field(
+        ...,
+        validation_alias="idToken",
+        title="ID Token",
+    )
+    refresh_token: str = Field(
+        ...,
+        validation_alias="refreshToken",
+        title="Refresh Token",
+    )
+    expires_in: str = Field(
+        ...,
+        validation_alias="expiresIn",
+        title="Expires In",
+    )
+    expires_at: int = Field(
+        ...,
+        validation_alias="expiresAt",
+        title="Expires At",
+    )

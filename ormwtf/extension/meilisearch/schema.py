@@ -27,6 +27,6 @@ class SearchRequest(BaseModel):
 
 class SearchResponse(BaseModel):
     hits: List[Dict[str, Any]] = []
-    size: int = Field(alias="hits_per_page")
+    size: int = Field(validation_alias="hits_per_page")
     page: int
-    count: int = Field(alias="total_hits")
+    count: int = Field(validation_alias="total_hits")
