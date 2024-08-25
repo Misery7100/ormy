@@ -28,7 +28,7 @@ class DocumentOrmABC(Base, ABC):
 
     # ....................... #
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls: Type[T], **kwargs):
         """Initialize subclass with config inheritance"""
 
         super().__init_subclass__(**kwargs)
