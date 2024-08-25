@@ -362,8 +362,8 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         ...
         """
 
-        collection = cls._get_collection().where()
-        query = collection.where()
+        collection = cls._get_collection()
+        query = collection.where(filter=None)
 
         if filters:
             for f in filters:
@@ -390,7 +390,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = await cls._aget_collection()
-        query = collection.where()
+        query = collection.where(filter=None)
 
         if filters:
             for f in filters:
@@ -413,7 +413,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = cls._get_collection()
-        query = collection.where()
+        query = collection.where(filter=None)
 
         if filters:
             for f in filters:
@@ -437,7 +437,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = await cls._aget_collection()
-        query = collection.where()
+        query = collection.where(filter=None)
 
         if filters:
             for f in filters:
@@ -505,7 +505,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = cls._get_collection()
-        query = collection.where()
+        query = collection.where(filter=None)
 
         if filters:
             for f in filters:
@@ -527,7 +527,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         """
 
         collection = await cls._aget_collection()
-        query = collection.where()
+        query = collection.where(filter=None)
 
         if filters:
             for f in filters:

@@ -1,6 +1,6 @@
 import inspect
 from abc import ABC, abstractmethod
-from typing import Optional, Type, TypeVar
+from typing import ClassVar, Optional, Type, TypeVar
 
 from pydantic import ConfigDict, Field
 
@@ -20,6 +20,8 @@ class DocumentOrmABC(Base, ABC):
     Abstract Base Class for Document-Oriented Object-Relational Mapping
     """
 
+    config: ClassVar[Base] = Base()
+
     # ....................... #
 
     id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
@@ -35,14 +37,16 @@ class DocumentOrmABC(Base, ABC):
 
         for p in parents:
             cfg = getattr(p, "config", None)
-            mcfg: ConfigDict = getattr(p, "model_config", {})
+            mcfg: ConfigDict = getattr(p, "model_config", {})  # type: ignore
             ignored_types = mcfg.get("ignored_types", tuple())
 
             if type(cfg) in ignored_types:
                 nearest = p
 
-        if nearest is not None and hasattr(cls, "config"):
-            values = {**nearest.config.model_dump(), **cls.config.model_dump()}
+        if (nearest is not None) and (
+            (nearest_config := getattr(nearest, "config", None)) is not None
+        ):
+            values = {**nearest_config.model_dump(), **cls.config.model_dump()}
             cls.config = type(cls.config)(**values)
 
     # ....................... #
