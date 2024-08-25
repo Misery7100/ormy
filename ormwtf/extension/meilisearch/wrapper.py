@@ -23,6 +23,7 @@ M = TypeVar("M", bound="MeilisearchExtension")
 class MeilisearchExtension(BaseModel):
 
     meili_config: ClassVar[MeilisearchConfig] = MeilisearchConfig()
+    _meili_registry: ClassVar[Dict[str, Any]] = {}
 
     # ....................... #
 
@@ -50,6 +51,16 @@ class MeilisearchExtension(BaseModel):
             setattr(cls, config_key, type(cls_config)(**values))
 
         cls._meili_safe_create_index()
+        cls._meili_register_subclass()
+
+    # ....................... #
+
+    @classmethod
+    def _meili_register_subclass(cls: Type[M]):
+        """Register subclass in the registry"""
+
+        ix = cls.meili_config.index
+        cls._meili_registry[ix] = cls
 
     # ....................... #
 

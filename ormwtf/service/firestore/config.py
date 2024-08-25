@@ -53,7 +53,7 @@ class FirestoreConfig(Base):
     """
 
     # Local configuration
-    database: Optional[str] = None
+    database: str = "(default)"
     collection: str = "default"
 
     # Global configuration

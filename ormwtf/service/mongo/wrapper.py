@@ -29,13 +29,28 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
     config: ClassVar[MongoConfig] = MongoConfig()
     model_config = ConfigDict(ignored_types=(MongoConfig,))
 
+    _registry: ClassVar[Dict[str, Dict[str, Any]]] = {}
+
     # ....................... #
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls: Type[T], **kwargs):
         """Initialize subclass with extra features"""
 
         super().__init_subclass__(**kwargs)
         cls._enable_streaming()
+        cls._register_subclass()
+
+    # ....................... #
+
+    @classmethod
+    def _register_subclass(cls: Type[T]):
+        """Register subclass in the registry"""
+
+        db = cls.config.database
+        col = cls.config.collection
+
+        cls._registry[db] = cls._registry.get(db, {})
+        cls._registry[db][col] = cls
 
     # ....................... #
 

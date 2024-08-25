@@ -1,6 +1,6 @@
 import json
 from contextlib import asynccontextmanager, contextmanager
-from typing import ClassVar, Optional, Type, TypeVar
+from typing import Any, ClassVar, Dict, Optional, Type, TypeVar
 
 from pydantic import ConfigDict
 from redis import Redis
@@ -23,6 +23,28 @@ class RedisBase(DocumentOrmABC):  # TODO: add docstrings
 
     config: ClassVar[RedisConfig] = RedisConfig()
     model_config = ConfigDict(ignored_types=(RedisConfig,))
+
+    _registry: ClassVar[Dict[int, Dict[str, Any]]] = {}
+
+    # ....................... #
+
+    def __init_subclass__(cls: Type[T], **kwargs):
+        """Initialize subclass with config"""
+
+        super().__init_subclass__(**kwargs)
+        cls._register_subclass()
+
+    # ....................... #
+
+    @classmethod
+    def _register_subclass(cls: Type[T]):
+        """Register subclass in the registry"""
+
+        db = cls.config.database
+        col = cls.config.collection
+
+        cls._registry[db] = cls._registry.get(db, {})
+        cls._registry[db][col] = cls
 
     # ....................... #
 

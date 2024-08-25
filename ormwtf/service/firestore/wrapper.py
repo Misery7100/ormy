@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import ClassVar, List, Optional, Type, TypeVar, cast
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, cast
 
 from firebase_admin import firestore, firestore_async  # type: ignore
 from google.cloud.firestore_v1 import (
@@ -33,6 +33,7 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
 
     config: ClassVar[FirestoreConfig] = FirestoreConfig()
     model_config = ConfigDict(ignored_types=(FirestoreConfig,))
+    _registry: ClassVar[Dict[str, Dict[str, Any]]] = {}
 
     # ....................... #
 
@@ -41,6 +42,19 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
 
         super().__init_subclass__(**kwargs)
         cls.config.credentials.validate_app()
+        cls._register_subclass()
+
+    # ....................... #
+
+    @classmethod
+    def _register_subclass(cls: Type[T]):
+        """Register subclass in the registry"""
+
+        db = cls.config.database
+        col = cls.config.collection
+
+        cls._registry[db] = cls._registry.get(db, {})
+        cls._registry[db][col] = cls
 
     # ....................... #
 
