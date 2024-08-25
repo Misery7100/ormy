@@ -40,6 +40,7 @@ class RedisConfig(Base):
     # Local configuration
     database: int = 0
     collection: str = "default"
+    include_to_registry: bool = True
 
     # Global configuration
     credentials: RedisCredentials = RedisCredentials()

@@ -58,9 +58,9 @@ class MeilisearchExtension(BaseModel):
     @classmethod
     def _meili_register_subclass(cls: Type[M]):
         """Register subclass in the registry"""
-
-        ix = cls.meili_config.index
-        cls._meili_registry[ix] = cls
+        if cls.meili_config.include_to_registry:
+            ix = cls.meili_config.index
+            cls._meili_registry[ix] = cls
 
     # ....................... #
 

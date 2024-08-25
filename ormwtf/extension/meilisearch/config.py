@@ -22,6 +22,7 @@ class MeilisearchConfig(Base):
     index: str = "default"
     primary_key: str = "id"
     settings: MeilisearchSettings = MeilisearchSettings()
+    include_to_registry: bool = True
 
     # Global configuration
     credentials: MeilisearchCredentials = MeilisearchCredentials()

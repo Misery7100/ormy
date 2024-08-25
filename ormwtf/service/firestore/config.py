@@ -55,6 +55,7 @@ class FirestoreConfig(Base):
     # Local configuration
     database: str = "(default)"
     collection: str = "default"
+    include_to_registry: bool = True
 
     # Global configuration
     credentials: FirestoreCredentials = FirestoreCredentials()

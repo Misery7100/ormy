@@ -53,8 +53,9 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
         db = cls.config.database
         col = cls.config.collection
 
-        cls._registry[db] = cls._registry.get(db, {})
-        cls._registry[db][col] = cls
+        if cls.config.include_to_registry:
+            cls._registry[db] = cls._registry.get(db, {})
+            cls._registry[db][col] = cls
 
     # ....................... #
 

@@ -46,6 +46,7 @@ class MongoConfig(Base):
     database: str = "default"
     collection: str = "default"
     streaming: bool = True
+    include_to_registry: bool = True
 
     # Global configuration
     credentials: MongoCredentials = MongoCredentials()
