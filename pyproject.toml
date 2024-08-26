@@ -16,7 +16,7 @@ pydantic-settings = "^2.4.0"
 pendulum = "^3.0.0"
 firebase-admin = "^6.5.0"
 bcrypt = "^4.2.0"
-meilisearch-python-sdk = "==3.0.0"
+meilisearch-python-sdk = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
