@@ -110,7 +110,7 @@ class Base(BaseModel):
     # ....................... #
 
     @classmethod
-    def model_from_any(
+    def model_validate_universal(
         cls: Type[T],
         data: Dict[str, Any] | str | T,
     ) -> T:
