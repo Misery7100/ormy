@@ -31,6 +31,14 @@ class Base2(MongoBase):
     )
 
 
+class BaseInherit(Base1):
+    config = MongoConfig(
+        collection="base_inherit",
+    )
+
+
+print(BaseInherit.config)
+
 # ----------------------- #
 
 

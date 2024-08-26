@@ -2,10 +2,11 @@ import hashlib
 import inspect
 import json
 from datetime import UTC, datetime
-from typing import Optional, cast
+from typing import Any, Dict, Optional, Type, cast
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict
+from pydantic.fields import FieldInfo
 
 # ----------------------- #
 
@@ -121,7 +122,7 @@ def hex_uuid4(val: Optional[str] = None) -> str:
 def _merge_config_with_parent(
     cls,
     config_key: str = "config",
-    config_type: object = BaseModel,
+    config_type: Type[BaseModel] = BaseModel,
     inspect_ignored: bool = True,
 ):
     parents = inspect.getmro(cls)[1:]
@@ -145,5 +146,18 @@ def _merge_config_with_parent(
         (nearest_config := getattr(nearest, config_key, None)) is not None
     ):
         cls_config = getattr(cls, config_key)
-        values = {**nearest_config.model_dump(), **cls_config.model_dump()}
-        setattr(cls, config_key, type(cls_config)(**values))
+        new_config: Dict[str, Any] = {}
+
+        for x, info in config_type.model_fields.items():
+            info = cast(FieldInfo, info)
+            new_value = getattr(cls_config, x, None)
+            old_value = getattr(nearest_config, x, None)
+            default_value = info.default
+
+            if new_value == default_value:
+                new_config[x] = old_value
+
+            else:
+                new_config[x] = new_value
+
+        setattr(cls, config_key, type(cls_config)(**new_config))
