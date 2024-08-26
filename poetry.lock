@@ -2032,6 +2032,7 @@ files = [
 
 [package.dependencies]
 execnet = ">=2.1"
+psutil = {version = ">=3.0", optional = true, markers = "extra == \"psutil\""}
 pytest = ">=7.0.0"
 
 [package.extras]
@@ -2606,4 +2607,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">3.10,<3.12"
-content-hash = "c360306fa41884eca9cec0fe1005d2700816523b2e960c7b38f29874bbf9c9cf"
+content-hash = "e64711c98f65f0992df418b90d68ba4cecc13754881d92f4d5c36b213ed3d86c"

@@ -180,7 +180,7 @@ class MeilisearchExtension(BaseModel):
         """Get associated Meilisearch index in asyncronous mode"""
 
         async with cls._ameili_client() as c:
-            return c.get_index(cls.meili_config.index)
+            return await c.get_index(cls.meili_config.index)
 
     # ....................... #
 

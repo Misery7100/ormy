@@ -63,7 +63,7 @@ services:
     <<: *base-variables
     image: getmeili/meilisearch:v1.9
     ports:
-      - "7700:7700"
+      - "7711:7700"
     volumes:
       - msdata:/data.ms
     restart: unless-stopped
