@@ -59,7 +59,7 @@ class MeilisearchExtension(BaseModel):
         #     values = {**nearest_config.model_dump(), **cls_config.model_dump()}
         #     setattr(cls, config_key, type(cls_config)(**values))
 
-        cls._meili_safe_create_index()
+        cls._meili_safe_create_or_update()
         cls._meili_register_subclass()
 
     # ....................... #
@@ -74,15 +74,18 @@ class MeilisearchExtension(BaseModel):
     # ....................... #
 
     @classmethod
-    def _meili_safe_create_index(cls: Type[M]):
+    def _meili_safe_create_or_update(cls: Type[M]):
         if (
             cls.meili_config.index != "default"
         ):  # TODO: use exact default value from class
             with cls._meili_client() as c:
                 try:
-                    c.get_index(cls.meili_config.index)
+                    ix = c.get_index(cls.meili_config.index)
                     logger.info(f"Index {cls.meili_config.index} exists")
-                    return
+
+                    if ix.get_settings() != cls.meili_config.settings:
+                        cls._meili_update_index(cls.meili_config.settings)
+                        logger.info(f"Index {cls.meili_config.index} updated")
 
                 except MeilisearchApiError:
                     c.create_index(
