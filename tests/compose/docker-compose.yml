@@ -61,7 +61,7 @@ services:
   
   meilisearch:
     <<: *base-variables
-    image: getmeili/meilisearch:v1.5
+    image: getmeili/meilisearch:v1.4
     ports:
       - "7700:7700"
     volumes:

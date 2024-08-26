@@ -47,16 +47,6 @@ class TestMongoBase(unittest.TestCase):
 
     # ....................... #
 
-    def tearDown(self):
-        with self.test_base1._client() as client:
-            client.drop_database(self.test_base1.config.database)
-            client.drop_database(self.test_base2.config.database)
-
-        del self.test_base1
-        del self.test_base2
-
-    # ....................... #
-
     def test_subclass(self):
         self.assertTrue(
             issubclass(self.test_base1, MongoBase),

@@ -36,18 +36,6 @@ class TestRedisBase(unittest.TestCase):
 
     # ....................... #
 
-    def tearDown(self):
-        with self.test_base1._client() as client:
-            client.flushdb()
-
-        with self.test_base2._client() as client:
-            client.flushdb()
-
-        del self.test_base1
-        del self.test_base2
-
-    # ....................... #
-
     def test_subclass(self):
         self.assertTrue(
             issubclass(self.test_base1, RedisBase),
@@ -110,4 +98,8 @@ class TestRedisBase(unittest.TestCase):
             "Should return an instance",
         )
 
-    # ....................... #
+
+# ----------------------- #
+
+if __name__ == "__main__":
+    unittest.main()

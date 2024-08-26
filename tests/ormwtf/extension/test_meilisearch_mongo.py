@@ -5,6 +5,7 @@ from ormwtf.extension.meilisearch import (
     MeilisearchCredentials,
     MeilisearchExtension,
     SearchRequest,
+    SearchResponse,
 )
 from ormwtf.service.mongo import MongoBase, MongoConfig, MongoCredentials
 
@@ -50,17 +51,6 @@ class TestMelisearchMongoMixed(unittest.TestCase):
 
     # ....................... #
 
-    def tearDown(self):
-        with self.test_base._client() as client:
-            client.drop_database(self.test_base.config.database)
-
-        with self.test_base._meili_client() as meili_client:
-            meili_client.delete_index_if_exists(self.test_base.meili_config.index)
-
-        del self.test_base
-
-    # ....................... #
-
     def test_subclass(self):
         self.assertTrue(
             issubclass(self.test_base, MongoBase),
@@ -96,6 +86,25 @@ class TestMelisearchMongoMixed(unittest.TestCase):
         test = self.test_base()
         self.test_base.meili_update_documents([test.model_dump()])
         res = self.test_base.meili_search(SearchRequest())
-        self.assertIsNotNone(res, "Search result should not be None")
 
-    # ....................... #
+        self.assertIsNotNone(
+            res,
+            "Search result should not be None",
+        )
+        self.assertIsInstance(
+            res,
+            SearchResponse,
+            "Search result should be SearchResponse",
+        )
+
+
+# ----------------------- #
+
+if __name__ == "__main__":
+    unittest.main()
+
+    with BaseMixed._client() as client:
+        client.drop_database(BaseMixed.config.database)
+
+    with BaseMixed._meili_client() as meili_client:
+        meili_client.delete_index_if_exists(BaseMixed.meili_config.index)

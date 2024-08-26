@@ -73,16 +73,19 @@ class MeilisearchExtension(BaseModel):
 
     @classmethod
     def _meili_safe_create_index(cls: Type[M]):
-        with cls._meili_client() as c:
-            try:
-                c.index(cls.meili_config.index)
+        if (
+            cls.meili_config.index != "default"
+        ):  # TODO: use exact default value from class
+            with cls._meili_client() as c:
+                try:
+                    c.get_index(cls.meili_config.index)
 
-            except MeilisearchApiError:
-                c.create_index(
-                    cls.meili_config.index,
-                    primary_key=cls.meili_config.primary_key,
-                    settings=cls.meili_config.settings,
-                )
+                except MeilisearchApiError:
+                    c.create_index(
+                        cls.meili_config.index,
+                        primary_key=cls.meili_config.primary_key,
+                        settings=cls.meili_config.settings,
+                    )
 
     # ....................... #
 
@@ -155,7 +158,7 @@ class MeilisearchExtension(BaseModel):
         """Get associated Meilisearch index"""
 
         with cls._meili_client() as c:
-            return c.index(cls.meili_config.index)
+            return c.get_index(cls.meili_config.index)
 
     # ....................... #
 
@@ -164,7 +167,7 @@ class MeilisearchExtension(BaseModel):
         """Get associated Meilisearch index in asyncronous mode"""
 
         async with cls._ameili_client() as c:
-            return c.index(cls.meili_config.index)
+            return c.get_index(cls.meili_config.index)
 
     # ....................... #
 

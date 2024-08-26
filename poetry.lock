@@ -1199,13 +1199,13 @@ traitlets = "*"
 
 [[package]]
 name = "meilisearch-python-sdk"
-version = "2.10.0"
-description = "A Python client providing both async and sync support for the Meilisearch API"
+version = "2.1.0"
+description = "A Python async client for the Meilisearch API"
 optional = false
-python-versions = "<4.0,>=3.8"
+python-versions = ">=3.8,<4.0"
 files = [
-    {file = "meilisearch_python_sdk-2.10.0-py3-none-any.whl", hash = "sha256:811cfd44050839d4ef5c3207024f418a5ec52ed9500d5beac9703bcfb7f1b56a"},
-    {file = "meilisearch_python_sdk-2.10.0.tar.gz", hash = "sha256:561d5cd6a5ba4c39e41b04e232fb4400cdda98d8799106b02c7730307bc4e410"},
+    {file = "meilisearch_python_sdk-2.1.0-py3-none-any.whl", hash = "sha256:6c160b794084133044820d7848d79de36c670c7a684a9602b39b6b7de550d84c"},
+    {file = "meilisearch_python_sdk-2.1.0.tar.gz", hash = "sha256:f892cadc3b91eb5109f8fc126aa997174d215cfd0760889fe3ffb0a9ff372d22"},
 ]
 
 [package.dependencies]
@@ -2601,4 +2601,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">3.10,<3.12"
-content-hash = "3e5d66f8095e7dd1e14fe8fdefe0afab685a67a1d7819bdc3c4bcda0aa6f700a"
+content-hash = "5e7ef2b76389f97be33e5f8de27eb1fcb16168a3bf6c9509b157255d6e9c0e25"
