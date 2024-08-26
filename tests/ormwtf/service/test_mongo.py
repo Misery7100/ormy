@@ -37,8 +37,6 @@ class BaseInherit(Base1):
     )
 
 
-print(BaseInherit.config)
-
 # ----------------------- #
 
 

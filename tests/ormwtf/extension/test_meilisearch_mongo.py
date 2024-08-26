@@ -4,6 +4,7 @@ from ormwtf.extension.meilisearch import (
     MeilisearchConfig,
     MeilisearchCredentials,
     MeilisearchExtension,
+    SearchRequest,
 )
 from ormwtf.service.mongo import MongoBase, MongoConfig, MongoCredentials
 
@@ -88,5 +89,13 @@ class TestMelisearchMongoMixed(unittest.TestCase):
             reg_meli is self.test_base,
             "Registry item should be BaseMixed",
         )
+
+    # ....................... #
+
+    def test_search(self):
+        test = self.test_base()
+        self.test_base.meili_update_documents([test.model_dump()])
+        res = self.test_base.meili_search(SearchRequest())
+        self.assertIsNotNone(res, "Search result should not be None")
 
     # ....................... #

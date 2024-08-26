@@ -2,7 +2,7 @@ import hashlib
 import inspect
 import json
 from datetime import UTC, datetime
-from typing import Any, Dict, Optional, Type, cast
+from typing import Any, Dict, List, Optional, Type, cast
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict
@@ -124,6 +124,7 @@ def _merge_config_with_parent(
     config_key: str = "config",
     config_type: Type[BaseModel] = BaseModel,
     inspect_ignored: bool = True,
+    ignore_defaults: List[str] = ["credentials", "auth"],
 ):
     parents = inspect.getmro(cls)[1:]
     nearest = None
@@ -154,7 +155,7 @@ def _merge_config_with_parent(
             old_value = getattr(nearest_config, x, None)
             default_value = info.default
 
-            if new_value == default_value:
+            if new_value == default_value and x in ignore_defaults:
                 new_config[x] = old_value
 
             else:

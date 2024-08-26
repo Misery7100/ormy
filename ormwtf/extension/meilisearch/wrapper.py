@@ -212,7 +212,7 @@ class MeilisearchExtension(BaseModel):
 
     @staticmethod
     def _meili_prepare_response(res: SearchResults):
-        return SearchResponse.model_validate(res)
+        return SearchResponse.model_validate(res, from_attributes=True)
 
     # ....................... #
 
