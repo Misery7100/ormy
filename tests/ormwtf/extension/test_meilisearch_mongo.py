@@ -51,6 +51,16 @@ class TestMelisearchMongoMixed(unittest.TestCase):
 
     # ....................... #
 
+    @classmethod
+    def tearDownClass(cls):
+        with BaseMixed._client() as client:
+            client.drop_database(BaseMixed.config.database)
+
+        with BaseMixed._meili_client() as meili_client:
+            meili_client.delete_index_if_exists(BaseMixed.meili_config.index)
+
+    # ....................... #
+
     def test_subclass(self):
         self.assertTrue(
             issubclass(self.test_base, MongoBase),
@@ -102,9 +112,3 @@ class TestMelisearchMongoMixed(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-    with BaseMixed._client() as client:
-        client.drop_database(BaseMixed.config.database)
-
-    with BaseMixed._meili_client() as meili_client:
-        meili_client.delete_index_if_exists(BaseMixed.meili_config.index)

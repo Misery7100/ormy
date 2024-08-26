@@ -36,6 +36,16 @@ class TestRedisBase(unittest.TestCase):
 
     # ....................... #
 
+    @classmethod
+    def tearDownClass(cls):
+        with Base1._client() as client:
+            client.flushdb()
+
+        with Base2._client() as client:
+            client.flushdb()
+
+    # ....................... #
+
     def test_subclass(self):
         self.assertTrue(
             issubclass(self.test_base1, RedisBase),

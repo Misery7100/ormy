@@ -49,6 +49,16 @@ class TestFirestoreBase(unittest.TestCase):
 
     # ....................... #
 
+    @classmethod
+    def tearDownClass(cls):
+        with Base1._client() as client:
+            client.recursive_delete(Base1._get_collection())
+
+        with Base2._client() as client:
+            client.recursive_delete(Base2._get_collection())
+
+    # ....................... #
+
     def test_subclass(self):
         self.assertTrue(
             issubclass(self.test_base1, FirestoreBase),

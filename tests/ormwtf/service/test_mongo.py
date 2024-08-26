@@ -31,12 +31,6 @@ class Base2(MongoBase):
     )
 
 
-class BaseInherit(Base1):
-    config = MongoConfig(
-        collection="base_inherit",
-    )
-
-
 # ----------------------- #
 
 
@@ -44,6 +38,16 @@ class TestMongoBase(unittest.TestCase):
     def setUp(self):
         self.test_base1 = Base1
         self.test_base2 = Base2
+
+    # ....................... #
+
+    @classmethod
+    def tearDownClass(cls):
+        with Base1._client() as client:
+            client.drop_database(Base1.config.database)
+
+        with Base2._client() as client:
+            client.drop_database(Base1.config.database)
 
     # ....................... #
 

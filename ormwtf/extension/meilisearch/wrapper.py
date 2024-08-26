@@ -10,6 +10,7 @@ from meilisearch_python_sdk.types import JsonDict
 
 from ormwtf.base.func import _merge_config_with_parent
 from ormwtf.base.pydantic import BaseModel
+from ormwtf.utils.logging import LogLevel, console_logger
 
 from .config import MeilisearchConfig
 from .schema import SearchRequest, SearchResponse
@@ -17,6 +18,7 @@ from .schema import SearchRequest, SearchResponse
 # ----------------------- #
 
 M = TypeVar("M", bound="MeilisearchExtension")
+logger = console_logger(__name__, level=LogLevel.DEBUG)
 
 # ....................... #
 
@@ -79,6 +81,8 @@ class MeilisearchExtension(BaseModel):
             with cls._meili_client() as c:
                 try:
                     c.get_index(cls.meili_config.index)
+                    logger.info(f"Index {cls.meili_config.index} exists")
+                    return
 
                 except MeilisearchApiError:
                     c.create_index(
@@ -86,6 +90,7 @@ class MeilisearchExtension(BaseModel):
                         primary_key=cls.meili_config.primary_key,
                         settings=cls.meili_config.settings,
                     )
+                    logger.info(f"Index {cls.meili_config.index} created")
 
     # ....................... #
 
@@ -103,7 +108,11 @@ class MeilisearchExtension(BaseModel):
         else:
             api_key = None
 
-        c = Client(url=url, api_key=api_key)
+        c = Client(
+            url=url,
+            api_key=api_key,
+            custom_headers={"Content-Type": "application/json"},
+        )
 
         try:
             yield c
@@ -127,7 +136,11 @@ class MeilisearchExtension(BaseModel):
         else:
             api_key = None
 
-        c = AsyncClient(url=url, api_key=api_key)
+        c = AsyncClient(
+            url=url,
+            api_key=api_key,
+            custom_headers={"Content-Type": "application/json"},
+        )
 
         try:
             yield c

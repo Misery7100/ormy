@@ -21,7 +21,7 @@ class MeilisearchConfig(Base):
     # Local configuration
     index: str = "default"
     primary_key: str = "id"
-    settings: MeilisearchSettings = MeilisearchSettings()
+    settings: MeilisearchSettings = MeilisearchSettings(searchable_attributes=["*"])
     include_to_registry: bool = True
 
     # Global configuration
