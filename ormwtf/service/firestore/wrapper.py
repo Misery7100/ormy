@@ -18,6 +18,7 @@ from google.cloud.firestore_v1.async_aggregation import AsyncAggregationQuery
 from pydantic import ConfigDict
 
 from ormwtf.base.abc import DocumentOrmABC
+from ormwtf.base.func import _merge_config_with_parent
 from ormwtf.base.typing import DocumentID
 
 from .config import FirestoreConfig
@@ -42,6 +43,8 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
 
         super().__init_subclass__(**kwargs)
         cls.config.credentials.validate_app()
+        _merge_config_with_parent(cls, "config", FirestoreConfig)
+
         cls._register_subclass()
 
     # ....................... #

@@ -110,6 +110,22 @@ class Base(BaseModel):
     # ....................... #
 
     @classmethod
+    def model_from_any(
+        cls: Type[T],
+        data: Dict[str, Any] | str | T,
+    ) -> T:
+        if isinstance(data, str):
+            return cls.model_validate_json(data)
+
+        elif isinstance(data, dict):
+            return cls.model_validate(data)
+
+        else:
+            return cls.model_validate(data, from_attributes=True)
+
+    # ....................... #
+
+    @classmethod
     def _define_dtype(
         cls: Type[T],
         key: FieldName,

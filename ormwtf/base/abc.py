@@ -1,8 +1,8 @@
-import inspect
+import inspect  # noqa: F401
 from abc import ABC, abstractmethod
 from typing import ClassVar, Optional, Type, TypeVar
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field  # noqa: F401
 
 from .func import hex_uuid4
 from .pydantic import Base
@@ -28,29 +28,29 @@ class DocumentOrmABC(Base, ABC):
 
     # ....................... #
 
-    def __init_subclass__(cls: Type[T], **kwargs):
-        """Initialize subclass with config inheritance"""
+    # def __init_subclass__(cls: Type[T], **kwargs):
+    #     """Initialize subclass"""
 
-        super().__init_subclass__(**kwargs)
+    #     super().__init_subclass__(**kwargs)
 
-        # TODO: move to base utils ?
-        parents = inspect.getmro(cls)[1:]
-        nearest = None
+    #     # # TODO: move to base utils ?
+    #     # parents = inspect.getmro(cls)[1:]
+    #     # nearest = None
 
-        for p in parents:
-            cfg = getattr(p, "config", None)
-            mcfg: ConfigDict = getattr(p, "model_config", {})  # type: ignore
-            ignored_types = mcfg.get("ignored_types", tuple())
+    #     # for p in parents:
+    #     #     cfg = getattr(p, "config", None)
+    #     #     mcfg: ConfigDict = getattr(p, "model_config", {})  # type: ignore
+    #     #     ignored_types = mcfg.get("ignored_types", tuple())
 
-            if type(cfg) in ignored_types:
-                nearest = p
-                break
+    #     #     if type(cfg) in ignored_types:
+    #     #         nearest = p
+    #     #         break
 
-        if (nearest is not None) and (
-            (nearest_config := getattr(nearest, "config", None)) is not None
-        ):
-            values = {**nearest_config.model_dump(), **cls.config.model_dump()}
-            cls.config = type(cls.config)(**values)
+    #     # if (nearest is not None) and (
+    #     #     (nearest_config := getattr(nearest, "config", None)) is not None
+    #     # ):
+    #     #     values = {**nearest_config.model_dump(), **cls.config.model_dump()}
+    #     #     cls.config = type(cls.config)(**values)
 
     # ....................... #
 

@@ -12,6 +12,7 @@ from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from ormwtf.base.abc import DocumentOrmABC
+from ormwtf.base.func import _merge_config_with_parent
 from ormwtf.base.typing import DocumentID
 
 from .config import MongoConfig
@@ -37,6 +38,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
         """Initialize subclass with extra features"""
 
         super().__init_subclass__(**kwargs)
+        _merge_config_with_parent(cls, "config", MongoConfig)
+
         cls._enable_streaming()
         cls._register_subclass()
 

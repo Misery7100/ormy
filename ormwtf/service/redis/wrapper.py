@@ -7,6 +7,7 @@ from redis import Redis
 from redis import asyncio as aioredis
 
 from ormwtf.base.abc import DocumentOrmABC
+from ormwtf.base.func import _merge_config_with_parent
 from ormwtf.base.typing import DocumentID
 
 from .config import RedisConfig
@@ -32,6 +33,8 @@ class RedisBase(DocumentOrmABC):  # TODO: add docstrings
         """Initialize subclass with config"""
 
         super().__init_subclass__(**kwargs)
+        _merge_config_with_parent(cls, "config", RedisConfig)
+
         cls._register_subclass()
 
     # ....................... #

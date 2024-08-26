@@ -1,8 +1,11 @@
 import hashlib
+import inspect
 import json
 from datetime import UTC, datetime
-from typing import Optional
+from typing import Optional, cast
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, ConfigDict
 
 # ----------------------- #
 
@@ -109,3 +112,38 @@ def hex_uuid4(val: Optional[str] = None) -> str:
     """
 
     return hex_uuid4_from_string(val) if val else uuid4().hex
+
+
+# ....................... #
+# Semi-public methods
+
+
+def _merge_config_with_parent(
+    cls,
+    config_key: str = "config",
+    config_type: object = BaseModel,
+    inspect_ignored: bool = True,
+):
+    parents = inspect.getmro(cls)[1:]
+    nearest = None
+
+    for p in parents:
+        cfg = getattr(p, config_key, None)
+
+        if inspect_ignored:
+            mcfg = cast(ConfigDict, getattr(p, "model_config", {}))  # type: ignore
+            ignored_types = mcfg.get("ignored_types", tuple())
+
+        else:
+            ignored_types = (type(cfg),)
+
+        if type(cfg) in ignored_types and type(cfg) is config_type:
+            nearest = p
+            break
+
+    if (nearest is not None) and (
+        (nearest_config := getattr(nearest, config_key, None)) is not None
+    ):
+        cls_config = getattr(cls, config_key)
+        values = {**nearest_config.model_dump(), **cls_config.model_dump()}
+        setattr(cls, config_key, type(cls_config)(**values))

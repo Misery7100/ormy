@@ -1,4 +1,4 @@
-import inspect
+import inspect  # noqa: F401
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
@@ -8,6 +8,7 @@ from meilisearch_python_sdk.models.search import SearchResults
 from meilisearch_python_sdk.models.settings import MeilisearchSettings
 from meilisearch_python_sdk.types import JsonDict
 
+from ormwtf.base.func import _merge_config_with_parent
 from ormwtf.base.pydantic import BaseModel
 
 from .config import MeilisearchConfig
@@ -29,26 +30,32 @@ class MeilisearchExtension(BaseModel):
 
     def __init_subclass__(cls: Type[M], **kwargs):
         super().__init_subclass__(**kwargs)
+        _merge_config_with_parent(
+            cls,
+            "meili_config",
+            MeilisearchConfig,
+            inspect_ignored=False,
+        )
 
-        # TODO: move to base utils ?
-        parents = inspect.getmro(cls)[1:]
-        nearest = None
-        config_key = "meili_config"
-        config_type = MeilisearchConfig
+        # # TODO: move to base utils ?
+        # parents = inspect.getmro(cls)[1:]
+        # nearest = None
+        # config_key = "meili_config"
+        # config_type = MeilisearchConfig
 
-        for p in parents:
-            cfg = getattr(p, config_key, None)
+        # for p in parents:
+        #     cfg = getattr(p, config_key, None)
 
-            if type(cfg) is config_type:
-                nearest = p
-                break
+        #     if type(cfg) is config_type:
+        #         nearest = p
+        #         break
 
-        if (nearest is not None) and (
-            (nearest_config := getattr(nearest, config_key, None)) is not None
-        ):
-            cls_config = getattr(cls, config_key)
-            values = {**nearest_config.model_dump(), **cls_config.model_dump()}
-            setattr(cls, config_key, type(cls_config)(**values))
+        # if (nearest is not None) and (
+        #     (nearest_config := getattr(nearest, config_key, None)) is not None
+        # ):
+        #     cls_config = getattr(cls, config_key)
+        #     values = {**nearest_config.model_dump(), **cls_config.model_dump()}
+        #     setattr(cls, config_key, type(cls_config)(**values))
 
         cls._meili_safe_create_index()
         cls._meili_register_subclass()
