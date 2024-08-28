@@ -39,26 +39,6 @@ class MeilisearchExtension(BaseModel):
             inspect_ignored=False,
         )
 
-        # # TODO: move to base utils ?
-        # parents = inspect.getmro(cls)[1:]
-        # nearest = None
-        # config_key = "meili_config"
-        # config_type = MeilisearchConfig
-
-        # for p in parents:
-        #     cfg = getattr(p, config_key, None)
-
-        #     if type(cfg) is config_type:
-        #         nearest = p
-        #         break
-
-        # if (nearest is not None) and (
-        #     (nearest_config := getattr(nearest, config_key, None)) is not None
-        # ):
-        #     cls_config = getattr(cls, config_key)
-        #     values = {**nearest_config.model_dump(), **cls_config.model_dump()}
-        #     setattr(cls, config_key, type(cls_config)(**values))
-
         cls._meili_safe_create_or_update()
         cls._meili_register_subclass()
 
@@ -81,11 +61,13 @@ class MeilisearchExtension(BaseModel):
             with cls._meili_client() as c:
                 try:
                     ix = c.get_index(cls.meili_config.index)
-                    logger.info(f"Index {cls.meili_config.index} exists")
+                    logger.info(f"Index `{cls.meili_config.index}` already exists")
 
                     if ix.get_settings() != cls.meili_config.settings:
                         cls._meili_update_index(cls.meili_config.settings)
-                        logger.info(f"Index {cls.meili_config.index} updated")
+                        logger.info(
+                            f"Update of index `{cls.meili_config.index}` is started"
+                        )
 
                 except MeilisearchApiError:
                     c.create_index(
@@ -93,7 +75,7 @@ class MeilisearchExtension(BaseModel):
                         primary_key=cls.meili_config.primary_key,
                         settings=cls.meili_config.settings,
                     )
-                    logger.info(f"Index {cls.meili_config.index} created")
+                    logger.info(f"Index `{cls.meili_config.index}` is created")
 
     # ....................... #
 

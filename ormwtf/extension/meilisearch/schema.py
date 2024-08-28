@@ -1,8 +1,12 @@
 from enum import StrEnum
 from typing import Any, Dict, List, Optional
 
+from meilisearch_python_sdk.models.settings import MeilisearchSettings  # noqa: F401
 from meilisearch_python_sdk.types import Filter
 from pydantic import BaseModel, ConfigDict, Field
+
+# ----------------------- #
+
 
 # ----------------------- #
 

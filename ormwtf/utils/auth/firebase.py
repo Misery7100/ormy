@@ -32,6 +32,7 @@ class FirebaseUserInfo(BaseModel):
     local_id: str = Field(
         ...,
         validation_alias="localId",
+        serialization_alias="local_id",
     )
     email: str = Field(
         ...,
@@ -39,12 +40,14 @@ class FirebaseUserInfo(BaseModel):
     )
     display_name: Optional[str] = Field(
         default=None,
-        alias="displayName",
+        validation_alias="displayName",
+        serialization_alias="display_name",
         title="Display Name",
     )
     id_token: str = Field(
         ...,
         validation_alias="idToken",
+        serialization_alias="id_token",
         title="ID Token",
     )
     registered: Optional[bool] = Field(
@@ -54,16 +57,19 @@ class FirebaseUserInfo(BaseModel):
     refresh_token: str = Field(
         ...,
         validation_alias="refreshToken",
+        serialization_alias="refresh_token",
         title="Refresh Token",
     )
     expires_in: str = Field(
         ...,
         validation_alias="expiresIn",
+        serialization_alias="expires_in",
         title="Expires In",
     )
     expires_at: Optional[int] = Field(
         default=None,
         validation_alias="expiresAt",
+        serialization_alias="expires_at",
         title="Expires At",
     )
 
@@ -105,6 +111,7 @@ class FirebaseAccessCredentials(BaseModel):
     email_verified: bool = Field(
         ...,
         validation_alias="emailVerified",
+        serialization_alias="email_verified",
         title="Email Verified",
     )
     exp: int = Field(
@@ -118,6 +125,7 @@ class FirebaseAccessCredentials(BaseModel):
     auth_time: int = Field(
         ...,
         validation_alias="authTime",
+        serialization_alias="auth_time",
         title="Authentication Time",
     )
     uid: str = Field(
@@ -148,25 +156,30 @@ class FirebaseRefreshCredentials(BaseModel):
     local_id: str = Field(
         ...,
         validation_alias="localId",
+        serialization_alias="local_id",
         title="Local ID",
     )
     id_token: str = Field(
         ...,
         validation_alias="idToken",
+        serialization_alias="id_token",
         title="ID Token",
     )
     refresh_token: str = Field(
         ...,
         validation_alias="refreshToken",
+        serialization_alias="refresh_token",
         title="Refresh Token",
     )
     expires_in: str = Field(
         ...,
         validation_alias="expiresIn",
+        serialization_alias="expires_in",
         title="Expires In",
     )
     expires_at: int = Field(
         ...,
         validation_alias="expiresAt",
+        serialization_alias="expires_at",
         title="Expires At",
     )

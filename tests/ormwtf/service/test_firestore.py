@@ -17,7 +17,7 @@ try:
     app = firebase_admin.get_app()
 
 except ValueError:
-    app = firebase_admin.initialize_app()
+    app = firebase_admin.initialize_app(options={"projectId": "test"})
 
 credentials = FirestoreCredentials(
     app=app,
