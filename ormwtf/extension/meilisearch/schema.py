@@ -1,9 +1,10 @@
 from enum import StrEnum
-from typing import Any, Dict, List, Optional
+from typing import Generic, List, Optional, Type, TypeVar
 
+from meilisearch_python_sdk.models.search import SearchResults
 from meilisearch_python_sdk.models.settings import MeilisearchSettings  # noqa: F401
 from meilisearch_python_sdk.types import Filter
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 # ----------------------- #
 
@@ -38,22 +39,21 @@ class SearchRequest(BaseModel):
     )
 
 
+# ----------------------- #
+
+S = TypeVar("S", bound="SearchResponse")
+T = TypeVar("T")
+
 # ....................... #
 
 
-class SearchResponse(BaseModel):
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    # ....................... #
-
-    hits: List[Dict[str, Any]] = Field(
+class SearchResponse(BaseModel, Generic[T]):
+    hits: List[T] = Field(
         default_factory=list,
         title="Hits",
     )
     size: int = Field(
         ...,
-        validation_alias="hits_per_page",
         title="Hits per Page",
     )
     page: int = Field(
@@ -62,6 +62,16 @@ class SearchResponse(BaseModel):
     )
     count: int = Field(
         ...,
-        validation_alias="total_hits",
         title="Total number of Hits",
     )
+
+    # ....................... #
+
+    @classmethod
+    def from_search_results(cls: Type[S], res: SearchResults) -> S:
+        return cls(
+            hits=res.hits,
+            size=res.hits_per_page,  # type: ignore
+            page=res.page,  # type: ignore
+            count=res.total_hits,  # type: ignore
+        )

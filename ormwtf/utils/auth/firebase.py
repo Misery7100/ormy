@@ -1,11 +1,12 @@
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from camel_converter.pydantic_base import CamelBase
+from pydantic import Field
 
 # ----------------------- #
 
 
-class FirebaseUserInfo(BaseModel):
+class FirebaseUserInfo(CamelBase):
     """
     Firebase User Info
 
@@ -21,18 +22,13 @@ class FirebaseUserInfo(BaseModel):
         expires_at (int, optional): The expiration timestamp of the user.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-
-    # ....................... #
-
     kind: str = Field(
         ...,
         title="Kind",
     )
     local_id: str = Field(
         ...,
-        validation_alias="localId",
-        serialization_alias="local_id",
+        title="Local ID",
     )
     email: str = Field(
         ...,
@@ -40,14 +36,10 @@ class FirebaseUserInfo(BaseModel):
     )
     display_name: Optional[str] = Field(
         default=None,
-        validation_alias="displayName",
-        serialization_alias="display_name",
         title="Display Name",
     )
     id_token: str = Field(
         ...,
-        validation_alias="idToken",
-        serialization_alias="id_token",
         title="ID Token",
     )
     registered: Optional[bool] = Field(
@@ -56,20 +48,14 @@ class FirebaseUserInfo(BaseModel):
     )
     refresh_token: str = Field(
         ...,
-        validation_alias="refreshToken",
-        serialization_alias="refresh_token",
         title="Refresh Token",
     )
     expires_in: str = Field(
         ...,
-        validation_alias="expiresIn",
-        serialization_alias="expires_in",
         title="Expires In",
     )
     expires_at: Optional[int] = Field(
         default=None,
-        validation_alias="expiresAt",
-        serialization_alias="expires_at",
         title="Expires At",
     )
 
@@ -77,7 +63,7 @@ class FirebaseUserInfo(BaseModel):
 # ....................... #
 
 
-class FirebaseAccessCredentials(BaseModel):
+class FirebaseAccessCredentials(CamelBase):
     """
     Firebase Access Credentials
 
@@ -91,10 +77,6 @@ class FirebaseAccessCredentials(BaseModel):
         auth_time (int): The authentication time of the credentials.
         uid (str): The user ID of the credentials.
     """
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    # ....................... #
 
     sub: str = Field(
         ...,
@@ -110,8 +92,6 @@ class FirebaseAccessCredentials(BaseModel):
     )
     email_verified: bool = Field(
         ...,
-        validation_alias="emailVerified",
-        serialization_alias="email_verified",
         title="Email Verified",
     )
     exp: int = Field(
@@ -124,8 +104,6 @@ class FirebaseAccessCredentials(BaseModel):
     )
     auth_time: int = Field(
         ...,
-        validation_alias="authTime",
-        serialization_alias="auth_time",
         title="Authentication Time",
     )
     uid: str = Field(
@@ -137,7 +115,7 @@ class FirebaseAccessCredentials(BaseModel):
 # ....................... #
 
 
-class FirebaseRefreshCredentials(BaseModel):
+class FirebaseRefreshCredentials(CamelBase):
     """
     Firebase Refresh Credentials
 
@@ -149,37 +127,23 @@ class FirebaseRefreshCredentials(BaseModel):
         expires_at (int): The expiration timestamp of the credentials.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-
-    # ....................... #
-
     local_id: str = Field(
         ...,
-        validation_alias="localId",
-        serialization_alias="local_id",
         title="Local ID",
     )
     id_token: str = Field(
         ...,
-        validation_alias="idToken",
-        serialization_alias="id_token",
         title="ID Token",
     )
     refresh_token: str = Field(
         ...,
-        validation_alias="refreshToken",
-        serialization_alias="refresh_token",
         title="Refresh Token",
     )
     expires_in: str = Field(
         ...,
-        validation_alias="expiresIn",
-        serialization_alias="expires_in",
         title="Expires In",
     )
     expires_at: int = Field(
         ...,
-        validation_alias="expiresAt",
-        serialization_alias="expires_at",
         title="Expires At",
     )

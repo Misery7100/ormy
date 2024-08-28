@@ -212,8 +212,8 @@ class MeilisearchExtension(BaseModel):
     # ....................... #
 
     @staticmethod
-    def _meili_prepare_response(res: SearchResults):
-        return SearchResponse.model_validate(res, from_attributes=True)
+    def _meili_prepare_response(res: SearchResults) -> SearchResponse:
+        return SearchResponse.from_search_results(res)
 
     # ....................... #
 
@@ -224,7 +224,11 @@ class MeilisearchExtension(BaseModel):
         page: int = 1,
         size: int = 20,
         include: List[str] = ["*"],
-    ):
+    ) -> SearchResponse:
+        """
+        ...
+        """
+
         ix = cls._meili_index()
         req = cls._meili_prepare_request(request, page, size)
         res = ix.search(attributes_to_retrieve=include, **req)
@@ -240,7 +244,11 @@ class MeilisearchExtension(BaseModel):
         page: int = 1,
         size: int = 20,
         include: List[str] = ["*"],
-    ):
+    ) -> SearchResponse:
+        """
+        ...
+        """
+
         ix = await cls._ameili_index()
         req = cls._meili_prepare_request(request, page, size)
         res = await ix.search(attributes_to_retrieve=include, **req)
