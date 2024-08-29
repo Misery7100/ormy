@@ -46,7 +46,8 @@ class RedisBase(DocumentOrmABC):  # TODO: add docstrings
         db = cls.config.database
         col = cls.config.collection
 
-        if cls.config.include_to_registry:
+        # TODO: use exact default value from class
+        if cls.config.include_to_registry and col != "default":
             cls._registry[db] = cls._registry.get(db, {})
             cls._registry[db][col] = cls
 

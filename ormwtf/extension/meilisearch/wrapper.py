@@ -7,6 +7,7 @@ from meilisearch_python_sdk.errors import MeilisearchApiError
 from meilisearch_python_sdk.models.search import SearchResults
 from meilisearch_python_sdk.models.settings import MeilisearchSettings
 from meilisearch_python_sdk.types import JsonDict
+from pydantic import ConfigDict  # noqa: F401
 
 from ormwtf.base.func import _merge_config_with_parent
 from ormwtf.base.pydantic import BaseModel
@@ -26,6 +27,8 @@ logger = console_logger(__name__, level=LogLevel.DEBUG)
 class MeilisearchExtension(BaseModel):
 
     meili_config: ClassVar[MeilisearchConfig] = MeilisearchConfig()
+    # model_config = ConfigDict(ignored_types=(MeilisearchConfig,))
+
     _meili_registry: ClassVar[Dict[str, Any]] = {}
 
     # ....................... #
@@ -47,7 +50,9 @@ class MeilisearchExtension(BaseModel):
     @classmethod
     def _meili_register_subclass(cls: Type[M]):
         """Register subclass in the registry"""
-        if cls.meili_config.include_to_registry:
+
+        # TODO: use exact default value from class
+        if cls.meili_config.include_to_registry and cls.meili_config.index != "default":
             ix = cls.meili_config.index
             cls._meili_registry[ix] = cls
 
