@@ -33,16 +33,18 @@ class TestMelisearchMongoMixed(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         class BaseMixed(MongoBase, MeilisearchExtension):
-            config = MongoConfig(
-                credentials=mongo_creds,
-                database="base_mixed",
-                collection="base_mixed",
-                streaming=False,
-            )
-            meili_config = MeilisearchConfig(
-                credentials=meili_creds,
-                index="default_base_mixed",
-            )
+            configs = [
+                MongoConfig(
+                    credentials=mongo_creds,
+                    database="base_mixed",
+                    collection="base_mixed",
+                    streaming=False,
+                ),
+                MeilisearchConfig(
+                    credentials=meili_creds,
+                    index="default_base_mixed",
+                ),
+            ]
 
             a: int = 10
             b: str = "test"
@@ -54,10 +56,12 @@ class TestMelisearchMongoMixed(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         with cls.base._client() as client:
-            client.drop_database(cls.base.config.database)
+            cfg = cls.base.get_config(type_=MongoConfig)
+            client.drop_database(cfg.database)
 
         with cls.base._meili_client() as meili_client:
-            meili_client.delete_index_if_exists(cls.base.meili_config.index)
+            cfg = cls.base.get_config(type_=MeilisearchConfig)
+            meili_client.delete_index_if_exists(cfg.index)
 
     # ....................... #
 
@@ -75,18 +79,21 @@ class TestMelisearchMongoMixed(unittest.TestCase):
     # ....................... #
 
     def test_registry(self):
-        reg_mongo = MongoBase._registry.get(self.base.config.database).get(
-            self.base.config.collection
-        )
-        reg_meli = MeilisearchExtension._meili_registry.get(
-            self.base.meili_config.index
-        )
+        reg_mongo = MongoBase._registry[MongoConfig]
+        reg_meili = MeilisearchExtension._registry[MeilisearchConfig]
+
+        cfg_mongo: MongoConfig = self.base.get_config(type_=MongoConfig)
+        cfg_meili: MeilisearchConfig = self.base.get_config(type_=MeilisearchConfig)
+
+        reg1 = reg_mongo[cfg_mongo.database][cfg_mongo.collection]
+        reg2 = reg_meili[cfg_meili.index]
+
         self.assertTrue(
-            reg_mongo is reg_meli,
+            reg1 is reg2,
             "Registry items should match",
         )
         self.assertTrue(
-            reg_meli is self.base,
+            reg1 is self.base,
             "Registry item should be BaseMixed",
         )
 
@@ -115,16 +122,18 @@ class TestMelisearchMongoMixedAsync(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         class BaseMixed(MongoBase, MeilisearchExtension):
-            config = MongoConfig(
-                credentials=mongo_creds,
-                database="base_mixed_async",
-                collection="base_mixed_async",
-                streaming=False,
-            )
-            meili_config = MeilisearchConfig(
-                credentials=meili_creds,
-                index="default_base_mixed_async",
-            )
+            configs = [
+                MongoConfig(
+                    credentials=mongo_creds,
+                    database="base_mixed_async",
+                    collection="base_mixed_async",
+                    streaming=False,
+                ),
+                MeilisearchConfig(
+                    credentials=meili_creds,
+                    index="default_base_mixed_async",
+                ),
+            ]
 
             a: int = 10
             b: str = "test"
@@ -136,10 +145,12 @@ class TestMelisearchMongoMixedAsync(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def tearDownClass(cls):
         with cls.base._client() as client:
-            client.drop_database(cls.base.config.database)
+            cfg = cls.base.get_config(type_=MongoConfig)
+            client.drop_database(cfg.database)
 
         with cls.base._meili_client() as meili_client:
-            meili_client.delete_index_if_exists(cls.base.meili_config.index)
+            cfg = cls.base.get_config(type_=MeilisearchConfig)
+            meili_client.delete_index_if_exists(cfg.index)
 
     # ....................... #
 

@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, cast
+from typing import List, Optional, Type, TypeVar, cast
 
 from firebase_admin import firestore, firestore_async  # type: ignore
 from google.cloud.firestore_v1 import (
@@ -15,10 +15,8 @@ from google.cloud.firestore_v1 import (
 )
 from google.cloud.firestore_v1.aggregation import AggregationQuery
 from google.cloud.firestore_v1.async_aggregation import AsyncAggregationQuery
-from pydantic import ConfigDict
 
-from ormwtf.base.abc import DocumentOrmABC
-from ormwtf.base.func import _merge_config_with_parent
+from ormwtf.base.abc import ConfigABC, DocumentABC
 from ormwtf.base.typing import DocumentID
 
 from .config import FirestoreConfig
@@ -26,40 +24,47 @@ from .config import FirestoreConfig
 # ----------------------- #
 
 T = TypeVar("T", bound="FirestoreBase")
+C = TypeVar("C", bound="ConfigABC")
 
 # ....................... #
 
 
-class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
+class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
-    config: ClassVar[FirestoreConfig] = FirestoreConfig()
-    model_config = ConfigDict(ignored_types=(FirestoreConfig,))
-    _registry: ClassVar[Dict[str, Dict[str, Any]]] = {}
+    configs = [FirestoreConfig()]
+    _config_type = FirestoreConfig
+    _registry = {FirestoreConfig: {}}
 
     # ....................... #
 
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
-
+    def __init_subclass__(cls: Type[T], **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.config.credentials.validate_app()
-        _merge_config_with_parent(cls, "config", FirestoreConfig)
 
-        cls._register_subclass()
+        cls._firestore_register_subclass()
+        cls._merge_registry()
+
+        FirestoreBase._registry = cls._merge_registry_helper(
+            FirestoreBase._registry,
+            cls._registry,
+        )
 
     # ....................... #
 
     @classmethod
-    def _register_subclass(cls: Type[T]):
+    def _firestore_register_subclass(cls: Type[T]):
         """Register subclass in the registry"""
 
-        db = cls.config.database
-        col = cls.config.collection
+        cfg = cls.get_config(type_=FirestoreConfig)
+        db = cfg.database
+        col = cfg.collection
 
         # TODO: use exact default value from class
-        if cls.config.include_to_registry and col != "default":
-            cls._registry[db] = cls._registry.get(db, {})
-            cls._registry[db][col] = cls
+        if cfg.include_to_registry and not cfg.is_default():
+            cls._registry[FirestoreConfig] = cls._registry.get(FirestoreConfig, {})
+            cls._registry[FirestoreConfig][db] = cls._registry[FirestoreConfig].get(
+                db, {}
+            )
+            cls._registry[FirestoreConfig][db][col] = cls
 
     # ....................... #
 
@@ -68,9 +73,11 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     def _client(cls: Type[T]):
         """Get syncronous Firestore client"""
 
-        project_id = cls.config.credentials.project_id
-        app = cls.config.credentials.app
-        database = cls.config.database
+        cfg = cls.get_config(type_=FirestoreConfig)
+
+        project_id = cfg.credentials.project_id
+        app = cfg.credentials.app
+        database = cfg.database
 
         client = firestore.client(app)
         client._database_string_internal = f"projects/{project_id}/databases/{database}"
@@ -88,9 +95,11 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     async def _aclient(cls: Type[T]):
         """Get asyncronous Firestore client"""
 
-        project_id = cls.config.credentials.project_id
-        app = cls.config.credentials.app
-        database = cls.config.database
+        cfg = cls.get_config(type_=FirestoreConfig)
+
+        project_id = cfg.credentials.project_id
+        app = cfg.credentials.app
+        database = cfg.database
 
         client = firestore_async.client(app)
         client._database_string_internal = f"projects/{project_id}/databases/{database}"
@@ -129,8 +138,10 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     def _get_collection(cls: Type[T]) -> CollectionReference:
         """Get assigned Firestore collection in syncronous mode"""
 
+        cfg = cls.get_config(type_=FirestoreConfig)
+
         with cls._client() as client:
-            return client.collection(cls.config.collection)
+            return client.collection(cfg.collection)
 
     # ....................... #
 
@@ -138,8 +149,10 @@ class FirestoreBase(DocumentOrmABC):  # TODO: add docstrings
     async def _aget_collection(cls: Type[T]) -> AsyncCollectionReference:
         """Get assigned Firestore collection in asyncronous mode"""
 
+        cfg = cls.get_config(type_=FirestoreConfig)
+
         async with cls._aclient() as client:
-            return client.collection(cls.config.collection)
+            return client.collection(cfg.collection)
 
     # ....................... #
 

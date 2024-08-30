@@ -3,6 +3,7 @@ from typing import Optional
 import firebase_admin  # type: ignore
 from pydantic import ConfigDict
 
+from ormwtf.base.abc import ConfigABC
 from ormwtf.base.pydantic import Base
 
 # ----------------------- #
@@ -38,13 +39,15 @@ class FirestoreCredentials(Base):
         if self.project_id is None:
             self.project_id = self.app.project_id
 
+        return self
+
 
 # ....................... #
 
 
-class FirestoreConfig(Base):
+class FirestoreConfig(ConfigABC):
     """
-    Firestore Configuration for ORM WTF Base Model
+    Configuration for Firestore Base Model
 
     Attributes:
         database (str): Database name to assign
@@ -59,3 +62,20 @@ class FirestoreConfig(Base):
 
     # Global configuration
     credentials: FirestoreCredentials = FirestoreCredentials()
+
+    # ....................... #
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if not self.is_default():
+            self.credentials.validate_app()
+
+    # ....................... #
+
+    def is_default(self) -> bool:
+        """
+        Validate if the config is default
+        """
+
+        return self._default_helper("collection")

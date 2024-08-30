@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import SecretStr
 
+from ormwtf.base.abc import ConfigABC
 from ormwtf.base.pydantic import Base
 
 # ----------------------- #
@@ -31,9 +32,9 @@ class MongoCredentials(Base):
 # ....................... #
 
 
-class MongoConfig(Base):
+class MongoConfig(ConfigABC):
     """
-    Mongo Configuration for ORM WTF Base Model
+    Configuration for Mongo Base Model
 
     Attributes:
         database (str): Database name to assign
@@ -50,3 +51,12 @@ class MongoConfig(Base):
 
     # Global configuration
     credentials: MongoCredentials = MongoCredentials()
+
+    # ....................... #
+
+    def is_default(self) -> bool:
+        """
+        Validate if the config is default
+        """
+
+        return self._default_helper("collection")

@@ -531,6 +531,21 @@ trio = ["trio (>=0.23)"]
 wmi = ["wmi (>=1.5.1)"]
 
 [[package]]
+name = "email-validator"
+version = "2.2.0"
+description = "A robust email address syntax and deliverability validation library."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "email_validator-2.2.0-py3-none-any.whl", hash = "sha256:561977c2d73ce3611850a06fa56b414621e0c8faa9d66f2611407d87465da631"},
+    {file = "email_validator-2.2.0.tar.gz", hash = "sha256:cb690f344c617a714f22e66ae771445a1ceb46821152df8e165c5f9a364582b7"},
+]
+
+[package.dependencies]
+dnspython = ">=2.0.0"
+idna = ">=2.0.0"
+
+[[package]]
 name = "exceptiongroup"
 version = "1.2.2"
 description = "Backport of PEP 654 (exception groups)"
@@ -2607,4 +2622,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">3.10,<3.12"
-content-hash = "177cc6cd3573ba4f055397cc0e7308994a5db27902e06b4451f6bed66a097d15"
+content-hash = "fa1afce3b0b7a913da15871516e20b5e04f79b883bfbb8a3d4a4d960d1b170dd"

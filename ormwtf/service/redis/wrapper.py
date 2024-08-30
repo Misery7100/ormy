@@ -1,14 +1,13 @@
 import json
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, ClassVar, Dict, Optional, Type, TypeVar
+from typing import Optional, Type, TypeVar
 
-from pydantic import ConfigDict
 from redis import Redis
 from redis import asyncio as aioredis
 
-from ormwtf.base.abc import DocumentOrmABC
-from ormwtf.base.func import _merge_config_with_parent
+from ormwtf.base.abc import DocumentABC
 from ormwtf.base.typing import DocumentID
+from ormwtf.utils.logging import LogLevel, console_logger
 
 from .config import RedisConfig
 
@@ -16,40 +15,51 @@ from .config import RedisConfig
 
 T = TypeVar("T", bound="RedisBase")
 
+logger = console_logger(__name__, level=LogLevel.INFO)
+
 # ....................... #
 
 
-class RedisBase(DocumentOrmABC):  # TODO: add docstrings
+class RedisBase(DocumentABC):  # TODO: add docstrings
     """Base ORM document model class for Redis"""
 
-    config: ClassVar[RedisConfig] = RedisConfig()
-    model_config = ConfigDict(ignored_types=(RedisConfig,))
-
-    _registry: ClassVar[Dict[int, Dict[str, Any]]] = {}
+    configs = [RedisConfig()]
+    _config_type = RedisConfig
+    _registry = {RedisConfig: {}}
 
     # ....................... #
 
     def __init_subclass__(cls: Type[T], **kwargs):
-        """Initialize subclass with config"""
-
         super().__init_subclass__(**kwargs)
-        _merge_config_with_parent(cls, "config", RedisConfig)
 
-        cls._register_subclass()
+        cls._redis_register_subclass()
+        cls._merge_registry()
+
+        RedisBase._registry = cls._merge_registry_helper(
+            RedisBase._registry,
+            cls._registry,
+        )
 
     # ....................... #
 
     @classmethod
-    def _register_subclass(cls: Type[T]):
+    def _redis_register_subclass(cls: Type[T]):
         """Register subclass in the registry"""
 
-        db = cls.config.database
-        col = cls.config.collection
+        cfg = cls.get_config(type_=RedisConfig)
+        db = cfg.database
+        col = cfg.collection
 
         # TODO: use exact default value from class
-        if cls.config.include_to_registry and col != "default":
-            cls._registry[db] = cls._registry.get(db, {})
-            cls._registry[db][col] = cls
+        if cfg.include_to_registry and not cfg.is_default():
+            logger.debug(f"Registering {cls.__name__} in {db}.{col}")
+            logger.debug(f"Registry before: {cls._registry}")
+
+            cls._registry[RedisConfig] = cls._registry.get(RedisConfig, {})
+            cls._registry[RedisConfig][db] = cls._registry[RedisConfig].get(db, {})
+            cls._registry[RedisConfig][db][col] = cls
+
+            logger.debug(f"Registry after: {cls._registry}")
 
     # ....................... #
 
@@ -58,7 +68,8 @@ class RedisBase(DocumentOrmABC):  # TODO: add docstrings
     def _client(cls: Type[T]):
         """Get syncronous Redis client"""
 
-        url = cls.config.url()
+        cfg = cls.get_config(type_=RedisConfig)
+        url = cfg.url()
         r = Redis.from_url(url)
 
         try:
@@ -74,7 +85,8 @@ class RedisBase(DocumentOrmABC):  # TODO: add docstrings
     async def _aclient(cls: Type[T]):
         """Get asyncronous Redis client"""
 
-        url = cls.config.url()
+        cfg = cls.get_config(type_=RedisConfig)
+        url = cfg.url()
         r = aioredis.from_url(url)
 
         try:
@@ -89,8 +101,9 @@ class RedisBase(DocumentOrmABC):  # TODO: add docstrings
     def _build_key(cls: Type[T], key: str) -> str:
         """Build key for Redis storage"""
 
-        collection = cls.config.collection
-        return f"{collection}:{key}"
+        cfg = cls.get_config(type_=RedisConfig)
+
+        return f"{cfg.collection}:{key}"
 
     # ....................... #
 

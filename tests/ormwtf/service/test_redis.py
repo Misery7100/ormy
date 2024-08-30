@@ -16,17 +16,20 @@ class TestRedisBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         class Base1(RedisBase):
-            config = RedisConfig(
-                credentials=credentials,
-                collection="base1_redis",
-            )
+            configs = [
+                RedisConfig(
+                    credentials=credentials,
+                    collection="base1_redis",
+                ),
+            ]
 
-        class Base2(RedisBase):
-            config = RedisConfig(
-                credentials=credentials,
-                collection="base2_redis",
-                database=2,
-            )
+        class Base2(Base1):
+            configs = [
+                RedisConfig(
+                    collection="base2_redis",
+                    database=2,
+                ),
+            ]
 
         cls.base1 = Base1
         cls.base2 = Base2
@@ -57,12 +60,12 @@ class TestRedisBase(unittest.TestCase):
     # ....................... #
 
     def test_registry(self):
-        reg1 = RedisBase._registry.get(self.base1.config.database).get(
-            self.base1.config.collection
-        )
-        reg2 = RedisBase._registry.get(self.base2.config.database).get(
-            self.base2.config.collection
-        )
+        reg = RedisBase._registry[RedisConfig]
+        cfg1: RedisConfig = self.base1.get_config(type_=RedisConfig)
+        cfg2: RedisConfig = self.base2.get_config(type_=RedisConfig)
+
+        reg1 = reg[cfg1.database][cfg1.collection]
+        reg2 = reg[cfg2.database][cfg2.collection]
 
         self.assertTrue(
             reg1 is self.base1,
@@ -113,17 +116,20 @@ class TestRedisBaseAsync(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         class Base1(RedisBase):
-            config = RedisConfig(
-                credentials=credentials,
-                collection="base1_redis_async",
-            )
+            configs = [
+                RedisConfig(
+                    credentials=credentials,
+                    collection="base1_redis_async",
+                ),
+            ]
 
-        class Base2(RedisBase):
-            config = RedisConfig(
-                credentials=credentials,
-                collection="base2_redis_async",
-                database=2,
-            )
+        class Base2(Base1):
+            configs = [
+                RedisConfig(
+                    collection="base2_redis_async",
+                    database=2,
+                ),
+            ]
 
         cls.base1 = Base1
         cls.base2 = Base2

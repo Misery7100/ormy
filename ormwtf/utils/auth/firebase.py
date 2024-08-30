@@ -1,7 +1,7 @@
 from typing import Optional
 
 from camel_converter.pydantic_base import CamelBase
-from pydantic import Field
+from pydantic import EmailStr, Field
 
 # ----------------------- #
 
@@ -30,7 +30,7 @@ class FirebaseUserInfo(CamelBase):
         ...,
         title="Local ID",
     )
-    email: str = Field(
+    email: EmailStr = Field(
         ...,
         title="Email",
     )
@@ -82,7 +82,7 @@ class FirebaseAccessCredentials(CamelBase):
         ...,
         title="Subject",
     )
-    email: str = Field(
+    email: EmailStr = Field(
         ...,
         title="Email",
     )

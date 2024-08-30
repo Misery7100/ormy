@@ -167,3 +167,5 @@ secrets/
 *.zip
 tests/cache/
 firebase-export-*
+*.ipynb
+ipynb/

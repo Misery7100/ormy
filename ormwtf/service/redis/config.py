@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import SecretStr
 
+from ormwtf.base.abc import ConfigABC
 from ormwtf.base.pydantic import Base
 
 # ----------------------- #
@@ -27,9 +28,9 @@ class RedisCredentials(Base):
 # ....................... #
 
 
-class RedisConfig(Base):
+class RedisConfig(ConfigABC):
     """
-    Redis Configuration for ORM WTF Base Model
+    Configuration for Redis Base Model
 
     Attributes:
         database (int): Database number to assign
@@ -71,3 +72,12 @@ class RedisConfig(Base):
             conn = host
 
         return f"redis://{auth}{conn}/{self.database}"
+
+    # ....................... #
+
+    def is_default(self) -> bool:
+        """
+        Validate if the config is default
+        """
+
+        return self._default_helper("collection")

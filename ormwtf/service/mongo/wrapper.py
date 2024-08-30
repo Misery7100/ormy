@@ -1,69 +1,79 @@
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
     AsyncIOMotorCollection,
     AsyncIOMotorDatabase,
 )
-from pydantic import ConfigDict
 from pymongo import InsertOne, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from ormwtf.base.abc import DocumentOrmABC
-from ormwtf.base.func import _merge_config_with_parent
+from ormwtf.base.abc import DocumentABC
 from ormwtf.base.typing import DocumentID
+from ormwtf.utils.logging import LogLevel, console_logger
 
 from .config import MongoConfig
 from .typing import MongoRequest
 
 # ----------------------- #
 
-T = TypeVar("T", bound="MongoBase")
+M = TypeVar("M", bound="MongoBase")
+
+logger = console_logger(__name__, level=LogLevel.INFO)
 
 # ....................... #
 
 
-class MongoBase(DocumentOrmABC):  # TODO: add docstrings
+class MongoBase(DocumentABC):  # TODO: add docstrings
 
-    config: ClassVar[MongoConfig] = MongoConfig()
-    model_config = ConfigDict(ignored_types=(MongoConfig,))
-
-    _registry: ClassVar[Dict[str, Dict[str, Any]]] = {}
+    configs = [MongoConfig()]
+    _config_type = MongoConfig
+    _registry = {MongoConfig: {}}
 
     # ....................... #
 
-    def __init_subclass__(cls: Type[T], **kwargs):
-        """Initialize subclass with extra features"""
-
+    def __init_subclass__(cls: Type[M], **kwargs):
         super().__init_subclass__(**kwargs)
-        _merge_config_with_parent(cls, "config", MongoConfig)
 
+        cls._mongo_register_subclass()
+        cls._merge_registry()
         cls._enable_streaming()
-        cls._register_subclass()
+
+        MongoBase._registry = cls._merge_registry_helper(
+            MongoBase._registry,
+            cls._registry,
+        )
 
     # ....................... #
 
     @classmethod
-    def _register_subclass(cls: Type[T]):
+    def _mongo_register_subclass(cls: Type[M]):
         """Register subclass in the registry"""
 
-        db = cls.config.database
-        col = cls.config.collection
+        cfg = cls.get_config(type_=MongoConfig)
+        db = cfg.database
+        col = cfg.collection
 
-        # TODO: use exact default value from class
-        if cls.config.include_to_registry and col != "default":
-            cls._registry[db] = cls._registry.get(db, {})
-            cls._registry[db][col] = cls
+        if cfg.include_to_registry and not cfg.is_default():
+            logger.debug(f"Registering {cls.__name__} in {db}.{col}")
+            logger.debug(f"Registry before: {cls._registry}")
+
+            cls._registry[MongoConfig] = cls._registry.get(MongoConfig, {})
+            cls._registry[MongoConfig][db] = cls._registry[MongoConfig].get(db, {})
+            cls._registry[MongoConfig][db][col] = cls
+
+            logger.debug(f"Registry after: {cls._registry}")
 
     # ....................... #
 
     @classmethod
-    def _enable_streaming(cls: Type[T]):
+    def _enable_streaming(cls: Type[M]):
         """Enable watch streams for the collection"""
 
-        is_streaming = cls.config.streaming
+        cfg = cls.get_config(type_=MongoConfig)
+        is_streaming = cfg.streaming
 
         if is_streaming:
             database = cls._get_database()
@@ -95,67 +105,73 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    def _client(cls: Type[T]) -> MongoClient:
+    def _client(cls: Type[M]) -> MongoClient:
         """Get syncronous MongoDB client"""
 
-        creds_dict = cls.config.credentials.model_dump_with_secrets()
+        cfg = cls.get_config(type_=MongoConfig)
+        creds_dict = cfg.credentials.model_dump_with_secrets()
 
         return MongoClient(**creds_dict)
 
     # ....................... #
 
     @classmethod
-    def _aclient(cls: Type[T]) -> AsyncIOMotorClient:
+    def _aclient(cls: Type[M]) -> AsyncIOMotorClient:
         """Get asyncronous MongoDB client"""
 
-        creds_dict = cls.config.credentials.model_dump_with_secrets()
+        cfg = cls.get_config(type_=MongoConfig)
+        creds_dict = cfg.credentials.model_dump_with_secrets()
 
         return AsyncIOMotorClient(**creds_dict)
 
     # ....................... #
 
     @classmethod
-    def _get_database(cls: Type[T]) -> Database:
+    def _get_database(cls: Type[M]) -> Database:
         """Get assigned MongoDB database in syncronous mode"""
 
+        cfg = cls.get_config(type_=MongoConfig)
         client = cls._client()
 
-        return client.get_database(cls.config.database)
+        return client.get_database(cfg.database)
 
     # ....................... #
 
     @classmethod
-    def _aget_database(cls: Type[T]) -> AsyncIOMotorDatabase:
+    def _aget_database(cls: Type[M]) -> AsyncIOMotorDatabase:
         """Get assigned MongoDB database in asyncronous mode"""
 
+        cfg = cls.get_config(type_=MongoConfig)
         client = cls._aclient()
 
-        return client.get_database(cls.config.database)
+        return client.get_database(cfg.database)
 
     # ....................... #
 
     @classmethod
-    def _get_collection(cls: Type[T]) -> Collection:
+    def _get_collection(cls: Type[M]) -> Collection:
         """Get assigned MongoDB collection in syncronous mode"""
 
+        cfg = cls.get_config(type_=MongoConfig)
         database = cls._get_database()
 
-        return database.get_collection(cls.config.collection)
+        return database.get_collection(cfg.collection)
 
     # ....................... #
 
     @classmethod
-    def _aget_collection(cls: Type[T]) -> AsyncIOMotorCollection:
+    def _aget_collection(cls: Type[M]) -> AsyncIOMotorCollection:
         """Get assigned MongoDB collection in asyncronous mode"""
 
+        cfg = cls.get_config(type_=MongoConfig)
         database = cls._aget_database()
 
-        return database.get_collection(cls.config.collection)
+        return database.get_collection(cfg.collection)
 
     # ....................... #
 
     @classmethod
-    def create(cls: Type[T], data: T) -> T:
+    def create(cls: Type[M], data: M) -> M:
         """
         Create a new document in the collection
 
@@ -181,7 +197,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    async def acreate(cls: Type[T], data: T) -> T:
+    async def acreate(cls: Type[M], data: M) -> M:
         """
         Create a new document in the collection in asyncronous mode
 
@@ -206,7 +222,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     # ....................... #
 
-    def save(self: T) -> T:
+    def save(self: M) -> M:
         """
         Save a document in the collection.
         Document will be updated if exists
@@ -227,7 +243,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     # ....................... #
 
-    async def asave(self: T) -> T:
+    async def asave(self: M) -> M:
         """
         Save a document in the collection in asyncronous mode.
         Document will be updated if exists
@@ -342,8 +358,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     def create_many(
-        cls: Type[T],
-        data: List[T],
+        cls: Type[M],
+        data: List[M],
         ordered: bool = False,
     ):
         """
@@ -366,8 +382,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     async def acreate_many(
-        cls: Type[T],
-        data: List[T],
+        cls: Type[M],
+        data: List[M],
         ordered: bool = False,
     ):
         """
@@ -390,8 +406,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     def update_many(
-        cls: Type[T],
-        data: List[T],
+        cls: Type[M],
+        data: List[M],
         autosave: bool = True,
     ):
         """
@@ -404,8 +420,8 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     async def aupdate_many(
-        cls: Type[T],
-        data: List[T],
+        cls: Type[M],
+        data: List[M],
         autosave: bool = True,
     ):
         """
@@ -418,11 +434,11 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     def find(
-        cls: Type[T],
+        cls: Type[M],
         id_: Optional[DocumentID] = None,
         request: MongoRequest = {},
         bypass: bool = False,
-    ) -> Optional[T]:
+    ) -> Optional[M]:
         """
         ...
         """
@@ -450,11 +466,11 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     async def afind(
-        cls: Type[T],
+        cls: Type[M],
         id_: Optional[DocumentID] = None,
         request: MongoRequest = {},
         bypass: bool = False,
-    ) -> Optional[T]:
+    ) -> Optional[M]:
         """
         ...
         """
@@ -482,11 +498,11 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     def find_many(
-        cls: Type[T],
+        cls: Type[M],
         request: MongoRequest = {},
         limit: int = 100,
         offset: int = 0,
-    ) -> List[T]:
+    ) -> List[M]:
         """
         ...
         """
@@ -500,11 +516,11 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     async def afind_many(
-        cls: Type[T],
+        cls: Type[M],
         request: MongoRequest = {},
         limit: int = 100,
         offset: int = 0,
-    ) -> List[T]:
+    ) -> List[M]:
         """
         ...
         """
@@ -518,7 +534,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     def count(
-        cls: Type[T],
+        cls: Type[M],
         request: MongoRequest = {},
     ) -> int:
         """
@@ -533,7 +549,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     async def acount(
-        cls: Type[T],
+        cls: Type[M],
         request: MongoRequest = {},
     ) -> int:
         """
@@ -548,10 +564,10 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     def find_all(
-        cls: Type[T],
+        cls: Type[M],
         request: MongoRequest = {},
         batch_size: int = 100,
-    ) -> List[T]:
+    ) -> List[M]:
         """
         ...
         """
@@ -569,10 +585,10 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     async def afind_all(
-        cls: Type[T],
+        cls: Type[M],
         request: MongoRequest = {},
         batch_size: int = 100,
-    ) -> List[T]:
+    ) -> List[M]:
         """
         ...
         """
@@ -592,7 +608,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod
     def patch_records(
-        cls: Type[T],
+        cls: Type[M],
         records: List[Dict[str, Any]],
         fields: List[str],
         prefix: Optional[str] = None,
@@ -625,7 +641,7 @@ class MongoBase(DocumentOrmABC):  # TODO: add docstrings
 
     @classmethod  # TODO: rewrite
     def patch_schema(
-        cls: Type[T],
+        cls: Type[M],
         schema: List[Dict[str, Any]],
         fields: List[str],
         prefix: Optional[str] = None,

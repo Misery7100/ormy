@@ -4,6 +4,7 @@ from .firebase import (
     FirebaseUserInfo,
 )
 from .func import hash_secret, verify_secret
+from .generic import SignInWithEmailAndPassword, SignUpWithEmailAndPassword
 
 # ----------------------- #
 
@@ -15,4 +16,7 @@ __all__ = [
     "FirebaseUserInfo",
     "FirebaseAccessCredentials",
     "FirebaseRefreshCredentials",
+    # generic.py
+    "SignInWithEmailAndPassword",
+    "SignUpWithEmailAndPassword",
 ]

@@ -17,7 +17,7 @@ class LogLevel(Enum):
 
 def console_logger(name: str, level: LogLevel) -> logging.Logger:
     # Create a named logger
-    logger = logging.getLogger(f":: {name} ::")
+    logger = logging.getLogger(name)
     logger.setLevel(level.value)  # Set logger level using enum value
 
     # Create a console handler and set its level
@@ -26,7 +26,7 @@ def console_logger(name: str, level: LogLevel) -> logging.Logger:
 
     # Set the formatter for the console handler
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "%(asctime)s - [%(levelname)s] :: %(name)s ::  %(message)s",
         datefmt="%m/%d/%Y %I:%M:%S%p",
     )
     console_handler.setFormatter(formatter)

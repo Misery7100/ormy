@@ -1,16 +1,13 @@
-import inspect  # noqa: F401
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from meilisearch_python_sdk import AsyncClient, AsyncIndex, Client, Index
 from meilisearch_python_sdk.errors import MeilisearchApiError
 from meilisearch_python_sdk.models.search import SearchResults
 from meilisearch_python_sdk.models.settings import MeilisearchSettings
 from meilisearch_python_sdk.types import JsonDict
-from pydantic import ConfigDict  # noqa: F401
 
-from ormwtf.base.func import _merge_config_with_parent
-from ormwtf.base.pydantic import BaseModel
+from ormwtf.base.abc import AbstractABC
 from ormwtf.utils.logging import LogLevel, console_logger
 
 from .config import MeilisearchConfig
@@ -19,31 +16,30 @@ from .schema import SearchRequest, SearchResponse
 # ----------------------- #
 
 M = TypeVar("M", bound="MeilisearchExtension")
-logger = console_logger(__name__, level=LogLevel.DEBUG)
+logger = console_logger(__name__, level=LogLevel.INFO)
 
 # ....................... #
 
 
-class MeilisearchExtension(BaseModel):
+class MeilisearchExtension(AbstractABC):
 
-    meili_config: ClassVar[MeilisearchConfig] = MeilisearchConfig()
-    # model_config = ConfigDict(ignored_types=(MeilisearchConfig,))
-
-    _meili_registry: ClassVar[Dict[str, Any]] = {}
+    configs = [MeilisearchConfig()]
+    _config_type = MeilisearchConfig
+    _registry = {MeilisearchConfig: {}}
 
     # ....................... #
 
     def __init_subclass__(cls: Type[M], **kwargs):
         super().__init_subclass__(**kwargs)
-        _merge_config_with_parent(
-            cls,
-            "meili_config",
-            MeilisearchConfig,
-            inspect_ignored=False,
-        )
 
-        cls._meili_safe_create_or_update()
         cls._meili_register_subclass()
+        cls._merge_registry()
+        cls._meili_safe_create_or_update()
+
+        MeilisearchExtension._registry = cls._merge_registry_helper(
+            MeilisearchExtension._registry,
+            cls._registry,
+        )
 
     # ....................... #
 
@@ -51,36 +47,41 @@ class MeilisearchExtension(BaseModel):
     def _meili_register_subclass(cls: Type[M]):
         """Register subclass in the registry"""
 
-        # TODO: use exact default value from class
-        if cls.meili_config.include_to_registry and cls.meili_config.index != "default":
-            ix = cls.meili_config.index
-            cls._meili_registry[ix] = cls
+        cfg = cls.get_config(type_=MeilisearchConfig)
+        ix = cfg.index
+
+        if cfg.include_to_registry and not cfg.is_default():
+            logger.debug(f"Registering {cls.__name__} in {ix}")
+            logger.debug(f"Registry before: {cls._registry}")
+
+            cls._registry[MeilisearchConfig] = cls._registry.get(MeilisearchConfig, {})
+            cls._registry[MeilisearchConfig][ix] = cls
+
+            logger.debug(f"Registry after: {cls._registry}")
 
     # ....................... #
 
     @classmethod
     def _meili_safe_create_or_update(cls: Type[M]):
-        if (
-            cls.meili_config.index != "default"
-        ):  # TODO: use exact default value from class
+        cfg = cls.get_config(type_=MeilisearchConfig)
+
+        if not cfg.is_default():
             with cls._meili_client() as c:
                 try:
-                    ix = c.get_index(cls.meili_config.index)
-                    logger.info(f"Index `{cls.meili_config.index}` already exists")
+                    ix = c.get_index(cfg.index)
+                    logger.debug(f"Index `{cfg.index}` already exists")
 
-                    if ix.get_settings() != cls.meili_config.settings:
-                        cls._meili_update_index(cls.meili_config.settings)
-                        logger.info(
-                            f"Update of index `{cls.meili_config.index}` is started"
-                        )
+                    if ix.get_settings() != cfg.settings:
+                        cls._meili_update_index(cfg.settings)
+                        logger.debug(f"Update of index `{cfg.index}` is started")
 
                 except MeilisearchApiError:
                     c.create_index(
-                        cls.meili_config.index,
-                        primary_key=cls.meili_config.primary_key,
-                        settings=cls.meili_config.settings,
+                        cfg.index,
+                        primary_key=cfg.primary_key,
+                        settings=cfg.settings,
                     )
-                    logger.info(f"Index `{cls.meili_config.index}` is created")
+                    logger.debug(f"Index `{cfg.index}` is created")
 
     # ....................... #
 
@@ -89,8 +90,9 @@ class MeilisearchExtension(BaseModel):
     def _meili_client(cls: Type[M]):
         """Get syncronous Meilisearch client"""
 
-        url = cls.meili_config.url()
-        key = cls.meili_config.credentials.master_key
+        cfg = cls.get_config(type_=MeilisearchConfig)
+        url = cfg.url()
+        key = cfg.credentials.master_key
 
         if key:
             api_key = key.get_secret_value()
@@ -117,8 +119,9 @@ class MeilisearchExtension(BaseModel):
     async def _ameili_client(cls: Type[M]):
         """Get asyncronous Meilisearch client"""
 
-        url = cls.meili_config.url()
-        key = cls.meili_config.credentials.master_key
+        cfg = cls.get_config(type_=MeilisearchConfig)
+        url = cfg.url()
+        key = cfg.credentials.master_key
 
         if key:
             api_key = key.get_secret_value()
@@ -160,8 +163,10 @@ class MeilisearchExtension(BaseModel):
     def _meili_index(cls: Type[M]) -> Index:
         """Get associated Meilisearch index"""
 
+        cfg = cls.get_config(type_=MeilisearchConfig)
+
         with cls._meili_client() as c:
-            return c.get_index(cls.meili_config.index)
+            return c.get_index(cfg.index)
 
     # ....................... #
 
@@ -169,8 +174,10 @@ class MeilisearchExtension(BaseModel):
     async def _ameili_index(cls: Type[M]) -> AsyncIndex:
         """Get associated Meilisearch index in asyncronous mode"""
 
+        cfg = cls.get_config(type_=MeilisearchConfig)
+
         async with cls._ameili_client() as c:
-            return await c.get_index(cls.meili_config.index)
+            return await c.get_index(cfg.index)
 
     # ....................... #
 
@@ -195,7 +202,8 @@ class MeilisearchExtension(BaseModel):
     ):
         """Prepare search request"""
 
-        sortable = cls.meili_config.settings.sortable_attributes
+        cfg = cls.get_config(type_=MeilisearchConfig)
+        sortable = cfg.settings.sortable_attributes
 
         if sortable is None:
             sortable = []

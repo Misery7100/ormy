@@ -20,20 +20,22 @@ class TestMongoBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         class Base1(MongoBase):
-            config = MongoConfig(
-                credentials=credentials,
-                collection="base1_mongo",
-                database="base1",
-                streaming=False,
-            )
+            configs = [
+                MongoConfig(
+                    credentials=credentials,
+                    collection="base1_mongo",
+                    database="base1",
+                    streaming=False,
+                ),
+            ]
 
-        class Base2(MongoBase):
-            config = MongoConfig(
-                credentials=credentials,
-                collection="base2_mongo",
-                database="base2",
-                streaming=False,
-            )
+        class Base2(Base1):
+            configs = [
+                MongoConfig(
+                    collection="base2_mongo",
+                    database="base2",
+                ),
+            ]
 
         cls.base1 = Base1
         cls.base2 = Base2
@@ -43,10 +45,12 @@ class TestMongoBase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         with cls.base1._client() as client:
-            client.drop_database(cls.base1.config.database)
+            cfg = cls.base1.get_config(type_=MongoConfig)
+            client.drop_database(cfg.database)
 
         with cls.base2._client() as client:
-            client.drop_database(cls.base1.config.database)
+            cfg = cls.base2.get_config(type_=MongoConfig)
+            client.drop_database(cfg.database)
 
     # ....................... #
 
@@ -64,20 +68,20 @@ class TestMongoBase(unittest.TestCase):
     # ....................... #
 
     def test_registry(self):
-        reg1 = MongoBase._registry.get(self.base1.config.database).get(
-            self.base1.config.collection
-        )
-        reg2 = MongoBase._registry.get(self.base2.config.database).get(
-            self.base2.config.collection
-        )
+        reg = MongoBase._registry[MongoConfig]
+        cfg1: MongoConfig = self.base1.get_config(type_=MongoConfig)
+        cfg2: MongoConfig = self.base2.get_config(type_=MongoConfig)
+
+        reg1 = reg[cfg1.database][cfg1.collection]
+        reg2 = reg[cfg2.database][cfg2.collection]
 
         self.assertTrue(
             reg1 is self.base1,
-            "Registry item should be subclass Base1",
+            "Registry item should be Base1",
         )
         self.assertTrue(
             reg2 is self.base2,
-            "Registry item should be subclass Base2",
+            "Registry item should be Base2",
         )
 
     # ....................... #
@@ -120,20 +124,22 @@ class TestMongoBaseAsync(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         class Base1(MongoBase):
-            config = MongoConfig(
-                credentials=credentials,
-                collection="base1_mongo_async",
-                database="base1_async",
-                streaming=False,
-            )
+            configs = [
+                MongoConfig(
+                    credentials=credentials,
+                    collection="base1_mongo_async",
+                    database="base1_async",
+                    streaming=False,
+                ),
+            ]
 
-        class Base2(MongoBase):
-            config = MongoConfig(
-                credentials=credentials,
-                collection="base2_mongo_async",
-                database="base2_async",
-                streaming=False,
-            )
+        class Base2(Base1):
+            configs = [
+                MongoConfig(
+                    collection="base2_mongo_async",
+                    database="base2_async",
+                ),
+            ]
 
         cls.base1 = Base1
         cls.base2 = Base2
@@ -143,10 +149,12 @@ class TestMongoBaseAsync(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def tearDownClass(cls):
         with cls.base1._client() as client:
-            client.drop_database(cls.base1.config.database)
+            cfg = cls.base1.get_config(type_=MongoConfig)
+            client.drop_database(cfg.database)
 
         with cls.base2._client() as client:
-            client.drop_database(cls.base1.config.database)
+            cfg = cls.base2.get_config(type_=MongoConfig)
+            client.drop_database(cfg.database)
 
     # ....................... #
 

@@ -17,7 +17,7 @@ try:
     app = firebase_admin.get_app()
 
 except ValueError:
-    app = firebase_admin.initialize_app(options={"projectId": "test"})
+    app = firebase_admin.initialize_app(options={"projectId": "test-project"})
 
 credentials = FirestoreCredentials(
     app=app,
@@ -30,17 +30,17 @@ class TestFirestoreBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         class Base1(FirestoreBase):
-            config = FirestoreConfig(
-                credentials=credentials,
-                collection="base1_firestore",
-            )
+            configs = [
+                FirestoreConfig(
+                    credentials=credentials,
+                    collection="base1_firestore",
+                ),
+            ]
 
-        class Base2(FirestoreBase):
-            config = FirestoreConfig(
-                credentials=credentials,
-                collection="base2_firestore",
-                database="second",
-            )
+        class Base2(Base1):
+            configs = [
+                FirestoreConfig(collection="base2_firestore"),
+            ]
 
         cls.base1 = Base1
         cls.base2 = Base2
@@ -66,6 +66,25 @@ class TestFirestoreBase(unittest.TestCase):
         self.assertTrue(
             issubclass(self.base2, FirestoreBase),
             "TestBase2 should be a subclass of FirestoreBase",
+        )
+
+    # ....................... #
+
+    def test_registry(self):
+        reg = FirestoreBase._registry[FirestoreConfig]
+        cfg1: FirestoreConfig = self.base1.get_config(type_=FirestoreConfig)
+        cfg2: FirestoreConfig = self.base2.get_config(type_=FirestoreConfig)
+
+        reg1 = reg[cfg1.database][cfg1.collection]
+        reg2 = reg[cfg2.database][cfg2.collection]
+
+        self.assertTrue(
+            reg1 is self.base1,
+            "Registry item should be Base1",
+        )
+        self.assertTrue(
+            reg2 is self.base2,
+            "Registry item should be Base2",
         )
 
     # ....................... #
@@ -108,17 +127,17 @@ class TestFirestoreBaseAsync(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         class Base1(FirestoreBase):
-            config = FirestoreConfig(
-                credentials=credentials,
-                collection="base1_firestore_async",
-            )
+            configs = [
+                FirestoreConfig(
+                    credentials=credentials,
+                    collection="base1_firestore_async",
+                ),
+            ]
 
-        class Base2(FirestoreBase):
-            config = FirestoreConfig(
-                credentials=credentials,
-                collection="base2_firestore_async",
-                database="second",
-            )
+        class Base2(Base1):
+            configs = [
+                FirestoreConfig(collection="base2_firestore_async"),
+            ]
 
         cls.base1 = Base1
         cls.base2 = Base2
