@@ -236,7 +236,8 @@ class MeilisearchExtension(AbstractABC):
         request: SearchRequest,
         page: int = 1,
         size: int = 20,
-        include: List[str] = ["*"],
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
     ) -> SearchResponse:
         """
         ...
@@ -244,7 +245,11 @@ class MeilisearchExtension(AbstractABC):
 
         ix = cls._meili_index()
         req = cls._meili_prepare_request(request, page, size)
-        res = ix.search(attributes_to_retrieve=include, **req)
+        res = ix.search(
+            attributes_to_retrieve=include,
+            attributes_to_crop=exclude,
+            **req,
+        )
 
         return cls._meili_prepare_response(res)
 
@@ -256,7 +261,8 @@ class MeilisearchExtension(AbstractABC):
         request: SearchRequest,
         page: int = 1,
         size: int = 20,
-        include: List[str] = ["*"],
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
     ) -> SearchResponse:
         """
         ...
@@ -264,7 +270,11 @@ class MeilisearchExtension(AbstractABC):
 
         ix = await cls._ameili_index()
         req = cls._meili_prepare_request(request, page, size)
-        res = await ix.search(attributes_to_retrieve=include, **req)
+        res = await ix.search(
+            attributes_to_retrieve=include,
+            attributes_to_crop=exclude,
+            **req,
+        )
 
         return cls._meili_prepare_response(res)
 
