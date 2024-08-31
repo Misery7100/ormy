@@ -243,11 +243,13 @@ class MeilisearchExtension(AbstractABC):
         ...
         """
 
+        if exclude is not None and include is None:
+            include = [x for x in cls.model_fields.keys() if x not in exclude]
+
         ix = cls._meili_index()
         req = cls._meili_prepare_request(request, page, size)
         res = ix.search(
             attributes_to_retrieve=include,
-            attributes_to_crop=exclude,
             **req,
         )
 
@@ -267,12 +269,13 @@ class MeilisearchExtension(AbstractABC):
         """
         ...
         """
+        if exclude is not None and include is None:
+            include = [x for x in cls.model_fields.keys() if x not in exclude]
 
         ix = await cls._ameili_index()
         req = cls._meili_prepare_request(request, page, size)
         res = await ix.search(
             attributes_to_retrieve=include,
-            attributes_to_crop=exclude,
             **req,
         )
 
