@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import List, Optional, Type, TypeVar
+from typing import Dict, List, Optional, Type, TypeVar
 
 from meilisearch_python_sdk import AsyncClient, AsyncIndex, Client, Index
 from meilisearch_python_sdk.errors import MeilisearchApiError
@@ -76,9 +76,21 @@ class MeilisearchExtension(AbstractABC):
         cls: Type[M],
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
+        extra: Optional[List[str]] = None,
+        extra_definitions: List[Dict[str, str]] = [],
     ) -> MeilisearchReference:
-        ie_schema = cls.model_flat_schema(include=include, exclude=exclude)
-        flat_schema = cls.model_flat_schema()
+        """
+        ...
+        """
+
+        table_schema = cls.model_flat_schema(
+            include=include,
+            exclude=exclude,
+            extra=extra,
+            extra_definitions=extra_definitions,
+        )
+
+        full_schema = cls.model_flat_schema()
         cfg = cls.get_config(type_=MeilisearchConfig)
 
         sort = []
@@ -86,7 +98,7 @@ class MeilisearchExtension(AbstractABC):
 
         if filterable := cfg.settings.filterable_attributes:
             for f in filterable:
-                if field := next((x for x in flat_schema if x["key"] == f), None):
+                if field := next((x for x in full_schema if x["key"] == f), None):
                     filter_model: Optional[Type[SomeFilter]] = None
 
                     match field["type"]:
@@ -112,11 +124,15 @@ class MeilisearchExtension(AbstractABC):
             default_sort = cfg.settings.default_sort
 
             for s in sortable:
-                if field := next((x for x in flat_schema if x["key"] == s), None):
+                if field := next((x for x in full_schema if x["key"] == s), None):
                     sort_key = SortField(**field, default=s == default_sort)
                     sort.append(sort_key)
 
-        return MeilisearchReference(table_schema=ie_schema, filters=filters, sort=sort)
+        return MeilisearchReference(
+            table_schema=table_schema,
+            filters=filters,
+            sort=sort,
+        )
 
     # ....................... #
 
