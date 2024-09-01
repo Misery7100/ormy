@@ -72,7 +72,12 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    def meili_model_reference(cls: Type[M]):
+    def meili_model_reference(
+        cls: Type[M],
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+    ) -> Reference:
+        ie_schema = cls.model_flat_schema(include=include, exclude=exclude)
         flat_schema = cls.model_flat_schema()
         cfg = cls.get_config(type_=MeilisearchConfig)
 
@@ -111,7 +116,7 @@ class MeilisearchExtension(AbstractABC):
                     sort_key = SortField(**field, default=s == default_sort)
                     sort.append(sort_key)
 
-        return Reference(table_schema=flat_schema, filters=filters, sort=sort)
+        return Reference(table_schema=ie_schema, filters=filters, sort=sort)
 
     # ....................... #
 
