@@ -198,7 +198,7 @@ class SearchResponse(BaseModel, Generic[T]):
 # ....................... #
 
 
-class Reference(BaseModel):
+class MeilisearchReference(BaseModel):
     table_schema: List[Dict[str, Any]] = Field(
         default_factory=list,
         title="Table Schema",

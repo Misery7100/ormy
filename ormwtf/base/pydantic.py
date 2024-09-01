@@ -138,6 +138,7 @@ class Base(BaseModel):
 
                 if ref := defs.get(ref_name, {}):
                     data = {"key": k, **ref}
+                    data["title"] = v.get("title", data.get("title", k.title()))
                     data = {
                         k: v
                         for k, v in data.items()

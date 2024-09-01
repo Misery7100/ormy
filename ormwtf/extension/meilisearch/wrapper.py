@@ -15,8 +15,8 @@ from .schema import (  # noqa: F401
     ArrayFilter,
     BooleanFilter,
     DatetimeFilter,
+    MeilisearchReference,
     NumericFilter,
-    Reference,
     SearchRequest,
     SearchResponse,
     SomeFilter,
@@ -76,7 +76,7 @@ class MeilisearchExtension(AbstractABC):
         cls: Type[M],
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-    ) -> Reference:
+    ) -> MeilisearchReference:
         ie_schema = cls.model_flat_schema(include=include, exclude=exclude)
         flat_schema = cls.model_flat_schema()
         cfg = cls.get_config(type_=MeilisearchConfig)
@@ -116,7 +116,7 @@ class MeilisearchExtension(AbstractABC):
                     sort_key = SortField(**field, default=s == default_sort)
                     sort.append(sort_key)
 
-        return Reference(table_schema=ie_schema, filters=filters, sort=sort)
+        return MeilisearchReference(table_schema=ie_schema, filters=filters, sort=sort)
 
     # ....................... #
 
