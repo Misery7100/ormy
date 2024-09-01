@@ -102,6 +102,8 @@ class Base(BaseModel):
         cls: Type[T],
         include: Optional[List[FieldName]] = None,
         exclude: Optional[List[FieldName]] = None,
+        extra: Optional[List[FieldName]] = None,
+        extra_definitions: List[Dict[str, str]] = [],
     ) -> List[Dict[str, Any]]:
         """
         ...
@@ -152,6 +154,10 @@ class Base(BaseModel):
                     k: v for k, v in data.items() if k in schema_keys and v is not None
                 }
                 flat_schema.append(data)
+
+        if extra and extra_definitions:
+            if exdef := next((x for x in extra_definitions if x["key"] == extra), None):
+                flat_schema.append(exdef)
 
         # follow up type definition from specific fields
         for field in flat_schema:
