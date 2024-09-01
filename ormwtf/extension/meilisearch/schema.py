@@ -14,7 +14,7 @@ from typing import (
 )
 
 from meilisearch_python_sdk.models.search import SearchResults
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from ormwtf.base.typing import FieldName
 
@@ -212,3 +212,14 @@ class MeilisearchReference(BaseModel):
         title="Filters",
         discriminator="type",
     )
+
+    # ....................... #
+
+    @model_validator(mode="after")
+    def filter_schema_fields(self):
+        self.table_schema = [
+            {k: v for k, v in field.items() if k in ["key", "title", "type"]}
+            for field in self.table_schema
+        ]
+
+        return self
