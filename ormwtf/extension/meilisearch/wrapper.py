@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import List, Optional, Type, TypeVar
 
 from meilisearch_python_sdk import AsyncClient, AsyncIndex, Client, Index
 from meilisearch_python_sdk.errors import MeilisearchApiError
@@ -11,7 +11,17 @@ from ormwtf.base.abc import AbstractABC
 from ormwtf.utils.logging import LogLevel, console_logger
 
 from .config import MeilisearchConfig
-from .schema import SearchRequest, SearchResponse
+from .schema import (  # noqa: F401
+    ArrayFilter,
+    BooleanFilter,
+    DatetimeFilter,
+    NumericFilter,
+    Reference,
+    SearchRequest,
+    SearchResponse,
+    SomeFilter,
+    SortField,
+)
 
 # ----------------------- #
 
@@ -62,6 +72,50 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
+    def meili_model_reference(cls: Type[M]):
+        flat_schema = cls.model_flat_schema()
+        cfg = cls.get_config(type_=MeilisearchConfig)
+
+        sort = []
+        filters = []
+
+        if filterable := cfg.settings.filterable_attributes:
+            for f in filterable:
+                if field := next((x for x in flat_schema if x["key"] == f), None):
+                    filter_model: Optional[Type[SomeFilter]] = None
+
+                    match field["type"]:
+                        case "boolean":
+                            filter_model = BooleanFilter
+
+                        case "numeric":
+                            filter_model = NumericFilter
+
+                        case "datetime":
+                            filter_model = DatetimeFilter
+
+                        case "array":
+                            filter_model = ArrayFilter
+
+                        case _:
+                            pass
+
+                    if filter_model:
+                        filters.append(filter_model.model_validate(field))
+
+        if sortable := cfg.settings.sortable_attributes:
+            default_sort = cfg.settings.default_sort
+
+            for s in sortable:
+                if field := next((x for x in flat_schema if x["key"] == s), None):
+                    sort_key = SortField(**field, default=s == default_sort)
+                    sort.append(sort_key)
+
+        return Reference(table_schema=flat_schema, filters=filters, sort=sort)
+
+    # ....................... #
+
+    @classmethod
     def _meili_safe_create_or_update(cls: Type[M]):
         cfg = cls.get_config(type_=MeilisearchConfig)
 
@@ -70,16 +124,22 @@ class MeilisearchExtension(AbstractABC):
                 try:
                     ix = c.get_index(cfg.index)
                     logger.debug(f"Index `{cfg.index}` already exists")
+                    settings = MeilisearchSettings.model_validate(
+                        cfg.settings.model_dump()
+                    )
 
-                    if ix.get_settings() != cfg.settings:
-                        cls._meili_update_index(cfg.settings)
+                    if ix.get_settings() != settings:
+                        cls._meili_update_index(settings)
                         logger.debug(f"Update of index `{cfg.index}` is started")
 
                 except MeilisearchApiError:
+                    settings = MeilisearchSettings.model_validate(
+                        cfg.settings.model_dump()
+                    )
                     c.create_index(
                         cfg.index,
                         primary_key=cfg.primary_key,
-                        settings=cfg.settings,
+                        settings=settings,
                     )
                     logger.debug(f"Index `{cfg.index}` is created")
 
@@ -204,6 +264,7 @@ class MeilisearchExtension(AbstractABC):
 
         cfg = cls.get_config(type_=MeilisearchConfig)
         sortable = cfg.settings.sortable_attributes
+        filterable = cfg.settings.filterable_attributes
 
         if sortable is None:
             sortable = []
@@ -214,12 +275,23 @@ class MeilisearchExtension(AbstractABC):
         else:
             sort = None
 
+        if request.filters and filterable:
+            filters = [
+                f.build()
+                for f in request.filters
+                if f.key in filterable or filterable == ["*"]
+            ]
+            filters = list(filter(None, filters))
+
+        else:
+            filters = []
+
         return {
             "query": request.query,
             "hits_per_page": size,
             "page": page,
             "sort": sort,
-            "filter": request.filters,
+            "filter": filters,
         }
 
     # ....................... #
@@ -245,6 +317,9 @@ class MeilisearchExtension(AbstractABC):
 
         if exclude is not None and include is None:
             include = [x for x in cls.model_fields.keys() if x not in exclude]
+
+        elif include is not None:
+            include = [x for x in include if x in cls.model_fields.keys()]
 
         ix = cls._meili_index()
         req = cls._meili_prepare_request(request, page, size)
@@ -272,6 +347,9 @@ class MeilisearchExtension(AbstractABC):
         if exclude is not None and include is None:
             include = [x for x in cls.model_fields.keys() if x not in exclude]
 
+        elif include is not None:
+            include = [x for x in include if x in cls.model_fields.keys()]
+
         ix = await cls._ameili_index()
         req = cls._meili_prepare_request(request, page, size)
         res = await ix.search(
@@ -284,15 +362,23 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    def meili_delete_documents(cls: Type[M], ids: List[str]):
+    def meili_delete_documents(cls: Type[M], ids: str | List[str]):
         ix = cls._meili_index()
+
+        if isinstance(ids, str):
+            ids = [ids]
+
         ix.delete_documents(ids)
 
     # ....................... #
 
     @classmethod
-    async def ameili_delete_documents(cls: Type[M], ids: List[str]):
+    async def ameili_delete_documents(cls: Type[M], ids: str | List[str]):
         ix = await cls._ameili_index()
+
+        if isinstance(ids, str):
+            ids = [ids]
+
         await ix.delete_documents(ids)
 
     # ....................... #
@@ -303,8 +389,8 @@ class MeilisearchExtension(AbstractABC):
         res: List[JsonDict] = []
         offset = 0
 
-        while docs := ix.get_documents(offset=offset, limit=1000):
-            res.extend(docs.results)
+        while docs := ix.get_documents(offset=offset, limit=1000).results:
+            res.extend(docs)
             offset += 1000
 
         return res
@@ -317,8 +403,8 @@ class MeilisearchExtension(AbstractABC):
         res: List[JsonDict] = []
         offset = 0
 
-        while docs := await ix.get_documents(offset=offset, limit=1000):
-            res.extend(docs.results)
+        while docs := (await ix.get_documents(offset=offset, limit=1000)).results:
+            res.extend(docs)
             offset += 1000
 
         return res
@@ -326,16 +412,26 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    def meili_update_documents(cls: Type[M], docs: List[Dict[str, Any]]):
+    def meili_update_documents(cls: Type[M], docs: M | List[M]):
         ix = cls._meili_index()
-        ix.update_documents(docs)
+
+        if not isinstance(docs, list):
+            docs = [docs]
+
+        doc_dicts = [d.model_dump() for d in docs]
+        ix.update_documents(doc_dicts)
 
     # ....................... #
 
     @classmethod
-    async def ameili_update_documents(cls: Type[M], docs: List[Dict[str, Any]]):
+    async def ameili_update_documents(cls: Type[M], docs: M | List[M]):
         ix = await cls._ameili_index()
-        await ix.update_documents(docs)
+
+        if not isinstance(docs, list):
+            docs = [docs]
+
+        doc_dicts = [d.model_dump() for d in docs]
+        await ix.update_documents(doc_dicts)
 
     # ....................... #
 

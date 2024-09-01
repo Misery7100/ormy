@@ -101,7 +101,7 @@ class TestMelisearchMongoMixed(unittest.TestCase):
 
     def test_search(self):
         test = self.base()
-        self.base.meili_update_documents([test.model_dump()])
+        self.base.meili_update_documents(test)
         res = self.base.meili_search(SearchRequest())
 
         self.assertIsNotNone(
@@ -156,7 +156,7 @@ class TestMelisearchMongoMixedAsync(unittest.IsolatedAsyncioTestCase):
 
     async def test_asearch(self):
         test = self.base()
-        await self.base.ameili_update_documents([test.model_dump()])
+        await self.base.ameili_update_documents(test)
         res = await self.base.ameili_search(SearchRequest())
 
         self.assertIsNotNone(

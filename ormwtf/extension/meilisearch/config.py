@@ -1,12 +1,29 @@
 from typing import Optional
 
-from meilisearch_python_sdk.models.settings import MeilisearchSettings
-from pydantic import SecretStr
+from meilisearch_python_sdk.models.settings import MeilisearchSettings as MsSettings
+from pydantic import SecretStr, model_validator
 
 from ormwtf.base.abc import ConfigABC
 from ormwtf.base.pydantic import Base
 
 # ----------------------- #
+
+
+class MeilisearchSettings(MsSettings):
+    default_sort: Optional[str] = None
+
+    # ....................... #
+
+    @model_validator(mode="after")
+    def validate_default_sort(self):
+        if self.default_sort and self.sortable_attributes:
+            if self.default_sort not in self.sortable_attributes:
+                raise ValueError(f"Invalid Default Sort Field: {self.default_sort}")
+
+        return self
+
+
+# ....................... #
 
 
 class MeilisearchCredentials(Base):
