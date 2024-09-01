@@ -156,8 +156,11 @@ class Base(BaseModel):
                 flat_schema.append(data)
 
         if extra and extra_definitions:
-            if exdef := next((x for x in extra_definitions if x["key"] == extra), None):
-                flat_schema.append(exdef)
+            for ef in extra:
+                if exdef := next(
+                    (x for x in extra_definitions if x["key"] == ef), None
+                ):
+                    flat_schema.append(exdef)
 
         # follow up type definition from specific fields
         for field in flat_schema:
