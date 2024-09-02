@@ -1,4 +1,3 @@
-from copy import deepcopy
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
@@ -330,7 +329,7 @@ class BaseReference(BaseModel):
 
     # ....................... #
 
-    def merge(self, other: Br):
+    def merge(self, *others: Br):
         """
         Merge two references
 
@@ -341,10 +340,9 @@ class BaseReference(BaseModel):
             BaseReference: The merged reference
         """
 
-        keys = [x["key"] for x in self.table_schema]
-        other_schema = deepcopy(other.table_schema)
-
-        update = [x for x in other_schema if x["key"] not in keys]
-        self.table_schema.extend(update)
+        for sch in others:
+            keys = [f["key"] for f in self.table_schema]
+            update = [x for x in sch.table_schema if x["key"] not in keys]
+            self.table_schema.extend(update)
 
         return self
