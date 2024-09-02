@@ -1,6 +1,6 @@
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 # ----------------------- #
 
@@ -334,10 +334,10 @@ class BaseReference(BaseModel):
         Merge two references
 
         Args:
-            other (BaseReference): The other reference to merge
+            others (BaseReference): The other references
 
         Returns:
-            BaseReference: The merged reference
+            schema (BaseReference): The merged reference
         """
 
         for sch in others:
@@ -346,3 +346,15 @@ class BaseReference(BaseModel):
             self.table_schema.extend(update)
 
         return self
+
+    # ....................... #
+
+    @model_validator(mode="before")
+    @classmethod
+    def filter_schema_fields(cls, v):
+        v["table_schema"] = [
+            {k: v for k, v in field.items() if k in ["key", "title", "type"]}
+            for field in v["table_schema"]
+        ]
+
+        return v
