@@ -210,7 +210,7 @@ class Base(BaseModel):
 
         if prefix:
             schema = [
-                {"key": f"{prefix}_{s['key']}", **s}
+                {**s, "key": f"{prefix}_{s['key']}"}
                 for s in schema
                 if s["key"] not in (extra or [])
             ]
