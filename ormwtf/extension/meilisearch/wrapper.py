@@ -80,7 +80,16 @@ class MeilisearchExtension(AbstractABC):
         extra_definitions: List[Dict[str, str]] = [],
     ) -> MeilisearchReference:
         """
-        ...
+        Generate a Meilisearch reference for the model schema with filters and sort fields
+
+        Args:
+            include (List[str], optional): The fields to include in the schema.
+            exclude (List[str], optional): The fields to exclude from the schema.
+            extra (List[str], optional): Extra fields to include in the schema.
+            extra_definitions (List[Dict[str, str]], optional): Extra definitions for the schema.
+
+        Returns:
+            schema (MeilisearchReference): The Meilisearch reference for the model schema
         """
 
         table_schema = cls.model_flat_schema(
@@ -141,6 +150,12 @@ class MeilisearchExtension(AbstractABC):
 
     @classmethod
     def _meili_safe_create_or_update(cls: Type[M]):
+        """
+        Safely create or update the Meilisearch index.
+        If the index does not exist, it will be created.
+        If the index exists and settings were updated, index will be updated.
+        """
+
         cfg = cls.get_config(type_=MeilisearchConfig)
 
         if not cfg.is_default():

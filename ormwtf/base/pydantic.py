@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
@@ -184,6 +185,41 @@ class Base(BaseModel):
 
     # ....................... #
 
+    @classmethod
+    def model_reference(
+        cls: Type[T],
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        extra: Optional[List[str]] = None,
+        extra_definitions: List[Dict[str, str]] = [],
+        prefix: str = "",
+    ) -> "BaseReference":
+        """
+        Generate a reference schema for the model data structure with extra definitions
+
+        Args:
+            include (List[str], optional): The fields to include in the schema. Defaults to None.
+            exclude (List[str], optional): The fields to exclude from the schema. Defaults to None.
+            extra (List[str], optional): The extra fields to include in the schema. Defaults to None.
+            extra_definitions (List[Dict[str, str]], optional): The extra definitions to include in the schema. Defaults to [].
+
+        Returns:
+            schema (BaseReference): The reference schema for the model
+        """
+
+        schema = cls.model_flat_schema(include, exclude, extra, extra_definitions)
+
+        if prefix:
+            schema = [
+                {"key": f"{prefix}_{s['key']}", **s}
+                for s in schema
+                if s["key"] not in (extra or [])
+            ]
+
+        return BaseReference(table_schema=schema)
+
+    # ....................... #
+
     @staticmethod
     def _handle_secret(x: Any) -> Any:
         """
@@ -283,9 +319,32 @@ class Base(BaseModel):
 
 # ....................... #
 
+Br = TypeVar("Br", bound="BaseReference")
+
 
 class BaseReference(BaseModel):
     table_schema: List[Dict[str, str]] = Field(
         default_factory=list,
         title="Table Schema",
     )
+
+    # ....................... #
+
+    def merge(self, other: Br):
+        """
+        Merge two references
+
+        Args:
+            other (BaseReference): The other reference to merge
+
+        Returns:
+            BaseReference: The merged reference
+        """
+
+        keys = [x["key"] for x in self.table_schema]
+        other_schema = deepcopy(other.table_schema)
+
+        update = [x for x in other_schema if x["key"] not in keys]
+        self.table_schema.extend(update)
+
+        return self
