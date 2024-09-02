@@ -16,7 +16,7 @@ from .schema import (  # noqa: F401
     BooleanFilter,
     DatetimeFilter,
     MeilisearchReference,
-    NumericFilter,
+    NumberFilter,
     SearchRequest,
     SearchResponse,
     SomeFilter,
@@ -105,8 +105,11 @@ class MeilisearchExtension(AbstractABC):
                         case "boolean":
                             filter_model = BooleanFilter
 
-                        case "numeric":
-                            filter_model = NumericFilter
+                        case "number":
+                            filter_model = NumberFilter
+
+                        case "integer":
+                            filter_model = NumberFilter
 
                         case "datetime":
                             filter_model = DatetimeFilter

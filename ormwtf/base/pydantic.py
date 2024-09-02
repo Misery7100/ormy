@@ -1,29 +1,25 @@
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
-from pydantic import BaseModel, ConfigDict, SecretStr
-
-from .typing import FieldDataType, FieldName, FieldSchema
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 # ----------------------- #
 
 T = TypeVar("T", bound="Base")
 
-# ....................... #
-
 
 class Base(BaseModel):
     """
     Base class for all Pydantic models within the package
-
-    TODO: write about the `specific_fields` attribute
     """
+
+    # TODO: write about the `specific_fields` attribute
 
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,
     )
 
-    specific_fields: ClassVar[Dict[FieldDataType, List[FieldName]]] = {
+    specific_fields: ClassVar[Dict[str, List[str]]] = {
         "datetime": [
             "created_at",
             "last_update_at",
@@ -34,50 +30,60 @@ class Base(BaseModel):
 
     # ....................... #
 
-    @classmethod
-    def model_simple_schema(
-        cls: Type[T],
-        include: Optional[List[FieldName]] = None,
-        exclude: Optional[List[FieldName]] = None,
-    ) -> List[FieldSchema]:
-        """
-        Generate a simple schema for the model
+    # @classmethod
+    # def model_simple_schema(
+    #     cls: Type[T],
+    #     include: Optional[List[str]] = None,
+    #     exclude: Optional[List[str]] = None,
+    # ) -> List[str]:
+    #     """
+    #     Generate a simple schema for the model
 
-        Args:
-            include (List[FieldName], optional): The fields to include in the schema.
-            exclude (List[FieldName], optional): The fields to exclude from the schema.
+    #     Args:
+    #         include (List[str], optional): The fields to include in the schema.
+    #         exclude (List[str], optional): The fields to exclude from the schema.
 
-        Returns:
-            schema (List[FieldSchema]): The simple schema for the model
-        """
+    #     Returns:
+    #         schema (List[str]): The simple schema for the model
+    #     """
 
-        schema = cls.model_json_schema()
+    #     schema = cls.model_json_schema()
 
-        if include is None:
-            keys: List[FieldName] = [k for k, _ in schema["properties"].items()]
+    #     if include is None:
+    #         keys: List[str] = [k for k, _ in schema["properties"].items()]
 
-        else:
-            keys = include
+    #     else:
+    #         keys = include
 
-        if exclude:
-            keys = [k for k in keys if k not in exclude]
+    #     if exclude:
+    #         keys = [k for k in keys if k not in exclude]
 
-        simple_schema = [
-            {
-                "key": k,
-                "title": v.get("title", k.title()),
-                "type": cls._define_dtype(k, v.get("type", None)),
-            }
-            for k, v in schema["properties"].items()
-            if k in keys
-        ]
+    #     simple_schema = [
+    #         {
+    #             "key": k,
+    #             "title": v.get("title", k.title()),
+    #             "type": cls._define_dtype(k, v.get("type", None)),
+    #         }
+    #         for k, v in schema["properties"].items()
+    #         if k in keys
+    #     ]
 
-        return simple_schema
+    #     return simple_schema
 
     # ....................... #
 
     @staticmethod
-    def parse_json_schema_defs(json_schema: dict):
+    def _parse_json_schema_defs(json_schema: dict):
+        """
+        Parse the definitions from a JSON schema
+
+        Args:
+            json_schema (dict): The JSON schema to parse
+
+        Returns:
+            extracted_defs (Dict[str, dict]): The extracted definitions
+        """
+
         defs = json_schema.get("$defs", {})
         extracted_defs: Dict[str, dict] = {}
 
@@ -91,27 +97,30 @@ class Base(BaseModel):
 
     # ....................... #
 
-    # @staticmethod
-    # def _field_helper():
-    #     pass
-
-    # ....................... #
-
     @classmethod
     def model_flat_schema(
         cls: Type[T],
-        include: Optional[List[FieldName]] = None,
-        exclude: Optional[List[FieldName]] = None,
-        extra: Optional[List[FieldName]] = None,
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        extra: Optional[List[str]] = None,
         extra_definitions: List[Dict[str, str]] = [],
     ) -> List[Dict[str, Any]]:
         """
-        ...
+        Generate a flat schema for the model data structure with extra definitions
+
+        Args:
+            include (List[str], optional): The fields to include in the schema. Defaults to None.
+            exclude (List[str], optional): The fields to exclude from the schema. Defaults to None.
+            extra (List[str], optional): The extra fields to include in the schema. Defaults to None.
+            extra_definitions (List[Dict[str, str]], optional): The extra definitions to include in the schema. Defaults to [].
+
+        Returns:
+            schema (List[Dict[str, Any]]): The flat schema for the model
         """
 
         schema = cls.model_json_schema()
-        defs = cls.parse_json_schema_defs(schema)
-        keys: List[FieldName] = [k for k, _ in schema["properties"].items()]
+        defs = cls._parse_json_schema_defs(schema)
+        keys: List[str] = [k for k, _ in schema["properties"].items()]
         flat_schema: List[Dict[str, Any]] = []
         schema_keys = ["key", "title", "type", "value"]
 
@@ -127,17 +136,20 @@ class Base(BaseModel):
 
             type_ = v.get("type", "string")
 
+            # skip array of references
             if type_ == "array":
                 if items := v.get("items", {}):
                     if "$ref" in items.keys():
                         continue
 
+            # check for reference
             if refs := v.get("allOf", []):
                 if len(refs) > 1:
                     continue
 
                 ref_name = refs[0]["$ref"].split("/")[-1]
 
+                # parse definitions, include only first level references
                 if ref := defs.get(ref_name, {}):
                     data = {"key": k, **ref}
                     data["title"] = v.get("title", data.get("title", k.title()))
@@ -148,6 +160,7 @@ class Base(BaseModel):
                     }
                     flat_schema.append(data)
 
+            # include not referenced fields
             else:
                 data = {"key": k, **v}
                 data = {
@@ -155,6 +168,7 @@ class Base(BaseModel):
                 }
                 flat_schema.append(data)
 
+        # include extra based on extra definitions list
         if extra and extra_definitions:
             for ef in extra:
                 if exdef := next(
@@ -172,6 +186,16 @@ class Base(BaseModel):
 
     @staticmethod
     def _handle_secret(x: Any) -> Any:
+        """
+        Handle secret values recursively
+
+        Args:
+            x (Any): The value to handle
+
+        Returns:
+            Any: The handled value
+        """
+
         if isinstance(x, SecretStr):
             return x.get_secret_value()
 
@@ -208,6 +232,16 @@ class Base(BaseModel):
         cls: Type[T],
         data: Dict[str, Any] | str | T,
     ) -> T:
+        """
+        Validate the model data in a universal way
+
+        Args:
+            data (Dict[str, Any] | str | Base): The data to validate
+
+        Returns:
+            model (Base): The validated
+        """
+
         if isinstance(data, str):
             return cls.model_validate_json(data)
 
@@ -222,18 +256,18 @@ class Base(BaseModel):
     @classmethod
     def _define_dtype(
         cls: Type[T],
-        key: FieldName,
-        dtype: Optional[FieldDataType] = None,
-    ) -> FieldDataType:
+        key: str,
+        dtype: Optional[str] = None,
+    ) -> str:
         """
         Define the data type of a given key
 
         Args:
-            key (FieldName): The key to define the type for
-            dtype (FieldDataType, optional): The dtype corresponding to the key. Defaults to None.
+            key (str): The key to define the type for
+            dtype (str, optional): The dtype corresponding to the key. Defaults to None.
 
         Returns:
-            type (FieldDataType): The data type of the given key
+            type (str): The data type of the given key
         """
 
         for k, v in cls.specific_fields.items():
@@ -246,4 +280,12 @@ class Base(BaseModel):
         else:
             return "string"
 
-    # ....................... #
+
+# ....................... #
+
+
+class BaseReference(BaseModel):
+    table_schema: List[Dict[str, str]] = Field(
+        default_factory=list,
+        title="Table Schema",
+    )

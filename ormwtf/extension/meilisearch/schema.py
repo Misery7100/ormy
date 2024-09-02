@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from enum import StrEnum
 from typing import (
     Any,
-    Dict,
     Generic,
     List,
     Literal,
@@ -16,12 +15,20 @@ from typing import (
 from meilisearch_python_sdk.models.search import SearchResults
 from pydantic import BaseModel, Field, model_validator
 
-from ormwtf.base.typing import FieldName
+from ormwtf.base.pydantic import BaseReference
 
 # ----------------------- #
 
 
 class SortOrder(StrEnum):
+    """
+    Sort Order Enum
+
+    Attributes:
+        asc (str): Ascending Order
+        desc (str): Descending Order
+    """
+
     asc = "asc"
     desc = "desc"
 
@@ -30,7 +37,16 @@ class SortOrder(StrEnum):
 
 
 class SortField(BaseModel):
-    key: FieldName
+    """
+    Sort field model
+
+    Attributes:
+        key (str): Key of the field
+        title (str): The field title
+        default (bool): Whether the Field is the default sort field
+    """
+
+    key: str
     title: str
     default: bool = False
 
@@ -41,7 +57,17 @@ F = TypeVar("F", bound="FilterABC")
 
 
 class FilterABC(ABC, BaseModel):
-    key: FieldName
+    """
+    Abstract Base Class for Search Filters
+
+    Attributes:
+        key (str): Key of the filter
+        title (str): The filter title
+        value (Any, optional): The filter value
+        type (str): The filter type
+    """
+
+    key: str
     title: str
     value: Optional[Any] = None
     type: str = "abc"
@@ -56,6 +82,15 @@ class FilterABC(ABC, BaseModel):
 
 
 class BooleanFilter(FilterABC):
+    """
+    Boolean Filter Model
+
+    Attributes:
+        key (str): Key of the filter
+        title (str): The filter title
+        value (bool): The filter value
+    """
+
     value: Optional[bool] = None
     type: Literal["boolean"] = "boolean"
 
@@ -71,9 +106,18 @@ class BooleanFilter(FilterABC):
 # ....................... #
 
 
-class NumericFilter(FilterABC):
+class NumberFilter(FilterABC):
+    """
+    Number Filter Model
+
+    Attributes:
+        key (str): Key of the filter
+        title (str): The filter title
+        value (Tuple[float, float]): The filter value
+    """
+
     value: Tuple[Optional[float], Optional[float]] = (None, None)
-    type: Literal["numeric"] = "numeric"
+    type: Literal["number"] = "number"
 
     # ....................... #
 
@@ -96,6 +140,15 @@ class NumericFilter(FilterABC):
 
 
 class DatetimeFilter(FilterABC):
+    """
+    Datetime Filter Model
+
+    Attributes:
+        key (str): Key of the filter
+        title (str): The filter title
+        value (Tuple[int, int]): The filter value
+    """
+
     value: Tuple[Optional[int], Optional[int]] = (None, None)
     type: Literal["datetime"] = "datetime"
 
@@ -120,6 +173,15 @@ class DatetimeFilter(FilterABC):
 
 
 class ArrayFilter(FilterABC):
+    """
+    Array Filter Model
+
+    Attributes:
+        key (str): Key of the filter
+        title (str): The filter title
+        value (List[Any]): The filter value
+    """
+
     value: List[Any] = []
     type: Literal["array"] = "array"
 
@@ -134,7 +196,7 @@ class ArrayFilter(FilterABC):
 
 # ....................... #
 
-SomeFilter = Union[BooleanFilter, NumericFilter, DatetimeFilter, ArrayFilter]
+SomeFilter = Union[BooleanFilter, NumberFilter, DatetimeFilter, ArrayFilter]
 
 # ----------------------- #
 
@@ -198,11 +260,7 @@ class SearchResponse(BaseModel, Generic[T]):
 # ....................... #
 
 
-class MeilisearchReference(BaseModel):
-    table_schema: List[Dict[str, Any]] = Field(
-        default_factory=list,
-        title="Table Schema",
-    )
+class MeilisearchReference(BaseReference):
     sort: List[SortField] = Field(
         default_factory=list,
         title="Sort Fields",

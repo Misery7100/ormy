@@ -3,8 +3,8 @@ from .schema import (
     ArrayFilter,
     BooleanFilter,
     DatetimeFilter,
-    NumericFilter,
     MeilisearchReference,
+    NumberFilter,
     SearchRequest,
     SearchResponse,
     SomeFilter,
@@ -27,5 +27,5 @@ __all__ = [
     "ArrayFilter",
     "BooleanFilter",
     "DatetimeFilter",
-    "NumericFilter",
+    "NumberFilter",
 ]

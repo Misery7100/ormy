@@ -17,8 +17,6 @@ C = TypeVar("C", bound="ConfigABC")
 
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
-
 
 class DocumentABC(AbstractABC):
     """

@@ -31,17 +31,17 @@ class TestPydantic(unittest.TestCase):
 
     # ....................... #
 
-    def test_model_simple_schema(self):
+    def test_model_flat_schema(self):
         self.assertFalse(
-            self.base.model_simple_schema(),
+            self.base.model_flat_schema(),
             "Model simple schema should return False",
         )
         self.assertFalse(
-            self.base.model_simple_schema(exclude=["a", "b", "c"]),
+            self.base.model_flat_schema(exclude=["a", "b", "c"]),
             "Model simple schema should return False",
         )
         self.assertFalse(
-            self.base.model_simple_schema(include=["a", "b", "c"]),
+            self.base.model_flat_schema(include=["a", "b", "c"]),
             "Model simple schema should return False",
         )
 

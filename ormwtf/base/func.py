@@ -1,12 +1,8 @@
 import hashlib
-import inspect
 import json
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Optional
 from uuid import UUID, uuid4
-
-from pydantic import BaseModel, ConfigDict
-from pydantic.fields import FieldInfo
 
 # ----------------------- #
 
@@ -113,52 +109,3 @@ def hex_uuid4(val: Optional[str] = None) -> str:
     """
 
     return hex_uuid4_from_string(val) if val else uuid4().hex
-
-
-# ....................... #
-# Semi-public methods
-
-
-def _merge_config_with_parent(
-    cls,
-    config_key: str = "config",
-    config_type: Type[BaseModel] = BaseModel,
-    inspect_ignored: bool = True,
-    ignore_defaults: List[str] = ["credentials", "auth"],
-):
-    parents = inspect.getmro(cls)[1:]
-    nearest = None
-
-    for p in parents:
-        cfg = getattr(p, config_key, None)
-
-        if inspect_ignored:
-            mcfg = cast(ConfigDict, getattr(p, "model_config", {}))  # type: ignore
-            ignored_types = mcfg.get("ignored_types", tuple())
-
-        else:
-            ignored_types = (type(cfg),)
-
-        if type(cfg) in ignored_types and type(cfg) is config_type:
-            nearest = p
-            break
-
-    if (nearest is not None) and (
-        (nearest_config := getattr(nearest, config_key, None)) is not None
-    ):
-        cls_config = getattr(cls, config_key)
-        new_config: Dict[str, Any] = {}
-
-        for x, info in config_type.model_fields.items():
-            info = cast(FieldInfo, info)
-            new_value = getattr(cls_config, x, None)
-            old_value = getattr(nearest_config, x, None)
-            default_value = info.default
-
-            if new_value == default_value and x in ignore_defaults:
-                new_config[x] = old_value
-
-            else:
-                new_config[x] = new_value
-
-        setattr(cls, config_key, type(cls_config)(**new_config))

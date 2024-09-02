@@ -9,8 +9,6 @@ from ormwtf.base.pydantic import Base
 
 C = TypeVar("C", bound="ConfigABC")
 
-# ....................... #
-
 
 class ConfigABC(Base, ABC):
     """
