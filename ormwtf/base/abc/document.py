@@ -71,21 +71,17 @@ class DocumentABC(AbstractABC):
 
     # ....................... #
 
-    @classmethod
     def update(
-        cls: Type[D],
-        id_: DocumentID,
+        self: D,
         data: AbstractData,
         *args,
         ignore_none: bool = True,
         autosave: bool = True,
         **kwargs,
-    ) -> Optional[D]:
+    ) -> D:
         """
         ...
         """
-
-        instance = cls.find(id_)
 
         if isinstance(data, dict):
             keys = data.keys()
@@ -97,18 +93,50 @@ class DocumentABC(AbstractABC):
         for k in keys:
             val = data.get(k, None)
 
-            if not (val is None and ignore_none) and hasattr(instance, k):
-                setattr(instance, k, val)
+            if not (val is None and ignore_none) and hasattr(self, k):
+                setattr(self, k, val)
 
-        if autosave and instance is not None:
-            return instance.save()
+        if autosave:
+            return self.save()
 
-        return instance
+        return self
+
+    # ....................... #
+
+    async def aupdate(
+        self: D,
+        data: AbstractData,
+        *args,
+        ignore_none: bool = True,
+        autosave: bool = True,
+        **kwargs,
+    ) -> D:
+        """
+        ...
+        """
+
+        if isinstance(data, dict):
+            keys = data.keys()
+
+        else:
+            keys = data.model_fields.keys()
+            data = data.model_dump()
+
+        for k in keys:
+            val = data.get(k, None)
+
+            if not (val is None and ignore_none) and hasattr(self, k):
+                setattr(self, k, val)
+
+        if autosave:
+            return await self.asave()
+
+        return self
 
     # ....................... #
 
     @classmethod
-    async def aupdate(
+    def update_by_id(
         cls: Type[D],
         id_: DocumentID,
         data: AbstractData,
@@ -117,26 +145,42 @@ class DocumentABC(AbstractABC):
         autosave: bool = True,
         **kwargs,
     ) -> Optional[D]:
-        """
-        ...
-        """
+
+        instance = cls.find(id_)
+
+        if instance:
+            return instance.update(
+                data,
+                *args,
+                ignore_none=ignore_none,
+                autosave=autosave,
+                **kwargs,
+            )
+
+        return None
+
+    # ....................... #
+
+    @classmethod
+    async def aupdate_by_id(
+        cls: Type[D],
+        id_: DocumentID,
+        data: AbstractData,
+        *args,
+        ignore_none: bool = True,
+        autosave: bool = True,
+        **kwargs,
+    ) -> Optional[D]:
 
         instance = await cls.afind(id_)
 
-        if isinstance(data, dict):
-            keys = data.keys()
+        if instance:
+            return await instance.aupdate(
+                data,
+                *args,
+                ignore_none=ignore_none,
+                autosave=autosave,
+                **kwargs,
+            )
 
-        else:
-            keys = data.model_fields.keys()
-            data = data.model_dump()
-
-        for k in keys:
-            val = data.get(k, None)
-
-            if not (val is None and ignore_none) and hasattr(instance, k):
-                setattr(instance, k, val)
-
-        if autosave and instance is not None:
-            return await instance.asave()
-
-        return instance
+        return None
