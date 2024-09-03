@@ -1,26 +1,17 @@
-from typing import ClassVar, Type, TypeVar, get_args
+from typing import Any, ClassVar, Dict, List, Type, TypeVar, get_args
 
 from infi.clickhouse_orm import engines, fields, models  # type: ignore[import-untyped]
-from pydantic._internal._model_construction import ModelMetaclass
 
 from ormwtf.base.abc import AbstractABC
 from ormwtf.utils.logging import LogLevel, console_logger
 
 from .config import ClickHouseConfig
-from .database import AsyncDatabase
+from .func import get_clickhouse_db
 
 # ----------------------- #
 
 Ch = TypeVar("Ch", bound="ClickHouseBase")
 logger = console_logger(__name__, level=LogLevel.INFO)
-
-# ....................... #
-
-
-class ClickHouseBaseMetaclass(ModelMetaclass):
-    def __new__(cls, name, bases, attrs):
-        pass
-
 
 # ....................... #
 
@@ -38,8 +29,8 @@ class ClickHouseBase(AbstractABC):
     def __init_subclass__(cls: type[Ch], **kwargs):
         super().__init_subclass__(**kwargs)
 
-        cls._clickhouse_register_subclass()
-        cls._construct_model()
+        cls.__clickhouse_register_subclass()
+        cls.__construct_model()
         cls._merge_registry()
 
         ClickHouseBase._registry = cls._merge_registry_helper(
@@ -52,7 +43,7 @@ class ClickHouseBase(AbstractABC):
     # ....................... #
 
     @classmethod
-    def _construct_model(cls: Type[Ch]):
+    def __construct_model(cls: Type[Ch]):
         orm_fields = {}
         engine = None
 
@@ -73,11 +64,16 @@ class ClickHouseBase(AbstractABC):
         orm_attrs = {"engine": engine, **orm_fields}
 
         cls._model = type(f"{cls.__name__}_infi", (models.Model,), orm_attrs)
+        setattr(
+            cls._model,
+            "table_name",
+            lambda: cls.get_config(type_=ClickHouseConfig).table,
+        )
 
     # ....................... #
 
     @classmethod
-    def _clickhouse_register_subclass(cls: Type[Ch]):
+    def __clickhouse_register_subclass(cls: Type[Ch]):
         """Register subclass in the registry"""
 
         cfg = cls.get_config(type_=ClickHouseConfig)
@@ -117,10 +113,58 @@ class ClickHouseBase(AbstractABC):
             else None
         )
 
-        return AsyncDatabase(
+        return get_clickhouse_db(
             db_name=cfg.database,
-            verify_ssl_cert=False,  # TODO: check
             username=username,
             password=password,
             db_url=cfg.db_url(),
         )
+
+    # ....................... #
+
+    @classmethod
+    def objects(cls: Type[Ch]) -> models.QuerySet:
+        return cls._model.objects_in(cls._get_adatabase())
+
+    # ....................... #
+
+    @classmethod
+    def evaluate(
+        cls: Type[Ch],
+        qs: models.QuerySet,
+        raw: bool = False,
+    ) -> List[Ch | Dict[str, Any]]:
+        if raw:
+            return [r.to_dict() for r in qs]  # type: ignore
+
+        return [cls.model_validate_universal(r.to_dict()) for r in qs]  # type: ignore
+
+    # ....................... #
+
+    @classmethod
+    def insert(
+        cls: Type[Ch],
+        records: Ch | List[Ch],
+        batch_size: int = 1000,
+    ) -> None:
+        if not isinstance(records, list):
+            records = [records]
+
+        model_records = [cls._model(**record.model_dump()) for record in records]
+        return cls._get_adatabase().insert(model_records, batch_size=batch_size)
+
+    # ....................... #
+
+    @classmethod
+    async def ainsert(
+        cls: Type[Ch],
+        records: Ch | List[Ch],
+        batch_size: int = 1000,
+    ) -> None:
+        if not isinstance(records, list):
+            records = [records]
+
+        model_records = [cls._model(**record.model_dump()) for record in records]
+        return await cls._get_adatabase().ainsert(model_records, batch_size=batch_size)
+
+    # ....................... #
