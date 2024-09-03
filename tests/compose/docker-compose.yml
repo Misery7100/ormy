@@ -4,8 +4,8 @@ x-base-variables: &base-variables
     MEILI_DB_PATH: /data.ms
     MONGO_INITDB_ROOT_USERNAME: user
     MONGO_INITDB_ROOT_PASSWORD: password
-    # CLICKHOUSE_USER: user
-    # CLICKHOUSE_PASSWORD: password
+    CLICKHOUSE_USER: user
+    CLICKHOUSE_PASSWORD: password
     # RABBITMQ_DEFAULT_USER: user
     # RABBITMQ_DEFAULT_PASS: password
 
@@ -68,16 +68,16 @@ services:
       - msdata:/data.ms
     restart: unless-stopped
 
-  # clickhouse:
-  #   <<: *base-variables
-  #   image: clickhouse/clickhouse-server:23.8-alpine
-  #   ports:
-  #     - "8223:8123"
-  #     - "9100:9000"
-  #     - "9109:9009"
-  #   volumes:
-  #     - clickdata:/var/lib/clickhouse
-  #   restart: unless-stopped
+  clickhouse:
+    <<: *base-variables
+    image: clickhouse/clickhouse-server:24.6-alpine
+    ports:
+      - "8223:8123"
+      - "9100:9000"
+      - "9109:9009"
+    volumes:
+      - clickdata:/var/lib/clickhouse
+    restart: unless-stopped
 
   redis:
     <<: *base-variables
@@ -102,7 +102,7 @@ services:
 volumes:
   mongodata:
   mongoconfig:
-  # clickdata:
+  clickdata:
   redisdata:
   msdata:
   # rabbitmqdata:

@@ -19,26 +19,30 @@ class ConfigABC(Base, ABC):
 
     # ....................... #
 
-    def _default_helper(self: C, field: str) -> bool:
+    def _default_helper(self: C, *fields: str) -> bool:
         """
         Helper function to check if a field has default value
         """
 
-        if field not in self.model_fields.keys():
-            raise ValueError(f"Field {field} not found in model")
+        for field in fields:
+            if field not in self.model_fields.keys():
+                raise ValueError(f"Field {field} not found in model")
 
-        required = getattr(
-            self.model_fields[field],
-            "required",
-            False,
-        )
-        default = getattr(
-            self.model_fields[field],
-            "default",
-            None,
-        )
+            required = getattr(
+                self.model_fields[field],
+                "required",
+                False,
+            )
+            default = getattr(
+                self.model_fields[field],
+                "default",
+                None,
+            )
 
-        return not required and (getattr(self, field) == default)
+            if required or (getattr(self, field) != default):
+                return False
+
+        return True
 
     # ....................... #
 
