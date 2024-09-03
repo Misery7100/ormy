@@ -74,7 +74,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         cfg = cls.get_config(type_=MongoConfig)
         is_streaming = cfg.streaming
 
-        if is_streaming:
+        if is_streaming and not cfg.is_default():
             database = cls._get_database()
             collection = cls._get_collection()
 
