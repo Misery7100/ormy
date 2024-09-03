@@ -10,6 +10,7 @@ credentials = MongoCredentials(
     port=27117,
     username="user",
     password="password",
+    replicaset="rs0",
     directConnection=True,
 )
 
