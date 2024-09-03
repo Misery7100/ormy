@@ -32,7 +32,6 @@ C = TypeVar("C", bound="ConfigABC")
 class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
     configs = [FirestoreConfig()]
-    _config_type = FirestoreConfig
     _registry = {FirestoreConfig: {}}
 
     # ....................... #

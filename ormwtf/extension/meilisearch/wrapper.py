@@ -34,7 +34,6 @@ logger = console_logger(__name__, level=LogLevel.INFO)
 class MeilisearchExtension(AbstractABC):
 
     configs = [MeilisearchConfig()]
-    _config_type = MeilisearchConfig
     _registry = {MeilisearchConfig: {}}
 
     # ....................... #

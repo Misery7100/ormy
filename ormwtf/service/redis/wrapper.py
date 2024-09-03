@@ -24,7 +24,6 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     """Base ORM document model class for Redis"""
 
     configs = [RedisConfig()]
-    _config_type = RedisConfig
     _registry = {RedisConfig: {}}
 
     # ....................... #

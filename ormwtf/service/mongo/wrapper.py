@@ -29,7 +29,6 @@ logger = console_logger(__name__, level=LogLevel.INFO)
 class MongoBase(DocumentABC):  # TODO: add docstrings
 
     configs = [MongoConfig()]
-    _config_type = MongoConfig
     _registry = {MongoConfig: {}}
 
     # ....................... #

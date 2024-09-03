@@ -22,8 +22,6 @@ class AbstractABC(Base, ABC):
 
     configs: ClassVar[List[Any]] = list()
     include_to_registry: ClassVar[bool] = True
-
-    _config_type: ClassVar[Any] = ConfigABC
     _registry: ClassVar[Dict[Any, dict]] = {}
 
     # ....................... #
@@ -52,8 +50,6 @@ class AbstractABC(Base, ABC):
 
         cls._update_ignored_types()
         cls._merge_configs()
-        # cls._register_subclass()
-        # cls._merge_registry()
 
     # ....................... #
 
@@ -65,8 +61,9 @@ class AbstractABC(Base, ABC):
 
         ignored_types = cls.model_config.get("ignored_types", tuple())
 
-        if cls._config_type not in ignored_types:
-            ignored_types += (cls._config_type,)
+        for x in cls.configs:
+            if (tx := type(x)) not in ignored_types:
+                ignored_types += (tx,)
 
         cls.model_config["ignored_types"] = ignored_types
 
@@ -84,8 +81,8 @@ class AbstractABC(Base, ABC):
         cfgs = []
 
         for p in parents:
-            if getattr(p, "_config_type", None) is not None:
-                cfgs = p.configs  # type: ignore
+            if hasattr(p, "_registry") and hasattr(p, "configs"):
+                cfgs = p.configs
                 break
 
         logger.debug(f"Parent configs for {cls.__name__}: {list(map(type, cfgs))}")
@@ -147,8 +144,8 @@ class AbstractABC(Base, ABC):
         reg = dict()
 
         for p in parents:
-            if getattr(p, "_config_type", None) is not None:
-                reg = p._registry  # type: ignore
+            if hasattr(p, "_registry"):
+                reg = p._registry
 
         logger.debug(f"Parent registry for {cls.__name__}: {reg}")
         logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
