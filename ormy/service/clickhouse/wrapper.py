@@ -141,7 +141,7 @@ class ClickHouseQuerySet(query.QuerySet):
     # ....................... #
 
     def aggregate(self, *args, **kwargs):
-        return ClickHouseAggregateQuerySet(self, *args, **kwargs)
+        return ClickHouseAggregateQuerySet(self, args, kwargs)
 
 
 # ....................... #
