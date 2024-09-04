@@ -141,7 +141,7 @@ class ClickHouseQuerySet(query.QuerySet):
     # ....................... #
 
     def aggregate(self, *args, **kwargs):
-        return ClickHouseAggregateQuerySet(self * args, **kwargs)
+        return ClickHouseAggregateQuerySet(self, *args, **kwargs)
 
 
 # ....................... #
@@ -204,7 +204,16 @@ class ClickHouseBase(AbstractABC):
 
         for p in parents[::-1]:
             if issubclass(p, ClickHouseBase):
-                _dict_.update(p.__dict__)
+                for attr_name, attr_value in p.__dict__.items():
+                    if isinstance(attr_value, ClickHouseFieldInfo) or isinstance(
+                        attr_value, engines.Engine
+                    ):
+                        _dict_[attr_name] = attr_value
+
+                    elif attr_name == "model_fields":
+                        for k, v in attr_value.items():
+                            if isinstance(v, ClickHouseFieldInfo):
+                                _dict_[k] = v.clickhouse
 
         for attr_name, attr_value in _dict_.items():
             if isinstance(attr_value, ClickHouseFieldInfo):
