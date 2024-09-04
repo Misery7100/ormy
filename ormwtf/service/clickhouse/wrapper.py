@@ -1,6 +1,23 @@
-from typing import Any, ClassVar, Dict, List, Type, TypeVar, get_args
+from typing import (  # noqa: F401
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    get_args,
+)
 
-from infi.clickhouse_orm import engines, fields, models  # type: ignore[import-untyped]
+from infi.clickhouse_orm import (  # type: ignore[import-untyped]
+    database,
+    engines,
+    fields,
+    models,
+    query,
+)
+from pydantic.fields import FieldInfo
+from pydantic_core import PydanticUndefined
 
 from ormwtf.base.abc import AbstractABC
 from ormwtf.utils.logging import LogLevel, console_logger
@@ -16,6 +33,142 @@ logger = console_logger(__name__, level=LogLevel.INFO)
 # ....................... #
 
 
+class ClickHouseFieldInfo(FieldInfo):
+    def __init__(
+        self,
+        default: Any,
+        *,
+        clickhouse: fields.Field,
+        **kwargs,
+    ):
+        super().__init__(default=default, **kwargs)
+
+        self.clickhouse = clickhouse
+
+
+# ....................... #
+
+
+def ClickHouseField(
+    default: Any = PydanticUndefined,
+    *,
+    clickhouse: fields.Field = fields.StringField(),
+    **kwargs: Any,
+) -> ClickHouseFieldInfo:
+    return ClickHouseFieldInfo(default, clickhouse=clickhouse, **kwargs)
+
+
+# ....................... #
+
+
+class ClickHousePage:
+    def __init__(
+        self,
+        model_cls: "ClickHouseModel",
+        fields: List[str],
+        objects: List["ClickHouseModel"],
+        number_of_objects: int,
+        pages_total: int,
+        number: int,
+        page_size: int,
+    ):
+
+        self._model_cls = model_cls
+        self.fields = fields
+        self.objects = objects
+        self.number_of_objects = number_of_objects
+        self.pages_total = pages_total
+        self.number = number
+        self.page_size = page_size
+
+    # ....................... #
+
+    @classmethod
+    def from_infi_page(
+        cls,
+        model_cls: "ClickHouseModel",
+        fields: List[str],
+        p: database.Page,
+    ):
+        return cls(
+            model_cls=model_cls,
+            fields=fields,
+            objects=p.objects,
+            number_of_objects=p.number_of_objects,
+            pages_total=p.pages_total,
+            number=p.number,
+            page_size=p.page_size,
+        )
+
+    # ....................... #
+
+    def evaluate(self, raw: bool = False):
+        qs = [r.to_dict(field_names=self.fields) for r in self.objects]
+
+        if raw:
+            return qs
+
+        return [self._model_cls._ref.model_validate_universal(r) for r in qs]
+
+
+# ....................... #
+
+
+class ClickHouseQuerySet(query.QuerySet):
+    def evaluate(self, raw: bool = False):
+        qs = [r.to_dict(field_names=self._fields) for r in self]
+
+        if raw:
+            return qs
+
+        if set(self._fields) != set(self._model_cls._ref.model_fields.keys()):
+            raise ValueError(
+                "Cannot validate incomplete model fields. Try use `raw=True`"
+            )
+
+        return [self._model_cls._ref.model_validate_universal(r) for r in qs]
+
+    # ....................... #
+
+    def paginate(self, page_num: int = 1, page_size: int = 100):
+        p = super().paginate(page_num=page_num, page_size=page_size)
+
+        return ClickHousePage.from_infi_page(
+            model_cls=self._model_cls,
+            fields=self._fields,
+            p=p,
+        )
+
+    # ....................... #
+
+    def aggregate(self, *args, **kwargs):
+        return ClickHouseAggregateQuerySet(self * args, **kwargs)
+
+
+# ....................... #
+
+
+class ClickHouseAggregateQuerySet(query.AggregateQuerySet):
+    def evaluate(self, raw: bool = False):
+        return [r.to_dict(field_names=self._fields) for r in self]
+
+
+# ....................... #
+
+
+class ClickHouseModel(models.Model):
+    _ref: ClassVar["ClickHouseBase"]
+
+    # ....................... #
+
+    @classmethod
+    def objects_in(cls, database):
+        return ClickHouseQuerySet(cls, database)
+
+
+# ....................... #
+
+
 class ClickHouseBase(AbstractABC):
 
     configs = [ClickHouseConfig()]
@@ -24,6 +177,8 @@ class ClickHouseBase(AbstractABC):
     _registry = {ClickHouseConfig: {}}
     _model: ClassVar[models.Model] = None
 
+    __fields__: ClassVar[Dict[str, ClickHouseFieldInfo]]  # type: ignore[assignment]
+    model_fields: ClassVar[Dict[str, ClickHouseFieldInfo]]  # type: ignore[assignment]
     # ....................... #
 
     def __init_subclass__(cls: type[Ch], **kwargs):
@@ -48,11 +203,8 @@ class ClickHouseBase(AbstractABC):
         engine = None
 
         for attr_name, attr_value in cls.__dict__.items():
-            if annot := cls.__annotations__.get(attr_name, None):
-                aargs = get_args(annot)
-
-                if len(aargs) > 1 and isinstance(aargs[1], fields.Field):
-                    orm_fields[attr_name] = aargs[1]
+            if isinstance(attr_value, ClickHouseFieldInfo):
+                orm_fields[attr_name] = attr_value.clickhouse
 
             elif isinstance(attr_value, fields.Field):
                 orm_fields[attr_name] = attr_value
@@ -61,9 +213,9 @@ class ClickHouseBase(AbstractABC):
                 engine = attr_value
 
         # Dynamically create the ORM model
-        orm_attrs = {"engine": engine, **orm_fields}
+        orm_attrs = {"engine": engine, **orm_fields, "_ref": cls}
 
-        cls._model = type(f"{cls.__name__}_infi", (models.Model,), orm_attrs)
+        cls._model = type(f"{cls.__name__}_infi", (ClickHouseModel,), orm_attrs)
         setattr(
             cls._model,
             "table_name",
@@ -123,7 +275,7 @@ class ClickHouseBase(AbstractABC):
     # ....................... #
 
     @classmethod
-    def objects(cls: Type[Ch]) -> models.QuerySet:
+    def objects(cls: Type[Ch]) -> ClickHouseQuerySet:
         return cls._model.objects_in(cls._get_adatabase())
 
     # ....................... #
@@ -131,13 +283,31 @@ class ClickHouseBase(AbstractABC):
     @classmethod
     def evaluate(
         cls: Type[Ch],
-        qs: models.QuerySet,
+        qs: ClickHouseQuerySet | ClickHousePage,
         raw: bool = False,
     ) -> List[Ch | Dict[str, Any]]:
-        if raw:
-            return [r.to_dict() for r in qs]  # type: ignore
+        if isinstance(qs, ClickHousePage):
+            qss = [r.to_dict() for r in qs.objects]  # type: ignore
 
-        return [cls.model_validate_universal(r.to_dict()) for r in qs]  # type: ignore
+        else:
+            qss = [r.to_dict(field_names=qs._fields) for r in qs]  # type: ignore
+
+        if raw:
+            return qss
+
+        return [cls.model_validate_universal(r) for r in qss]  # type: ignore
+
+    # ....................... #
+
+    @classmethod
+    def _get_materialized_fields(cls: Type[Ch]):
+        fields = []
+
+        for x, v in cls.model_fields.items():
+            if v.clickhouse.materialized:
+                fields.append(x)
+
+        return fields
 
     # ....................... #
 
@@ -150,7 +320,14 @@ class ClickHouseBase(AbstractABC):
         if not isinstance(records, list):
             records = [records]
 
-        model_records = [cls._model(**record.model_dump()) for record in records]
+        model_records = [
+            cls._model(
+                **record.model_dump(
+                    exclude=cls._get_materialized_fields(),
+                )
+            )
+            for record in records
+        ]
         return cls._get_adatabase().insert(model_records, batch_size=batch_size)
 
     # ....................... #
@@ -164,7 +341,14 @@ class ClickHouseBase(AbstractABC):
         if not isinstance(records, list):
             records = [records]
 
-        model_records = [cls._model(**record.model_dump()) for record in records]
+        model_records = [
+            cls._model(
+                **record.model_dump(
+                    exclude=cls._get_materialized_fields(),
+                )
+            )
+            for record in records
+        ]
         return await cls._get_adatabase().ainsert(model_records, batch_size=batch_size)
 
     # ....................... #
