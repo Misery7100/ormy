@@ -102,7 +102,7 @@ class ClickHousePage:
 
     # ....................... #
 
-    def evaluate(self) -> TabularData:
+    def tabular(self) -> TabularData:
         qs = [r.to_dict(field_names=self.fields) for r in self.objects]
 
         return TabularData(qs)
@@ -112,7 +112,7 @@ class ClickHousePage:
 
 
 class ClickHouseQuerySet(query.QuerySet):
-    def evaluate(self) -> TabularData:
+    def tabular(self) -> TabularData:
         qs = [r.to_dict(field_names=self._fields) for r in self]
 
         return TabularData(qs)
@@ -138,7 +138,7 @@ class ClickHouseQuerySet(query.QuerySet):
 
 
 class ClickHouseAggregateQuerySet(query.AggregateQuerySet):
-    def evaluate(self) -> TabularData:
+    def tabular(self) -> TabularData:
         all_fields = list(self._fields) + list(self._calculated_fields.keys())
         qs = [r.to_dict(field_names=all_fields) for r in self]
 
@@ -291,25 +291,6 @@ class ClickHouseBase(AbstractABC):
     @classmethod
     def objects(cls: Type[Ch]) -> ClickHouseQuerySet:
         return cls._model.objects_in(cls._get_adatabase())
-
-    # ....................... #
-
-    @classmethod
-    def evaluate(
-        cls: Type[Ch],
-        qs: ClickHouseQuerySet | ClickHousePage,
-        raw: bool = False,
-    ) -> List[Ch | Dict[str, Any]]:
-        if isinstance(qs, ClickHousePage):
-            qss = [r.to_dict() for r in qs.objects]  # type: ignore
-
-        else:
-            qss = [r.to_dict(field_names=qs._fields) for r in qs]  # type: ignore
-
-        if raw:
-            return qss
-
-        return [cls.model_validate_universal(r) for r in qss]  # type: ignore
 
     # ....................... #
 

@@ -109,6 +109,7 @@ class TabularData(list):
         right_key: Optional[str] = None,
         kind: Literal["inner", "left"] = "inner",
         fill_none: Any = None,
+        prefix: Optional[str] = None,
     ) -> Tb:
         """
         Merge two tabular data objects
@@ -136,11 +137,18 @@ class TabularData(list):
             if x[left_key] in intersection:
                 item = deepcopy(next(y for y in other if y[right_key] == x[left_key]))
                 item.pop(right_key)
+
+                if prefix:
+                    item = {f"{prefix}_{k}": v for k, v in item.items()}
+
                 res.append({**x, **item})
 
             elif kind == "left":
-                res.append(
-                    {**x, **{k: fill_none for k in other._valid_keys if k != right_key}}
-                )
+                item = {k: fill_none for k in other._valid_keys if k != right_key}
+
+                if prefix:
+                    item = {f"{prefix}_{k}": v for k, v in item.items()}
+
+                res.append({**x, **item})
 
         return self.__class__(res)
