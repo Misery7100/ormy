@@ -196,7 +196,7 @@ class ClickHouseBase(AbstractABC):
 
     @classmethod
     def __construct_model(cls: Type[Ch]):
-        _dict_: Dict[str, ClickHouseFieldInfo | fields.Field] = {}
+        _dict_: Dict[str, Any] = {}
         orm_fields = {}
         engine = None
 
