@@ -149,7 +149,7 @@ class ClickHouseQuerySet(query.QuerySet):
 
 class ClickHouseAggregateQuerySet(query.AggregateQuerySet):
     def evaluate(self):
-        all_fields = self._fields + self._grouping_fields + self._calculated_fields
+        all_fields = self._fields + list(self._calculated_fields.keys())
         return [r.to_dict(field_names=all_fields) for r in self]
 
 
