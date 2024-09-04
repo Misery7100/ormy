@@ -177,8 +177,6 @@ class ClickHouseBase(AbstractABC):
     _registry = {ClickHouseConfig: {}}
     _model: ClassVar[models.Model] = None
 
-    __fields__: ClassVar[Dict[str, ClickHouseFieldInfo]]  # type: ignore[assignment]
-    model_fields: ClassVar[Dict[str, ClickHouseFieldInfo]]  # type: ignore[assignment]
     # ....................... #
 
     def __init_subclass__(cls: type[Ch], **kwargs):
@@ -304,7 +302,7 @@ class ClickHouseBase(AbstractABC):
         fields = []
 
         for x, v in cls.model_fields.items():
-            if v.clickhouse.materialized:
+            if v.clickhouse.materialized:  # type: ignore[attr-defined]
                 fields.append(x)
 
         return fields

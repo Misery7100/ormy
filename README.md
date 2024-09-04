@@ -1,6 +1,6 @@
 # Ormy - the Waffle-Tossing Ferret
 
-Pydantic-compatible ORM (and ORM-like) wrappers of different kinds.
+Pydantic-compatible ORM (and ORM-like) wrappers of various kinds.
 
 ## TO DO
 
