@@ -1,6 +1,11 @@
+import logging
 from typing import Any, Dict, List, Optional
 
-from infi.clickhouse_orm import migrations  # type: ignore[import-untyped]
+from infi.clickhouse_orm import migrations, models  # type: ignore[import-untyped]
+
+from .wrapper import ClickHouseBase, ClickHouseModel
+
+logger = logging.getLogger("migrations")
 
 # ----------------------- #
 
@@ -34,3 +39,24 @@ class RunSQLWithSettings(migrations.RunSQL):
 
         for item in self._sql:
             database.raw(item, settings=self.settings)
+
+
+# ....................... #
+
+
+class ModelOperation(migrations.ModelOperation):
+    def __init__(self, model_class: ClickHouseModel | models.Model | ClickHouseBase):
+        if isinstance(model_class, ClickHouseBase):
+            model_class = model_class._model
+
+        super().__init__(model_class)
+
+
+# ....................... #
+
+
+class CreateTable(ModelOperation, migrations.CreateTable):
+    pass
+
+
+# ....................... #
