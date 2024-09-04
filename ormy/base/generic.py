@@ -104,9 +104,9 @@ class TabularData(list):
         self: Tb,
         other: Tb,
         *,
-        key: Optional[str] = None,
-        left_key: Optional[str] = None,
-        right_key: Optional[str] = None,
+        on: Optional[str] = None,
+        left_on: Optional[str] = None,
+        right_on: Optional[str] = None,
         kind: Literal["inner", "left"] = "inner",
         fill_none: Any = None,
         prefix: Optional[str] = None,
@@ -117,16 +117,14 @@ class TabularData(list):
 
         assert kind in ["inner", "left"], "Kind must be either 'inner' or 'left'"
 
-        if key is not None:
-            left_key = key
-            right_key = key
+        if on is not None:
+            left_on = on
+            right_on = on
 
-        assert left_key in self._valid_keys, f"Key {left_key} is not in the valid keys"
-        assert (
-            right_key in other._valid_keys
-        ), f"Key {right_key} is not in the valid keys"
+        assert left_on in self._valid_keys, f"Key {left_on} is not in the valid keys"
+        assert right_on in other._valid_keys, f"Key {right_on} is not in the valid keys"
 
-        intersection = self.unique(left_key).intersection(other.unique(right_key))
+        intersection = self.unique(left_on).intersection(other.unique(right_on))
 
         if len(intersection) == 0:
             return self.__class__()
@@ -134,9 +132,9 @@ class TabularData(list):
         res = []
 
         for x in self:
-            if x[left_key] in intersection:
-                item = deepcopy(next(y for y in other if y[right_key] == x[left_key]))
-                item.pop(right_key)
+            if x[left_on] in intersection:
+                item = deepcopy(next(y for y in other if y[right_on] == x[left_on]))
+                item.pop(right_on)
 
                 if prefix:
                     item = {f"{prefix}_{k}": v for k, v in item.items()}
@@ -144,7 +142,7 @@ class TabularData(list):
                 res.append({**x, **item})
 
             elif kind == "left":
-                item = {k: fill_none for k in other._valid_keys if k != right_key}
+                item = {k: fill_none for k in other._valid_keys if k != right_on}
 
                 if prefix:
                     item = {f"{prefix}_{k}": v for k, v in item.items()}

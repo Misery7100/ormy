@@ -11,6 +11,7 @@ from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from ormy.base.abc import DocumentABC
+from ormy.base.generic import TabularData
 from ormy.base.typing import DocumentID
 from ormy.utils.logging import LogLevel, console_logger
 
@@ -409,13 +410,17 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         request: MongoRequest = {},
         limit: int = 100,
         offset: int = 0,
-    ) -> List[M]:
+        tabular: bool = True,
+    ) -> TabularData | List[M]:
         """
         ...
         """
 
         collection = cls._get_collection()
         documents = collection.find(request).limit(limit).skip(offset)
+
+        if tabular:
+            return TabularData([doc for doc in documents])
 
         return [cls(**doc) for doc in documents]
 
@@ -427,13 +432,17 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         request: MongoRequest = {},
         limit: int = 100,
         offset: int = 0,
-    ) -> List[M]:
+        tabular: bool = True,
+    ) -> TabularData | List[M]:
         """
         ...
         """
 
         collection = cls._aget_collection()
         cursor = collection.find(request).limit(limit).skip(offset)
+
+        if tabular:
+            return TabularData([doc async for doc in cursor])
 
         return [cls(**doc) async for doc in cursor]
 
@@ -474,16 +483,22 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         cls: Type[M],
         request: MongoRequest = {},
         batch_size: int = 100,
-    ) -> List[M]:
+        tabular: bool = False,
+    ) -> TabularData | List[M]:
         """
         ...
         """
 
         cnt = cls.count(request=request)
-        found = []
+        found: TabularData | List[M] = []
 
         for j in range(0, cnt, batch_size):
-            docs = cls.find_many(request, limit=batch_size, offset=j)
+            docs = cls.find_many(
+                request,
+                limit=batch_size,
+                offset=j,
+                tabular=tabular,
+            )
             found.extend(docs)
 
         return found
@@ -495,16 +510,22 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         cls: Type[M],
         request: MongoRequest = {},
         batch_size: int = 100,
-    ) -> List[M]:
+        tabular: bool = False,
+    ) -> TabularData | List[M]:
         """
         ...
         """
 
         cnt = await cls.acount(request=request)
-        found = []
+        found: TabularData | List[M] = []
 
         for j in range(0, cnt, batch_size):
-            docs = await cls.afind_many(request, limit=batch_size, offset=j)
+            docs = await cls.afind_many(
+                request,
+                limit=batch_size,
+                offset=j,
+                tabular=tabular,
+            )
             found.extend(docs)
 
         return found
