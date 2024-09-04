@@ -152,6 +152,17 @@ class ClickHouseAggregateQuerySet(query.AggregateQuerySet):
         all_fields = list(self._fields) + list(self._calculated_fields.keys())
         return [r.to_dict(field_names=all_fields) for r in self]
 
+    # ....................... #
+
+    def paginate(self, page_num: int = 1, page_size: int = 100):
+        p = super().paginate(page_num=page_num, page_size=page_size)
+
+        return ClickHousePage.from_infi_page(
+            model_cls=self._model_cls,
+            fields=self._fields,
+            p=p,
+        )
+
 
 # ....................... #
 
