@@ -1,12 +1,11 @@
-from typing import (  # noqa: F401
+import inspect
+from typing import (
     Any,
     ClassVar,
     Dict,
     List,
-    Optional,
     Type,
     TypeVar,
-    get_args,
 )
 
 from infi.clickhouse_orm import (  # type: ignore[import-untyped]
@@ -197,10 +196,17 @@ class ClickHouseBase(AbstractABC):
 
     @classmethod
     def __construct_model(cls: Type[Ch]):
+        _dict_: Dict[str, ClickHouseFieldInfo | fields.Field] = {}
         orm_fields = {}
         engine = None
 
-        for attr_name, attr_value in cls.__dict__.items():
+        parents = inspect.getmro(cls)
+
+        for p in parents[::-1]:
+            if issubclass(p, ClickHouseBase):
+                _dict_.update(p.__dict__)
+
+        for attr_name, attr_value in _dict_.items():
             if isinstance(attr_value, ClickHouseFieldInfo):
                 orm_fields[attr_name] = attr_value.clickhouse
 
