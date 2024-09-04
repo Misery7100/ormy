@@ -175,7 +175,7 @@ class ClickHouseBase(AbstractABC):
     engine: ClassVar[engines.Engine] = None
 
     _registry = {ClickHouseConfig: {}}
-    _model: ClassVar[models.Model] = None
+    _model: ClassVar[ClickHouseModel] = None  # type: ignore[assignment]
 
     # ....................... #
 
@@ -213,7 +213,7 @@ class ClickHouseBase(AbstractABC):
         # Dynamically create the ORM model
         orm_attrs = {"engine": engine, **orm_fields, "_ref": cls}
 
-        cls._model = type(f"{cls.__name__}_infi", (ClickHouseModel,), orm_attrs)
+        cls._model = type(f"{cls.__name__}_infi", (ClickHouseModel,), orm_attrs)  # type: ignore[assignment]
         setattr(
             cls._model,
             "table_name",

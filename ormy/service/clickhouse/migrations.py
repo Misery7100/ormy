@@ -1,9 +1,14 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
-from infi.clickhouse_orm import migrations, models  # type: ignore[import-untyped]
+from infi.clickhouse_orm import migrations  # type: ignore[import-untyped]
 
 from .wrapper import ClickHouseBase, ClickHouseModel
+
+# ----------------------- #
+
+ChB = TypeVar("ChB", bound=ClickHouseBase)
+ChM = TypeVar("ChM", bound=ClickHouseModel)
 
 logger = logging.getLogger("migrations")
 
@@ -44,9 +49,9 @@ class RunSQLWithSettings(migrations.RunSQL):
 # ....................... #
 
 
-class ModelOperation(migrations.ModelOperation):
-    def __init__(self, model_class: ClickHouseModel | models.Model | ClickHouseBase):
-        if isinstance(model_class, ClickHouseBase):
+class ModelOperation(migrations.ModelOperation):  # ????
+    def __init__(self, model_class: Type[ChM] | Type[ChB]):
+        if issubclass(model_class, ClickHouseBase):
             model_class = model_class._model
 
         super().__init__(model_class)

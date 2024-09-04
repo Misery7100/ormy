@@ -1,3 +1,3 @@
 # These version placeholders will be replaced later during substitution.
-__version__ = "0.1.3-pre.41+4757516"
-__version_tuple__ = (0, 1, 3, "pre", 41, 4757516)
+__version__ = "0.1.3-pre.42+b356b01"
+__version_tuple__ = (0, 1, 3, "pre", 42, "b356b01")
