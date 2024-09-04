@@ -1,8 +1,9 @@
-# ORM - What The Fun
+# Ormy - the Waffle-Tossing Ferret
 
-Python ORM wrappers in uniform format for popular database solutions with pydantic compatibility.
+Pydantic-compatible ORM (and ORM-like) wrappers of different kinds.
 
 ## TO DO
 
 - [ ] Check `pytest-benchmark` for performance testing;
-- [ ] Check `pytest-meilisearch` for MeiliSearch testing.
+- [ ] Check `pytest-meilisearch` for MeiliSearch testing;
+- [ ] Add unit tests, finish `clickhouse` wrapper.

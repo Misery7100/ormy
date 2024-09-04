@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ormwtf"
+name = "ormy"
 version = "0.1.2"
 description = "Python ORM wrappers"
 authors = ["Lev Litvinov <misery7100@gmail.com>"]
@@ -43,7 +43,7 @@ style = "semver"
 latest-tag = true
 bump = "auto"
 
-[tool.poetry-dynamic-versioning.files."ormwtf/__version__.py"]
+[tool.poetry-dynamic-versioning.files."ormy/__version__.py"]
 persistent-substitution = true
 initial-content = """
   # These version placeholders will be replaced later during substitution.
