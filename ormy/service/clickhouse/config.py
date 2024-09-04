@@ -14,6 +14,17 @@ class ClickHouseCredentials(Base):
     username: Optional[SecretStr] = None
     password: Optional[SecretStr] = None
 
+    # ....................... #
+
+    def db_url(self) -> str:
+        host = self.host
+        port = self.port
+
+        if port:
+            return f"http://{host}:{port}/"
+
+        return f"http://{host}/"
+
 
 # ....................... #
 
@@ -37,10 +48,4 @@ class ClickHouseConfig(ConfigABC):
     # ....................... #
 
     def db_url(self) -> str:
-        host = self.credentials.host
-        port = self.credentials.port
-
-        if port:
-            return f"http://{host}:{port}/"
-
-        return f"http://{host}/"
+        return self.credentials.db_url()
