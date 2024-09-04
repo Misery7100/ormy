@@ -19,6 +19,7 @@ from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 
 from ormy.base.abc import AbstractABC
+from ormy.base.generic import TabularData
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import ClickHouseConfig
@@ -101,31 +102,20 @@ class ClickHousePage:
 
     # ....................... #
 
-    def evaluate(self, raw: bool = False):
+    def evaluate(self) -> TabularData:
         qs = [r.to_dict(field_names=self.fields) for r in self.objects]
 
-        if raw:
-            return qs
-
-        return [self._model_cls._ref.model_validate_universal(r) for r in qs]
+        return TabularData(qs)
 
 
 # ....................... #
 
 
 class ClickHouseQuerySet(query.QuerySet):
-    def evaluate(self, raw: bool = False):
+    def evaluate(self) -> TabularData:
         qs = [r.to_dict(field_names=self._fields) for r in self]
 
-        if raw:
-            return qs
-
-        if set(self._fields) != set(self._model_cls._ref.model_fields.keys()):
-            raise ValueError(
-                "Cannot validate incomplete model fields. Try use `raw=True`"
-            )
-
-        return [self._model_cls._ref.model_validate_universal(r) for r in qs]
+        return TabularData(qs)
 
     # ....................... #
 
@@ -148,9 +138,11 @@ class ClickHouseQuerySet(query.QuerySet):
 
 
 class ClickHouseAggregateQuerySet(query.AggregateQuerySet):
-    def evaluate(self):
+    def evaluate(self) -> TabularData:
         all_fields = list(self._fields) + list(self._calculated_fields.keys())
-        return [r.to_dict(field_names=all_fields) for r in self]
+        qs = [r.to_dict(field_names=all_fields) for r in self]
+
+        return TabularData(qs)
 
     # ....................... #
 
@@ -169,10 +161,6 @@ class ClickHouseAggregateQuerySet(query.AggregateQuerySet):
 
 
 class ClickHouseModel(models.Model):
-    _ref: ClassVar["ClickHouseBase"]
-
-    # ....................... #
-
     @classmethod
     def objects_in(cls, database):
         return ClickHouseQuerySet(cls, database)
@@ -239,7 +227,7 @@ class ClickHouseBase(AbstractABC):
                 engine = attr_value
 
         # Dynamically create the ORM model
-        orm_attrs = {"engine": engine, **orm_fields, "_ref": cls}
+        orm_attrs = {"engine": engine, **orm_fields}
 
         cls._model = type(f"{cls.__name__}_infi", (ClickHouseModel,), orm_attrs)  # type: ignore[assignment]
         setattr(

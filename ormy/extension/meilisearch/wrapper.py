@@ -336,6 +336,10 @@ class MeilisearchExtension(AbstractABC):
 
     @staticmethod
     def _meili_prepare_response(res: SearchResults) -> SearchResponse:
+        """
+        ...
+        """
+
         return SearchResponse.from_search_results(res)
 
     # ....................... #

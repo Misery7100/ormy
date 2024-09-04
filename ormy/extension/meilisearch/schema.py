@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from enum import StrEnum
 from typing import (
     Any,
-    Generic,
     List,
     Literal,
     Optional,
@@ -15,6 +14,7 @@ from typing import (
 from meilisearch_python_sdk.models.search import SearchResults
 from pydantic import BaseModel, Field
 
+from ormy.base.generic import TabularData
 from ormy.base.pydantic import BaseReference
 
 # ----------------------- #
@@ -224,12 +224,11 @@ class SearchRequest(BaseModel):
 # ----------------------- #
 
 S = TypeVar("S", bound="SearchResponse")
-T = TypeVar("T")
 
 
-class SearchResponse(BaseModel, Generic[T]):
-    hits: List[T] = Field(
-        default_factory=list,
+class SearchResponse(BaseModel):
+    hits: TabularData = Field(
+        default_factory=TabularData,
         title="Hits",
     )
     size: int = Field(
@@ -248,9 +247,16 @@ class SearchResponse(BaseModel, Generic[T]):
     # ....................... #
 
     @classmethod
-    def from_search_results(cls: Type[S], res: SearchResults) -> S:
+    def from_search_results(
+        cls: Type[S],
+        res: SearchResults,
+    ) -> S:
+        """
+        ...
+        """
+
         return cls(
-            hits=res.hits,
+            hits=TabularData(res.hits),  # type: ignore
             size=res.hits_per_page,  # type: ignore
             page=res.page,  # type: ignore
             count=res.total_hits,  # type: ignore
