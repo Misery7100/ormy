@@ -558,6 +558,13 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
             tabular=True,
         )
 
+        if include is not None:
+            include.append(right_on)
+            include = list(set(include))
+
+        if exclude is not None:
+            exclude = [x for x in exclude if x != right_on]
+
         return data.join(
             find.slice(include, exclude),  # type: ignore
             on=on,
@@ -593,6 +600,13 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
             request={right_on: {"$in": list(data.unique(left_on))}},
             tabular=True,
         )
+
+        if include is not None:
+            include.append(right_on)
+            include = list(set(include))
+
+        if exclude is not None:
+            exclude = [x for x in exclude if x != right_on]
 
         return data.join(
             find.slice(include, exclude),  # type: ignore
