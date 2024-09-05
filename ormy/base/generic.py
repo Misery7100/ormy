@@ -162,10 +162,13 @@ class TabularData(list):
                 res.append({**x, **item})
 
             elif kind == "left":
-                item = {k: fill_none for k in other._valid_keys if k != right_on}
+                item = {k: fill_none for k in other._valid_keys}
 
                 if prefix:
                     item = {f"{prefix}_{k}": v for k, v in item.items()}
+
+                else:
+                    item.pop(right_on)
 
                 res.append({**x, **item})
 
