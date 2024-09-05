@@ -152,10 +152,12 @@ class TabularData(list):
         for x in self:
             if x[left_on] in intersection:
                 item = deepcopy(next(y for y in other if y[right_on] == x[left_on]))
-                item.pop(right_on)
 
                 if prefix:
                     item = {f"{prefix}_{k}": v for k, v in item.items()}
+
+                else:
+                    item.pop(right_on)
 
                 res.append({**x, **item})
 
