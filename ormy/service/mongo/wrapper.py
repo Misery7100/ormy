@@ -536,6 +536,8 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
     def patch(
         cls: Type[M],
         data: TabularData,
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
         on: Optional[str] = None,
         left_on: Optional[str] = None,
         right_on: Optional[str] = None,
@@ -557,7 +559,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         )
 
         return data.join(
-            find,  # type: ignore[arg-type]
+            find.slice(include, exclude),  # type: ignore
             on=on,
             left_on=left_on,
             right_on=right_on,
@@ -570,6 +572,8 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
     async def apatch(
         cls: Type[M],
         data: TabularData,
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
         on: Optional[str] = None,
         left_on: Optional[str] = None,
         right_on: Optional[str] = None,
@@ -591,7 +595,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         )
 
         return data.join(
-            find,  # type: ignore[arg-type]
+            find.slice(include, exclude),  # type: ignore
             on=on,
             left_on=left_on,
             right_on=right_on,
