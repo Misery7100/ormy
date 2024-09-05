@@ -554,7 +554,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         assert left_on is not None and right_on is not None, "Fields are required"
 
         find = cls.find_all(
-            request={right_on: {"$in": data.unique(left_on)}},
+            request={right_on: {"$in": list(data.unique(left_on))}},
             tabular=True,
         )
 
@@ -590,7 +590,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         assert left_on is not None and right_on is not None, "Fields are required"
 
         find = await cls.afind_all(
-            request={right_on: {"$in": data.unique(left_on)}},
+            request={right_on: {"$in": list(data.unique(left_on))}},
             tabular=True,
         )
 
