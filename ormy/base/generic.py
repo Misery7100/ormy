@@ -103,6 +103,9 @@ class TabularData(list):
     # ....................... #
 
     def unique(self, key: str) -> Set[str]:
+        if not self:
+            return set()
+
         assert key in self._valid_keys, f"Key {key} is not in the valid keys"
 
         return set(map(lambda x: x[key], self))
@@ -123,6 +126,12 @@ class TabularData(list):
         """
         Merge two tabular data objects
         """
+
+        if not self:
+            return self.__class__()
+
+        if not other:
+            return self
 
         assert kind in ["inner", "left"], "Kind must be either 'inner' or 'left'"
 

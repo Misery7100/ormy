@@ -547,6 +547,9 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         ...
         """
 
+        if not data:
+            return data
+
         if on is not None:
             left_on = on
             right_on = on
@@ -589,6 +592,9 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         """
         ...
         """
+
+        if not data:
+            return data
 
         if on is not None:
             left_on = on
