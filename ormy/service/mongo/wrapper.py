@@ -501,7 +501,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
             )
             found.extend(docs)
 
-        return found
+        return TabularData(found) if tabular else found
 
     # ....................... #
 
@@ -528,7 +528,75 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
             )
             found.extend(docs)
 
-        return found
+        return TabularData(found) if tabular else found
+
+    # ....................... #
+
+    @classmethod
+    def patch(
+        cls: Type[M],
+        data: TabularData,
+        on: Optional[str] = None,
+        left_on: Optional[str] = None,
+        right_on: Optional[str] = None,
+        prefix: Optional[str] = None,
+    ) -> TabularData:
+        """
+        ...
+        """
+
+        if on is not None:
+            left_on = on
+            right_on = on
+
+        assert left_on is not None and right_on is not None, "Fields are required"
+
+        find = cls.find_all(
+            request={right_on: {"$in": data.unique(left_on)}},
+            tabular=True,
+        )
+
+        return data.join(
+            find,  # type: ignore[arg-type]
+            on=on,
+            left_on=left_on,
+            right_on=right_on,
+            prefix=prefix,
+        )
+
+    # ....................... #
+
+    @classmethod
+    async def apatch(
+        cls: Type[M],
+        data: TabularData,
+        on: Optional[str] = None,
+        left_on: Optional[str] = None,
+        right_on: Optional[str] = None,
+        prefix: Optional[str] = None,
+    ) -> TabularData:
+        """
+        ...
+        """
+
+        if on is not None:
+            left_on = on
+            right_on = on
+
+        assert left_on is not None and right_on is not None, "Fields are required"
+
+        find = await cls.afind_all(
+            request={right_on: {"$in": data.unique(left_on)}},
+            tabular=True,
+        )
+
+        return data.join(
+            find,  # type: ignore[arg-type]
+            on=on,
+            left_on=left_on,
+            right_on=right_on,
+            prefix=prefix,
+        )
 
     # ....................... #
 

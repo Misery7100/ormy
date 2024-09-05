@@ -26,6 +26,7 @@ class ExtendedEnum(Enum):
 # ----------------------- #
 
 
+# TODO: add paginate method
 class TabularData(list):
     _valid_keys: Set[str] = set()
 
@@ -84,6 +85,14 @@ class TabularData(list):
 
         else:
             return self.__class__(self)
+
+    # ....................... #
+
+    def paginate(self, page: int = 1, size: int = 20):
+        start = (page - 1) * size
+        end = page * size
+
+        return self.__class__(self[start:end])
 
     # ....................... #
 
