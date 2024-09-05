@@ -2,6 +2,8 @@ from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
+from .generic import TabularData
+
 # ----------------------- #
 
 T = TypeVar("T", bound="Base")
@@ -27,49 +29,6 @@ class Base(BaseModel):
             "timestamp",
         ]
     }
-
-    # ....................... #
-
-    # @classmethod
-    # def model_simple_schema(
-    #     cls: Type[T],
-    #     include: Optional[List[str]] = None,
-    #     exclude: Optional[List[str]] = None,
-    # ) -> List[str]:
-    #     """
-    #     Generate a simple schema for the model
-
-    #     Args:
-    #         include (List[str], optional): The fields to include in the schema.
-    #         exclude (List[str], optional): The fields to exclude from the schema.
-
-    #     Returns:
-    #         schema (List[str]): The simple schema for the model
-    #     """
-
-    #     schema = cls.model_json_schema()
-
-    #     if include is None:
-    #         keys: List[str] = [k for k, _ in schema["properties"].items()]
-
-    #     else:
-    #         keys = include
-
-    #     if exclude:
-    #         keys = [k for k in keys if k not in exclude]
-
-    #     simple_schema = [
-    #         {
-    #             "key": k,
-    #             "title": v.get("title", k.title()),
-    #             "type": cls._define_dtype(k, v.get("type", None)),
-    #         }
-    #         for k, v in schema["properties"].items()
-    #         if k in keys
-    #     ]
-
-    #     return simple_schema
-
     # ....................... #
 
     @staticmethod
@@ -316,7 +275,7 @@ class Base(BaseModel):
             return "string"
 
 
-# ....................... #
+# ----------------------- #
 
 Br = TypeVar("Br", bound="BaseReference")
 
@@ -358,3 +317,25 @@ class BaseReference(BaseModel):
         ]
 
         return v
+
+
+# ----------------------- #
+
+
+class TableResponse(BaseModel):
+    hits: TabularData = Field(
+        default_factory=TabularData,
+        title="Data",
+    )
+    size: int = Field(
+        ...,
+        title="Rows per page",
+    )
+    page: int = Field(
+        ...,
+        title="Current page",
+    )
+    count: int = Field(
+        ...,
+        title="Total number of rows",
+    )

@@ -15,7 +15,7 @@ from meilisearch_python_sdk.models.search import SearchResults
 from pydantic import BaseModel, Field
 
 from ormy.base.generic import TabularData
-from ormy.base.pydantic import BaseReference
+from ormy.base.pydantic import BaseReference, TableResponse
 
 # ----------------------- #
 
@@ -226,26 +226,7 @@ class SearchRequest(BaseModel):
 S = TypeVar("S", bound="SearchResponse")
 
 
-class SearchResponse(BaseModel):
-    hits: TabularData = Field(
-        default_factory=TabularData,
-        title="Hits",
-    )
-    size: int = Field(
-        ...,
-        title="Hits per Page",
-    )
-    page: int = Field(
-        ...,
-        title="Current Page",
-    )
-    count: int = Field(
-        ...,
-        title="Total number of Hits",
-    )
-
-    # ....................... #
-
+class SearchResponse(TableResponse):
     @classmethod
     def from_search_results(
         cls: Type[S],
@@ -255,11 +236,16 @@ class SearchResponse(BaseModel):
         ...
         """
 
+        assert res.hits is not None, "Hits must be provided"
+        assert res.hits_per_page is not None, "Hits per page must be provided"
+        assert res.page is not None, "Page must be provided"
+        assert res.total_hits is not None, "Total hits must be provided"
+
         return cls(
-            hits=TabularData(res.hits),  # type: ignore
-            size=res.hits_per_page,  # type: ignore
-            page=res.page,  # type: ignore
-            count=res.total_hits,  # type: ignore
+            hits=TabularData(res.hits),
+            size=res.hits_per_page,
+            page=res.page,
+            count=res.total_hits,
         )
 
 
