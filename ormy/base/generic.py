@@ -56,6 +56,8 @@ class TabularData(list):
         if set(item.keys()) != self._valid_keys:
             raise ValueError("Item must have the same keys as the other items")
 
+        return True
+
     # ....................... #
 
     def _validate_data(self, data: Sequence[Dict[str, Any] | Bm] | Tb = []):
@@ -64,9 +66,8 @@ class TabularData(list):
 
         _data = [x.model_dump() if not isinstance(x, dict) else x for x in data]
         self._valid_keys = set(_data[0].keys())
-        map(self._validate_item, _data)
 
-        return _data
+        return [item for item in _data if self._validate_item(item)]
 
     # ....................... #
 
@@ -76,15 +77,16 @@ class TabularData(list):
         exclude: Optional[Sequence[str]] = None,
     ):
         if include:
-            new_items = [{k: v for k, v in x.items() if k in include} for x in self]
-            return self.__class__(new_items)
+            return self.__class__(
+                [{k: v for k, v in x.items() if k in include} for x in self]
+            )
 
         elif exclude:
-            new_items = [{k: v for k, v in x.items() if k not in exclude} for x in self]
-            return self.__class__(new_items)
+            return self.__class__(
+                [{k: v for k, v in x.items() if k not in exclude} for x in self]
+            )
 
-        else:
-            return self.__class__(self)
+        return self.__class__(self)
 
     # ....................... #
 
@@ -103,12 +105,7 @@ class TabularData(list):
     # ....................... #
 
     def unique(self, key: str) -> Set[str]:
-        if not self:
-            return set()
-
-        assert key in self._valid_keys, f"Key {key} is not in the valid keys"
-
-        return set(map(lambda x: x[key], self))
+        return set(x[key] for x in self if key in x)
 
     # ....................... #
 
@@ -127,13 +124,11 @@ class TabularData(list):
         Merge two tabular data objects
         """
 
-        if not self:
+        if on is None or not other or not self:
             return self.__class__()
 
-        if not other:
-            return self
-
-        assert kind in ["inner", "left"], "Kind must be either 'inner' or 'left'"
+        if kind not in ["inner", "left"]:
+            raise ValueError("Kind must be either 'inner' or 'left'")
 
         if on is not None:
             left_on = on
