@@ -124,7 +124,7 @@ class TabularData(list):
         Merge two tabular data objects
         """
 
-        if on is None or not other or not self:
+        if not other or not self:
             return self.__class__()
 
         if kind not in ["inner", "left"]:
