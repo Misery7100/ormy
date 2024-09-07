@@ -124,11 +124,17 @@ class TabularData(list):
         Merge two tabular data objects
         """
 
-        if not other or not self:
-            return self.__class__()
-
         if kind not in ["inner", "left"]:
             raise ValueError("Kind must be either 'inner' or 'left'")
+
+        if not self:
+            return self
+
+        if not other:
+            if kind == "left":
+                return self
+
+            return self.__class__()
 
         if on is not None:
             left_on = on
@@ -140,6 +146,9 @@ class TabularData(list):
         intersection = self.unique(left_on).intersection(other.unique(right_on))
 
         if len(intersection) == 0:
+            if kind == "left":
+                return self
+
             return self.__class__()
 
         res = []
