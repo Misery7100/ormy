@@ -77,7 +77,7 @@ class Base(BaseModel):
             schema (List[Dict[str, Any]]): The flat schema for the model
         """
 
-        schema = cls.model_json_schema()
+        schema = cls.model_json_schema(mode="serialization")
         defs = cls._parse_json_schema_defs(schema)
         keys: List[str] = [k for k, _ in schema["properties"].items()]
         flat_schema: List[Dict[str, Any]] = []
