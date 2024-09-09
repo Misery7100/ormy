@@ -62,13 +62,13 @@ class FilterABC(ABC, BaseModel):
 
     Attributes:
         key (str): Key of the filter
-        title (str): The filter title
+        title (str, optional): The filter title
         value (Any, optional): The filter value
         type (str): The filter type
     """
 
     key: str
-    title: str
+    title: Optional[str] = None
     value: Optional[Any] = None
     type: str = "abc"
 
