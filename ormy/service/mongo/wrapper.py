@@ -418,11 +418,12 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
 
         collection = cls._get_collection()
         documents = collection.find(request).limit(limit).skip(offset)
+        clsdocs = [cls(**doc) for doc in documents]
 
         if tabular:
-            return TabularData([doc for doc in documents])
+            return TabularData(clsdocs)
 
-        return [cls(**doc) for doc in documents]
+        return clsdocs
 
     # ....................... #
 
@@ -440,11 +441,12 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
 
         collection = cls._aget_collection()
         cursor = collection.find(request).limit(limit).skip(offset)
+        clsdocs = [cls(**doc) async for doc in cursor]
 
         if tabular:
-            return TabularData([doc async for doc in cursor])
+            return TabularData(clsdocs)
 
-        return [cls(**doc) async for doc in cursor]
+        return clsdocs
 
     # ....................... #
 
