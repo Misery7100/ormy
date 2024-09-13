@@ -356,12 +356,13 @@ class MeilisearchExtension(AbstractABC):
         """
         ...
         """
+        fields = list(cls.model_fields.keys()) + list(cls.model_computed_fields.keys())
 
         if exclude is not None and include is None:
-            include = [x for x in cls.model_fields.keys() if x not in exclude]
+            include = [x for x in fields if x not in exclude]
 
         elif include is not None:
-            include = [x for x in include if x in cls.model_fields.keys()]
+            include = [x for x in include if x in fields]
 
         ix = cls._meili_index()
         req = cls._meili_prepare_request(request, page, size)
@@ -386,11 +387,13 @@ class MeilisearchExtension(AbstractABC):
         """
         ...
         """
+        fields = list(cls.model_fields.keys()) + list(cls.model_computed_fields.keys())
+
         if exclude is not None and include is None:
-            include = [x for x in cls.model_fields.keys() if x not in exclude]
+            include = [x for x in fields if x not in exclude]
 
         elif include is not None:
-            include = [x for x in include if x in cls.model_fields.keys()]
+            include = [x for x in include if x in fields]
 
         ix = await cls._ameili_index()
         req = cls._meili_prepare_request(request, page, size)
