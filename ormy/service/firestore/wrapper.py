@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import List, Optional, Type, TypeVar, cast
+from typing import Callable, List, Optional, Type, TypeVar, cast
 
 from firebase_admin import firestore, firestore_async  # type: ignore
 from google.cloud.firestore_v1 import (
@@ -571,3 +571,18 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         return query.stream()
 
     # ....................... #
+
+    @classmethod
+    def on_snapshot(
+        cls: Type[T],
+        callback: Callable,
+    ):
+        """
+        _summary_
+
+        Args:
+            callback (Callable): _description_
+        """
+
+        collection = cls._get_collection()
+        return collection.on_snapshot(callback)
