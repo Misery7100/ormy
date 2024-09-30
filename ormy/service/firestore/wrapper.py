@@ -456,7 +456,7 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
         aq: AggregationQuery = query.count()  # type: ignore
         res = aq.get()
-        number: int = res[0][0].value  # type: ignore
+        number = int(res[0][0].value)  # type: ignore
 
         return number
 
@@ -480,7 +480,7 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
         aq: AsyncAggregationQuery = query.count()  # type: ignore
         res = await aq.get()
-        number: int = res[0][0].value  # type: ignore
+        number = int(res[0][0].value)  # type: ignore
 
         return number
 
