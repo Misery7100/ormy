@@ -2,9 +2,10 @@ import json
 from contextlib import asynccontextmanager, contextmanager
 from typing import Optional, Type, TypeVar
 
-from aioredlock import Aioredlock  # type: ignore
 from redis import Redis
 from redis import asyncio as aioredis
+from redis.asyncio.client import Pipeline as Apipeline
+from redis.client import Pipeline
 
 from ormy.base.abc import DocumentABC
 from ormy.base.typing import DocumentID
@@ -97,16 +98,16 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    @classmethod
-    def _alock_manager(cls: Type[T]):
-        """
-        ...
-        """
+    # @classmethod
+    # def _alock_manager(cls: Type[T]):
+    #     """
+    #     ...
+    #     """
 
-        cfg = cls.get_config(type_=RedisConfig)
-        url = cfg.url()
+    #     cfg = cls.get_config(type_=RedisConfig)
+    #     url = cfg.url()
 
-        return Aioredlock([url])
+    #     return Aioredlock([url])
 
     # ....................... #
 
@@ -172,7 +173,55 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    def save(self: T) -> T:
+    @classmethod
+    @contextmanager
+    def pipe(cls: Type[T], **kwargs):
+        with cls._client() as client:
+            p = client.pipeline(**kwargs)
+
+        try:
+            yield p
+
+        finally:
+            pass
+
+    # ....................... #
+
+    @classmethod
+    @asynccontextmanager
+    async def apipe(cls: Type[T], **kwargs):
+        async with cls._aclient() as client:
+            p = client.pipeline(**kwargs)
+
+        try:
+            yield p
+
+        finally:
+            pass
+
+    # ....................... #
+
+    def watch(self: T, pipe: Pipeline) -> None:
+        """
+        ...
+        """
+
+        key = self._build_key(self.id)
+        pipe.watch(key)
+
+    # ....................... #
+
+    async def awatch(self: T, pipe: Apipeline) -> None:
+        """
+        ...
+        """
+
+        key = self._build_key(self.id)
+        await pipe.watch(key)
+
+    # ....................... #
+
+    def save(self: T, pipe: Optional[Pipeline] = None) -> T:
         """
         ...
         """
@@ -180,14 +229,20 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         document = self.model_dump()
         key = self._build_key(self.id)
 
-        with self._client() as client:
-            client.set(key, json.dumps(document))
+        if pipe is None:
+            with self._client() as client:
+                client.set(key, json.dumps(document))
+
+        else:
+            pipe.multi()
+            pipe.set(key, json.dumps(document))
+            pipe.execute()
 
         return self
 
     # ....................... #
 
-    async def asave(self: T) -> T:
+    async def asave(self: T, pipe: Optional[Apipeline] = None) -> T:
         """
         ...
         """
@@ -195,70 +250,17 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         document = self.model_dump()
         key = self._build_key(self.id)
 
-        async with self._aclient() as client:
-            await client.set(key, json.dumps(document))
+        if pipe is None:
+            async with self._aclient() as client:
+                await client.set(key, json.dumps(document))
+
+        else:
+            pipe.multi()
+            pipe.set(key, json.dumps(document))
+
+            await pipe.execute()
 
         return self
-
-    # ....................... #
-
-    async def alock(self: T, **kwargs) -> None:
-        """
-        ...
-        """
-
-        key = self._build_key(self.id)
-        locker = self._alock_manager()
-
-        return await locker.lock(
-            resource=key,
-            lock_identifier=key,
-            **kwargs,
-        )
-
-    # ....................... #
-
-    async def aextend(self: T, **kwargs) -> None:
-        """
-        ...
-        """
-
-        key = self._build_key(self.id)
-        locker = self._alock_manager()
-        lock = await locker.get_lock(
-            resource=key,
-            lock_identifier=key,
-        )
-
-        return await locker.extend(lock, **kwargs)
-
-    # ....................... #
-
-    async def ais_locked(self: T) -> bool:
-        """
-        ...
-        """
-
-        key = self._build_key(self.id)
-        locker = self._alock_manager()
-
-        return await locker.is_locked(key)
-
-    # ....................... #
-
-    async def aunlock(self: T) -> None:
-        """
-        ...
-        """
-
-        key = self._build_key(self.id)
-        locker = self._alock_manager()
-        lock = await locker.get_lock(
-            resource=key,
-            lock_identifier=key,
-        )
-
-        return await locker.unlock(lock)
 
     # ....................... #
 

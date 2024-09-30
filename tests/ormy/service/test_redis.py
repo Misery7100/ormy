@@ -108,6 +108,15 @@ class TestRedisBase(unittest.TestCase):
             "Should return an instance",
         )
 
+    # ....................... #
+
+    def test_pipe(self):
+        case1 = self.base1()
+
+        with case1.pipe() as pipe:
+            case1.watch(pipe)
+            case1.save(pipe)
+
 
 # ----------------------- #
 
@@ -178,27 +187,12 @@ class TestRedisBaseAsync(unittest.IsolatedAsyncioTestCase):
 
     # ....................... #
 
-    async def test_lock_unlock(self):
+    async def test_apipe(self):
         case1 = self.base1()
 
-        self.assertFalse(
-            await case1.ais_locked(),
-            "Should return False",
-        )
-
-        await case1.alock()
-
-        self.assertTrue(
-            await case1.ais_locked(),
-            "Should return True",
-        )
-
-        await case1.aunlock()
-
-        self.assertFalse(
-            await case1.ais_locked(),
-            "Should return False",
-        )
+        async with case1.apipe() as pipe:
+            await case1.awatch(pipe)
+            await case1.asave(pipe)
 
 
 # ----------------------- #
