@@ -208,7 +208,13 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         """
 
         key = self._build_key(self.id)
-        return await self._alock_manager().lock(key, **kwargs)
+        locker = self._alock_manager()
+
+        return await locker.lock(
+            resource=key,
+            lock_identifier=key,
+            **kwargs,
+        )
 
     # ....................... #
 
@@ -218,7 +224,13 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         """
 
         key = self._build_key(self.id)
-        return await self._alock_manager().extend(key, **kwargs)
+        locker = self._alock_manager()
+        lock = await locker.get_lock(
+            resource=key,
+            lock_identifier=key,
+        )
+
+        return await locker.extend(lock, **kwargs)
 
     # ....................... #
 
@@ -228,7 +240,9 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         """
 
         key = self._build_key(self.id)
-        return await self._alock_manager().is_locked(key)
+        locker = self._alock_manager()
+
+        return await locker.is_locked(key)
 
     # ....................... #
 
@@ -238,7 +252,13 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         """
 
         key = self._build_key(self.id)
-        return await self._alock_manager().unlock(key)
+        locker = self._alock_manager()
+        lock = await locker.get_lock(
+            resource=key,
+            lock_identifier=key,
+        )
+
+        return await locker.unlock(lock)
 
     # ....................... #
 

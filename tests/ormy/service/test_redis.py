@@ -176,6 +176,30 @@ class TestRedisBaseAsync(unittest.IsolatedAsyncioTestCase):
             "Should return an instance",
         )
 
+    # ....................... #
+
+    async def test_lock_unlock(self):
+        case1 = self.base1()
+
+        self.assertFalse(
+            await case1.ais_locked(),
+            "Should return False",
+        )
+
+        await case1.alock()
+
+        self.assertTrue(
+            await case1.ais_locked(),
+            "Should return True",
+        )
+
+        await case1.aunlock()
+
+        self.assertFalse(
+            await case1.ais_locked(),
+            "Should return False",
+        )
+
 
 # ----------------------- #
 
