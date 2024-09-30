@@ -2,6 +2,7 @@ import json
 from contextlib import asynccontextmanager, contextmanager
 from typing import Optional, Type, TypeVar
 
+from aioredlock import Aioredlock  # type: ignore
 from redis import Redis
 from redis import asyncio as aioredis
 
@@ -97,6 +98,19 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
+    def _alock_manager(cls: Type[T]):
+        """
+        ...
+        """
+
+        cfg = cls.get_config(type_=RedisConfig)
+        url = cfg.url()
+
+        return Aioredlock([url])
+
+    # ....................... #
+
+    @classmethod
     def _build_key(cls: Type[T], key: str) -> str:
         """Build key for Redis storage"""
 
@@ -164,8 +178,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         """
 
         document = self.model_dump()
-        _id = document["id"]
-        key = self._build_key(_id)
+        key = self._build_key(self.id)
 
         with self._client() as client:
             client.set(key, json.dumps(document))
@@ -180,13 +193,52 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         """
 
         document = self.model_dump()
-        _id = document["id"]
-        key = self._build_key(_id)
+        key = self._build_key(self.id)
 
         async with self._aclient() as client:
             await client.set(key, json.dumps(document))
 
         return self
+
+    # ....................... #
+
+    async def alock(self: T, **kwargs) -> None:
+        """
+        ...
+        """
+
+        key = self._build_key(self.id)
+        return await self._alock_manager().lock(key, **kwargs)
+
+    # ....................... #
+
+    async def aextend(self: T, **kwargs) -> None:
+        """
+        ...
+        """
+
+        key = self._build_key(self.id)
+        return await self._alock_manager().extend(key, **kwargs)
+
+    # ....................... #
+
+    async def ais_locked(self: T) -> bool:
+        """
+        ...
+        """
+
+        key = self._build_key(self.id)
+        return await self._alock_manager().is_locked(key)
+
+    # ....................... #
+
+    async def aunlock(self: T) -> None:
+        """
+        ...
+        """
+
+        key = self._build_key(self.id)
+        return await self._alock_manager().unlock(key)
 
     # ....................... #
 
