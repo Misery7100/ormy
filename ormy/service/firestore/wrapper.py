@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import Callable, List, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, cast
 
 from firebase_admin import firestore, firestore_async  # type: ignore
 from google.cloud.firestore_v1 import (
@@ -279,49 +279,61 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    def save(
-        self: T,
-        transaction: Optional[Transaction] = None,
-        ref: Optional[DocumentReference] = None,
-    ) -> T:
+    def save(self: T) -> T:
         """
         ...
         """
 
         document = self.model_dump()
         _id: DocumentID = document["id"]
-
-        if transaction and ref:
-            transaction.set(ref, document)
-
-        else:
-            ref = self._ref(_id)
-            ref.set(document)
+        ref = self._ref(_id)
+        ref.set(document)
 
         return self
 
     # ....................... #
 
-    async def asave(
-        self: T,
-        transaction: Optional[AsyncTransaction] = None,
-        ref: Optional[AsyncDocumentReference] = None,
-    ) -> T:
+    async def asave(self: T) -> T:
         """
         ...
         """
 
         document = self.model_dump()
         _id: DocumentID = document["id"]
-
-        if transaction and ref:
-            transaction.set(ref, document)
-
-        else:
-            ref = await self._aref(_id)
-            await ref.set(document)
+        ref = await self._aref(_id)
+        await ref.set(document)
 
         return self
+
+    # ....................... #
+
+    def update_in_transaction(
+        self: T,
+        updates: Dict[str, Any],
+        transaction: Transaction,
+    ):
+        """
+        ...
+        """
+
+        data_filtered = {k: v for k, v in updates.items() if hasattr(self, k)}
+        ref = self._ref(self.id)
+        transaction.update(ref, data_filtered)
+
+    # ....................... #
+
+    async def aupdate_in_transaction(
+        self: T,
+        updates: Dict[str, Any],
+        transaction: AsyncTransaction,
+    ):
+        """
+        ...
+        """
+
+        data_filtered = {k: v for k, v in updates.items() if hasattr(self, k)}
+        ref = await self._aref(self.id)
+        transaction.update(ref, data_filtered)
 
     # ....................... #
 
@@ -428,7 +440,7 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         id_: DocumentID,
         bypass: bool = False,
         transaction: Optional[Transaction] = None,
-        return_ref: bool = False,
+        return_snapshot: bool = False,
     ) -> Optional[T | Tuple[T, DocumentReference]]:
         """
         ...
@@ -443,8 +455,8 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
             snapshot = ref.get()
 
         if snapshot.exists:
-            if return_ref:
-                return cls(**snapshot.to_dict()), ref  # type: ignore
+            if return_snapshot:
+                return cls(**snapshot.to_dict()), snapshot  # type: ignore
 
             return cls(**snapshot.to_dict())  # type: ignore
 
@@ -461,7 +473,7 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         id_: DocumentID,
         bypass: bool = False,
         transaction: Optional[Transaction] = None,
-        return_ref: bool = False,
+        return_snapshot: bool = False,
     ) -> Optional[T | Tuple[T, DocumentReference]]:
         """
         ...
@@ -476,8 +488,8 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
             snapshot = await ref.get()
 
         if snapshot.exists:
-            if return_ref:
-                return cls(**snapshot.to_dict()), ref  # type: ignore
+            if return_snapshot:
+                return cls(**snapshot.to_dict()), snapshot  # type: ignore
 
             return cls(**snapshot.to_dict())  # type: ignore
 
