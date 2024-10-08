@@ -131,8 +131,9 @@ class TestFirestoreBase(unittest.TestCase):
         self.assertEqual(doc_before.a, 1, "Value should be 1")
 
         with self.base1.transaction() as tr:
+            doc_before, ref = self.base1.find(case.id, transaction=tr, return_ref=True)
             doc_before.a = 2
-            doc_before.save(transaction=tr)
+            doc_before.save(transaction=tr, ref=ref)
 
         doc_after = self.base1.find(case.id)
         self.assertEqual(doc_after.a, 2, "Value should be 2")

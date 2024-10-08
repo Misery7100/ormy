@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import Callable, List, Optional, Type, TypeVar, cast
+from typing import Callable, List, Optional, Tuple, Type, TypeVar, cast
 
 from firebase_admin import firestore, firestore_async  # type: ignore
 from google.cloud.firestore_v1 import (
@@ -279,40 +279,46 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    def save(self: T, transaction: Optional[Transaction] = None) -> T:
+    def save(
+        self: T,
+        transaction: Optional[Transaction] = None,
+        ref: Optional[DocumentReference] = None,
+    ) -> T:
         """
         ...
         """
 
         document = self.model_dump()
         _id: DocumentID = document["id"]
-        ref = self._ref(_id)
 
-        if transaction:
-            ref.get(transaction=transaction)
+        if transaction and ref:
             transaction.set(ref, document)
 
         else:
+            ref = self._ref(_id)
             ref.set(document)
 
         return self
 
     # ....................... #
 
-    async def asave(self: T, transaction: Optional[AsyncTransaction] = None) -> T:
+    async def asave(
+        self: T,
+        transaction: Optional[AsyncTransaction] = None,
+        ref: Optional[AsyncDocumentReference] = None,
+    ) -> T:
         """
         ...
         """
 
         document = self.model_dump()
         _id: DocumentID = document["id"]
-        ref = await self._aref(_id)
 
-        if transaction:
-            await ref.get(transaction=transaction)
+        if transaction and ref:
             transaction.set(ref, document)
 
         else:
+            ref = await self._aref(_id)
             await ref.set(document)
 
         return self
@@ -421,15 +427,25 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         cls: Type[T],
         id_: DocumentID,
         bypass: bool = False,
-    ) -> Optional[T]:
+        transaction: Optional[Transaction] = None,
+        return_ref: bool = False,
+    ) -> Optional[T | Tuple[T, DocumentReference]]:
         """
         ...
         """
 
         ref = cls._ref(id_)
-        snapshot = ref.get()
+
+        if transaction:
+            snapshot = ref.get(transaction=transaction)
+
+        else:
+            snapshot = ref.get()
 
         if snapshot.exists:
+            if return_ref:
+                return cls(**snapshot.to_dict()), ref  # type: ignore
+
             return cls(**snapshot.to_dict())  # type: ignore
 
         elif not bypass:
@@ -444,15 +460,25 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         cls: Type[T],
         id_: DocumentID,
         bypass: bool = False,
-    ) -> Optional[T]:
+        transaction: Optional[Transaction] = None,
+        return_ref: bool = False,
+    ) -> Optional[T | Tuple[T, DocumentReference]]:
         """
         ...
         """
 
         ref = await cls._aref(id_)
-        snapshot = await ref.get()
+
+        if transaction:
+            snapshot = await ref.get(transaction=transaction)
+
+        else:
+            snapshot = await ref.get()
 
         if snapshot.exists:
+            if return_ref:
+                return cls(**snapshot.to_dict()), ref  # type: ignore
+
             return cls(**snapshot.to_dict())  # type: ignore
 
         elif not bypass:
@@ -462,8 +488,7 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    #! TODO: Support transactions?
-
+    #! TODO: Support transactions
     @classmethod
     def find_many(
         cls: Type[T],
@@ -489,8 +514,7 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    #! TODO: Support transactions?
-
+    #! TODO: Support transactions
     @classmethod
     async def afind_many(
         cls: Type[T],

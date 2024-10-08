@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from pydantic import Field
 
@@ -56,7 +56,7 @@ class DocumentABC(AbstractABC):
         id_: DocumentID,
         *args,
         **kwargs,
-    ) -> Optional[D]: ...
+    ) -> Optional[D | Any]: ...
 
     # ....................... #
 
@@ -67,7 +67,7 @@ class DocumentABC(AbstractABC):
         id_: DocumentID,
         *args,
         **kwargs,
-    ) -> Optional[D]: ...
+    ) -> Optional[D | Any]: ...
 
     # ....................... #
 
