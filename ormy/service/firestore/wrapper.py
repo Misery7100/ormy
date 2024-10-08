@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, cast
 
 from firebase_admin import firestore, firestore_async  # type: ignore
+from google.api_core.retry import AsyncRetry, Retry
 from google.cloud.firestore_v1 import (
     AsyncCollectionReference,
     AsyncDocumentReference,
@@ -449,7 +450,10 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         ref = cls._ref(id_)
 
         if transaction:
-            snapshot = ref.get(transaction=transaction)
+            snapshot = ref.get(
+                transaction=transaction,
+                retry=Retry(),
+            )
 
         else:
             snapshot = ref.get()
@@ -482,7 +486,10 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         ref = await cls._aref(id_)
 
         if transaction:
-            snapshot = await ref.get(transaction=transaction)
+            snapshot = await ref.get(
+                transaction=transaction,
+                retry=AsyncRetry(),
+            )
 
         else:
             snapshot = await ref.get()
