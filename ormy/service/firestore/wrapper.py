@@ -233,10 +233,30 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         with cls._client() as client:
             try:
                 t = client.transaction()
+                t._begin()
+
                 yield t
 
             finally:
-                t.commit()
+                t._commit()
+
+    # ....................... #
+
+    @classmethod
+    @contextmanager
+    def raw_transaction(cls: Type[T]):
+        """
+        ...
+        """
+
+        with cls._client() as client:
+            try:
+                t = client.transaction()
+
+                yield t
+
+            finally:
+                pass
 
     # ....................... #
 
@@ -250,10 +270,12 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         async with cls._aclient() as client:
             try:
                 t = client.transaction()
+                await t._begin()
+
                 yield t
 
             finally:
-                await t.commit()
+                await t._commit()
 
     # ....................... #
 
@@ -267,6 +289,7 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         ref = self._ref(_id)
 
         if transaction:
+            ref.get(transaction=transaction)
             transaction.set(ref, document)
 
         else:
@@ -286,9 +309,11 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         ref = await self._aref(_id)
 
         if transaction:
+            await ref.get(transaction=transaction)
             transaction.set(ref, document)
 
-        await ref.set(document)
+        else:
+            await ref.set(document)
 
         return self
 
@@ -396,14 +421,13 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         cls: Type[T],
         id_: DocumentID,
         bypass: bool = False,
-        transaction: Optional[Transaction] = None,
     ) -> Optional[T]:
         """
         ...
         """
 
         ref = cls._ref(id_)
-        snapshot = ref.get(transaction=transaction)
+        snapshot = ref.get()
 
         if snapshot.exists:
             return cls(**snapshot.to_dict())  # type: ignore
@@ -420,14 +444,13 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         cls: Type[T],
         id_: DocumentID,
         bypass: bool = False,
-        transaction: Optional[Transaction] = None,
     ) -> Optional[T]:
         """
         ...
         """
 
         ref = await cls._aref(id_)
-        snapshot = await ref.get(transaction=transaction)
+        snapshot = await ref.get()
 
         if snapshot.exists:
             return cls(**snapshot.to_dict())  # type: ignore

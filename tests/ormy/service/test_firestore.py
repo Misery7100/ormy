@@ -37,6 +37,8 @@ class TestFirestoreBase(unittest.TestCase):
                 ),
             ]
 
+            a: int = 1
+
         class Base2(Base1):
             configs = [
                 FirestoreConfig(collection="base2_firestore"),
@@ -118,6 +120,22 @@ class TestFirestoreBase(unittest.TestCase):
             self.base2.find(case2.id, bypass=True),
             "Should return an instance",
         )
+
+    # ....................... #
+
+    def test_transaction(self):
+        case = self.base1()
+        case.save()
+
+        doc_before = self.base1.find(case.id)
+        self.assertEqual(doc_before.a, 1, "Value should be 1")
+
+        with self.base1.transaction() as tr:
+            doc_before.a = 2
+            doc_before.save(transaction=tr)
+
+        doc_after = self.base1.find(case.id)
+        self.assertEqual(doc_after.a, 2, "Value should be 2")
 
 
 # ----------------------- #
