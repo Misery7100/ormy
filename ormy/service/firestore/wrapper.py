@@ -6,11 +6,13 @@ from google.cloud.firestore_v1 import (
     AsyncCollectionReference,
     AsyncDocumentReference,
     AsyncQuery,
+    AsyncTransaction,
     AsyncWriteBatch,
     CollectionReference,
     DocumentReference,
     FieldFilter,
     Query,
+    Transaction,
     WriteBatch,
 )
 from google.cloud.firestore_v1.aggregation import AggregationQuery
@@ -221,7 +223,41 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    def save(self: T) -> T:
+    @classmethod
+    @contextmanager
+    def transaction(cls: Type[T]):
+        """
+        ...
+        """
+
+        with cls._client() as client:
+            try:
+                t = client.transaction()
+                yield t
+
+            finally:
+                t.commit()
+
+    # ....................... #
+
+    @classmethod
+    @asynccontextmanager
+    async def atransaction(cls: Type[T]):
+        """
+        ...
+        """
+
+        async with cls._aclient() as client:
+            try:
+                t = client.transaction()
+                yield t
+
+            finally:
+                await t.commit()
+
+    # ....................... #
+
+    def save(self: T, transaction: Optional[Transaction] = None) -> T:
         """
         ...
         """
@@ -229,13 +265,18 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         document = self.model_dump()
         _id: DocumentID = document["id"]
         ref = self._ref(_id)
-        ref.set(document)
+
+        if transaction:
+            transaction.set(ref, document)
+
+        else:
+            ref.set(document)
 
         return self
 
     # ....................... #
 
-    async def asave(self: T) -> T:
+    async def asave(self: T, transaction: Optional[AsyncTransaction] = None) -> T:
         """
         ...
         """
@@ -243,6 +284,10 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         document = self.model_dump()
         _id: DocumentID = document["id"]
         ref = await self._aref(_id)
+
+        if transaction:
+            transaction.set(ref, document)
+
         await ref.set(document)
 
         return self
@@ -347,13 +392,18 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    def find(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
+    def find(
+        cls: Type[T],
+        id_: DocumentID,
+        bypass: bool = False,
+        transaction: Optional[Transaction] = None,
+    ) -> Optional[T]:
         """
         ...
         """
 
         ref = cls._ref(id_)
-        snapshot = ref.get()
+        snapshot = ref.get(transaction=transaction)
 
         if snapshot.exists:
             return cls(**snapshot.to_dict())  # type: ignore
@@ -366,13 +416,18 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    async def afind(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
+    async def afind(
+        cls: Type[T],
+        id_: DocumentID,
+        bypass: bool = False,
+        transaction: Optional[Transaction] = None,
+    ) -> Optional[T]:
         """
         ...
         """
 
         ref = await cls._aref(id_)
-        snapshot = await ref.get()
+        snapshot = await ref.get(transaction=transaction)
 
         if snapshot.exists:
             return cls(**snapshot.to_dict())  # type: ignore
