@@ -1,5 +1,16 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from firebase_admin import firestore, firestore_async  # type: ignore
 from google.api_core.retry import AsyncRetry, Retry
@@ -18,6 +29,14 @@ from google.cloud.firestore_v1 import (
 )
 from google.cloud.firestore_v1.aggregation import AggregationQuery
 from google.cloud.firestore_v1.async_aggregation import AsyncAggregationQuery
+from google.cloud.firestore_v1.transforms import (
+    ArrayRemove,
+    ArrayUnion,
+    Increment,
+    Maximum,
+    Minimum,
+    Sentinel,
+)
 
 from ormy.base.abc import ConfigABC, DocumentABC
 from ormy.base.typing import DocumentID
@@ -28,6 +47,9 @@ from .config import FirestoreConfig
 
 T = TypeVar("T", bound="FirestoreBase")
 C = TypeVar("C", bound="ConfigABC")
+
+# ! ???
+FsTransform = Union[Sentinel, ArrayRemove, ArrayUnion, Increment, Maximum, Minimum]
 
 # ....................... #
 
@@ -335,6 +357,28 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         data_filtered = {k: v for k, v in updates.items() if hasattr(self, k)}
         ref = await self._aref(self.id)
         transaction.update(ref, data_filtered)
+
+    # ....................... #
+
+    def atmoic_update(self: T, updates: Dict[str, Any]):
+        """
+        ...
+        """
+
+        data_filtered = {k: v for k, v in updates.items() if hasattr(self, k)}
+        ref = self._ref(self.id)
+        ref.update(data_filtered)
+
+    # ....................... #
+
+    async def aatomic_update(self: T, updates: Dict[str, Any]):
+        """
+        ...
+        """
+
+        data_filtered = {k: v for k, v in updates.items() if hasattr(self, k)}
+        ref = await self._aref(self.id)
+        await ref.update(data_filtered)
 
     # ....................... #
 
