@@ -7,7 +7,7 @@ import backoff
 from google.cloud import bigquery
 from google.cloud.exceptions import BadRequest, GoogleCloudError, NotFound
 from pydantic import BaseModel, Field
-from pydantic.fields import FieldInfo
+from pydantic.fields import ComputedFieldInfo, FieldInfo
 
 from ormy.base.abc import AbstractABC
 from ormy.base.func import hex_uuid4, utcnow
@@ -104,28 +104,34 @@ class BigQueryBase(AbstractABC):
     @classmethod
     def _get_schema_field_type(
         cls: Type[Bq],
-        field: FieldInfo,
+        field: FieldInfo | ComputedFieldInfo,
     ) -> bigquery.enums.SqlTypeNames:
         """
         ...
         """
 
-        origin = get_origin(field.annotation)
+        if isinstance(field, FieldInfo):
+            annot = field.annotation
+
+        else:
+            annot = field.return_type
+
+        origin = get_origin(annot)
 
         if origin is None:
-            type_ = field.annotation
+            type_ = annot
 
         else:
             if isinstance(origin, dict):  #! ???
                 return bigquery.enums.SqlTypeNames.STRUCT
 
             elif origin is Union:
-                args = list(get_args(field.annotation))
+                args = list(get_args(annot))
                 args = [x for x in args if x]
                 type_ = args[0]
 
             else:
-                type_ = get_args(field.annotation)[0]
+                type_ = get_args(annot)[0]
 
         if type_ is not None and issubclass(type_, int):
             return bigquery.enums.SqlTypeNames.INTEGER
@@ -153,12 +159,21 @@ class BigQueryBase(AbstractABC):
     # ....................... #
 
     @classmethod
-    def _get_schema_field_mode(cls: Type[Bq], field: FieldInfo):
+    def _get_schema_field_mode(
+        cls: Type[Bq],
+        field: FieldInfo | ComputedFieldInfo,
+    ):
         """
         ...
         """
 
-        origin = get_origin(field.annotation)
+        if isinstance(field, FieldInfo):
+            annot = field.annotation
+
+        else:
+            annot = field.return_type
+
+        origin = get_origin(annot)
 
         if origin is None:
             return "REQUIRED"
@@ -168,7 +183,7 @@ class BigQueryBase(AbstractABC):
                 return "REQUIRED"
 
             elif origin is Union:
-                args = get_args(field.annotation)
+                args = get_args(annot)
 
                 if type(None) in args and type(list) not in args:
                     return "NULLABLE"
@@ -185,27 +200,36 @@ class BigQueryBase(AbstractABC):
     # ....................... #
 
     @classmethod
-    def _get_schema_inner_fields(cls: Type[Bq], field: FieldInfo):
+    def _get_schema_inner_fields(
+        cls: Type[Bq],
+        field: FieldInfo | ComputedFieldInfo,
+    ):
         """
         ...
         """
 
-        origin = get_origin(field.annotation)
+        if isinstance(field, FieldInfo):
+            annot = field.annotation
+
+        else:
+            annot = field.return_type
+
+        origin = get_origin(annot)
 
         if origin is None:
-            type_ = field.annotation
+            type_ = annot
 
         else:
             if isinstance(origin, dict):
                 return []
 
             elif origin is Union:
-                args = list(get_args(field.annotation))
+                args = list(get_args(annot))
                 args = [x for x in args if x]
                 type_ = args[0]
 
             else:
-                type_ = get_args(field.annotation)[0]
+                type_ = get_args(annot)[0]
 
         if type_ is not None and issubclass(type_, BaseModel):
             return [cls._get_schema_field(k, v) for k, v in type_.model_fields.items()]
@@ -218,7 +242,7 @@ class BigQueryBase(AbstractABC):
     def _get_schema_field(
         cls: Type[Bq],
         name: str,
-        field: FieldInfo,
+        field: FieldInfo | ComputedFieldInfo,
     ):
         """
         ...
@@ -243,7 +267,11 @@ class BigQueryBase(AbstractABC):
         ...
         """
 
-        return [cls._get_schema_field(k, v) for k, v in cls.model_fields.items()]
+        model_fields = list(cls.model_fields.items())
+        computed_fields = list(cls.model_computed_fields.items())
+        all_fields = model_fields + computed_fields
+
+        return [cls._get_schema_field(k, v) for k, v in all_fields]
 
     # ....................... #
 
