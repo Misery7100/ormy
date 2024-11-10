@@ -384,3 +384,12 @@ class BigQueryBase(AbstractABC):
 
                 else:
                     raise e
+
+    # ....................... #
+
+    def save(self: Bq):
+        """
+        ...
+        """
+
+        return self.insert(data=self)
