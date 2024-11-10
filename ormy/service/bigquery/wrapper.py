@@ -116,7 +116,7 @@ class BigQueryBase(AbstractABC):
             type_ = field.annotation
 
         else:
-            if isinstance(origin, dict):  #! ???
+            if isinstance(origin, dict) or issubclass(origin, dict):  #! ???
                 return bigquery.enums.SqlTypeNames.STRUCT
 
             elif origin is Union:
@@ -127,24 +127,22 @@ class BigQueryBase(AbstractABC):
             else:
                 type_ = get_args(field.annotation)[0]
 
-        if isinstance(type_, int):
+        if type_ is not None and issubclass(type_, int):
             return bigquery.enums.SqlTypeNames.INTEGER
 
-        if isinstance(type_, float):
+        if type_ is not None and issubclass(type_, float):
             return bigquery.enums.SqlTypeNames.FLOAT
 
-        if isinstance(type_, (str, UUID)) or (
-            type_ is not None and issubclass(type_, Enum)
-        ):
+        if type_ is not None and issubclass(type_, (str, UUID, Enum)):
             return bigquery.enums.SqlTypeNames.STRING
 
-        if isinstance(type_, bool):
+        if type_ is not None and issubclass(type_, bool):
             return bigquery.enums.SqlTypeNames.BOOLEAN
 
-        if isinstance(type_, date):
+        if type_ is not None and issubclass(type_, date):
             return bigquery.enums.SqlTypeNames.DATE
 
-        if isinstance(type_, datetime):
+        if type_ is not None and issubclass(type_, datetime):
             return bigquery.enums.SqlTypeNames.TIMESTAMP
 
         if type_ is not None and issubclass(type_, BaseModel):
@@ -198,7 +196,7 @@ class BigQueryBase(AbstractABC):
             type_ = field.annotation
 
         else:
-            if isinstance(origin, dict):
+            if isinstance(origin, dict) or issubclass(origin, dict):
                 return []
 
             elif origin is Union:
