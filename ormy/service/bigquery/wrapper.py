@@ -314,7 +314,9 @@ class BigQueryBase(AbstractABC):
     # ....................... #
 
     def bigquery_dump(self, *args, **kwargs):
-        return self.model_dump(*args, **kwargs)
+        kwargs.pop("mode", None)
+
+        return self.model_dump(*args, mode="json", **kwargs)
 
     # ....................... #
 
