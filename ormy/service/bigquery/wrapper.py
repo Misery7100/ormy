@@ -170,10 +170,10 @@ class BigQueryBase(AbstractABC):
             elif origin is Union:
                 args = get_args(field.annotation)
 
-                if None in args and list not in args:
+                if type(None) in args and type(list) not in args:
                     return "NULLABLE"
 
-                elif list in args:
+                elif type(list) in args:
                     return "REPEATED"
 
                 else:
