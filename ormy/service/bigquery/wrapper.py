@@ -133,6 +133,9 @@ class BigQueryBase(AbstractABC):
             else:
                 type_ = get_args(annot)[0]
 
+        if type_ is not None and issubclass(type_, bool):
+            return bigquery.enums.SqlTypeNames.BOOLEAN
+
         if type_ is not None and issubclass(type_, int):
             return bigquery.enums.SqlTypeNames.INTEGER
 
@@ -141,9 +144,6 @@ class BigQueryBase(AbstractABC):
 
         if type_ is not None and issubclass(type_, (str, UUID, Enum)):
             return bigquery.enums.SqlTypeNames.STRING
-
-        if type_ is not None and issubclass(type_, bool):
-            return bigquery.enums.SqlTypeNames.BOOLEAN
 
         if type_ is not None and issubclass(type_, date):
             return bigquery.enums.SqlTypeNames.DATE
