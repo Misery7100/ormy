@@ -116,7 +116,7 @@ class BigQueryBase(AbstractABC):
             type_ = field.annotation
 
         else:
-            if isinstance(origin, dict) or issubclass(origin, dict):  #! ???
+            if isinstance(origin, dict):  #! ???
                 return bigquery.enums.SqlTypeNames.STRUCT
 
             elif origin is Union:
@@ -196,7 +196,7 @@ class BigQueryBase(AbstractABC):
             type_ = field.annotation
 
         else:
-            if isinstance(origin, dict) or issubclass(origin, dict):
+            if isinstance(origin, dict):
                 return []
 
             elif origin is Union:
