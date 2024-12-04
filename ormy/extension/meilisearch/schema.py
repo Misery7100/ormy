@@ -1,15 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import (
-    Any,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Annotated, Any, List, Literal, Optional, Tuple, Type, TypeVar, Union
 
 from meilisearch_python_sdk.models.search import SearchResults
 from pydantic import BaseModel, Field
@@ -196,7 +187,10 @@ class ArrayFilter(FilterABC):
 
 # ....................... #
 
-SomeFilter = Union[BooleanFilter, NumberFilter, DatetimeFilter, ArrayFilter]
+SomeFilter = Annotated[
+    Union[BooleanFilter, NumberFilter, DatetimeFilter, ArrayFilter],
+    Field(discriminator="type"),
+]
 
 # ----------------------- #
 
@@ -217,7 +211,6 @@ class SearchRequest(BaseModel):
     filters: List[SomeFilter] = Field(
         default_factory=list,
         title="Filters",
-        discriminator="type",
     )
 
 
@@ -260,5 +253,4 @@ class MeilisearchReference(BaseReference):
     filters: List[SomeFilter] = Field(
         default_factory=list,
         title="Filters",
-        discriminator="type",
     )
