@@ -211,7 +211,7 @@ class ClickHouseBase(AbstractABC):
                     ):
                         _dict_[attr_name] = attr_value
 
-                    elif attr_name == "model_fields":
+                    elif attr_name in ["model_fields", "__pydantic_fields__"]:
                         for k, v in attr_value.items():
                             if isinstance(v, ClickHouseFieldInfo):
                                 _dict_[k] = v.clickhouse
