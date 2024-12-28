@@ -2,7 +2,11 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, ClassVar, List, Type, TypeVar
 
-from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtension
+from ormy.extension.meilisearch import (
+    MeilisearchConfig,
+    MeilisearchExtension,
+    MeilisearchExtensionV2,
+)
 from ormy.service.mongo import MongoBase, MongoConfig
 
 # ----------------------- #
@@ -159,30 +163,30 @@ class MongoWithMeilisearch(MongoBase, MeilisearchExtension):
 M = TypeVar("M", bound="MongoWithMeilisearchBackgroundV2")
 
 
-class MongoWithMeilisearchBackgroundV2(MongoBase, MeilisearchExtension):
+class MongoWithMeilisearchBackgroundV2(MongoBase, MeilisearchExtensionV2):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
 
     # ....................... #
 
     def save(self: M) -> M:
-        super().save()
+        res = super().save()
 
         # Run in background
         with ThreadPoolExecutor() as executor:
-            executor.submit(self.meili_update_documents, self)
+            executor.submit(self.meili_update_documents, res)
 
-        return self
+        return res
 
     # ....................... #
 
     async def asave(self: M) -> M:
-        await super().asave()
+        res = await super().asave()
 
         # Run in background
-        asyncio.create_task(self.ameili_update_documents(self))
+        asyncio.create_task(self.ameili_update_documents(res))
 
-        return self
+        return res
 
     # ....................... #
 
