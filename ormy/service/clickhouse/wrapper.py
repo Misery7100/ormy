@@ -192,7 +192,7 @@ class ClickHouseBase(AbstractABC):
             cls._registry,
         )
 
-        cls._model.set_database(cls._get_adatabase())  # type: ignore
+        cls._model.set_database(cls, cls._get_adatabase())  # type: ignore
 
     # ....................... #
 
