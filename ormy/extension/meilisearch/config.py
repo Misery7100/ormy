@@ -1,6 +1,19 @@
 from typing import Optional
 
+from meilisearch_python_sdk.models.settings import (
+    Faceting,
+    HuggingFaceEmbedder,
+    LocalizedAttributes,
+    OllamaEmbedder,
+    OpenAiEmbedder,
+    Pagination,
+    ProximityPrecision,
+    RestEmbedder,
+    TypoTolerance,
+    UserProvidedEmbedder,
+)
 from meilisearch_python_sdk.models.settings import MeilisearchSettings as MsSettings
+from meilisearch_python_sdk.types import JsonDict
 from pydantic import SecretStr, model_validator
 
 from ormy.base.abc import ConfigABC
@@ -10,7 +23,32 @@ from ormy.base.pydantic import Base
 
 
 class MeilisearchSettings(MsSettings):
-    default_sort: Optional[str] = None  #! - ??????
+    """
+    Meilisearch extension settings
+
+    Attributes:
+        default_sort (str, optional): Default sort field
+        synonyms (JsonDict, optional): Synonyms
+        stop_words (List[str], optional): Stop words
+        ranking_rules (List[str], optional): Ranking rules
+        filterable_attributes (List[str], optional): Filterable attributes
+        distinct_attribute (str, optional): Distinct attribute
+        searchable_attributes (List[str], optional): Searchable attributes
+        displayed_attributes (List[str], optional): Displayed attributes
+        sortable_attributes (List[str], optional): Sortable attributes
+        typo_tolerance (TypoTolerance, optional): Typo tolerance
+        faceting (Faceting, optional): Faceting
+        pagination (Pagination, optional): Pagination
+        proximity_precision (ProximityPrecision, optional): Proximity precision
+        separator_tokens (List[str], optional): Separator tokens
+        non_separator_tokens (List[str], optional): Non separator tokens
+        search_cutoff_ms (int, optional): Search cutoff ms
+        dictionary (List[str], optional): Dictionary
+        embedders (Dict[str, OpenAiEmbedder | HuggingFaceEmbedder | OllamaEmbedder | RestEmbedder | UserProvidedEmbedder], optional): Embedders
+        localized_attributes (List[LocalizedAttributes], optional): Localized attributes
+    """
+
+    default_sort: Optional[str] = None
 
     # ....................... #
 
@@ -27,15 +65,49 @@ class MeilisearchSettings(MsSettings):
 
 
 class MeilisearchCredentials(Base):
-    host: str = "localhost"
-    port: str = "7700"
+    """
+    Meilisearch connect credentials
+
+    Attributes:
+        master_key (SecretStr, optional): Meilisearch master key
+        host (str): Meilisearch host
+        port (int, optional): Meilisearch port
+        https (bool): Whether to use HTTPS
+    """
+
     master_key: Optional[SecretStr] = None
+    host: str = "localhost"
+    port: Optional[int] = 7700
+    https: bool = False
+
+    # ....................... #
+
+    def url(self) -> str:
+        """
+        Returns the Meilisearch URL
+        """
+
+        if self.https:
+            return f"https://{self.host}"
+
+        return f"http://{self.host}:{self.port}"
 
 
 # ....................... #
 
 
 class MeilisearchConfig(ConfigABC):
+    """
+    Configuration for Meilisearch extension
+
+    Attributes:
+        index (str): Meilisearch index name
+        primary_key (str): Meilisearch primary key
+        settings (MeilisearchSettings): Meilisearch settings
+        include_to_registry (bool): Whether to include to registry
+        credentials (MeilisearchCredentials): Meilisearch connect credentials
+    """
+
     # Local configuration
     index: str = "_default_"
     primary_key: str = "id"
@@ -52,7 +124,7 @@ class MeilisearchConfig(ConfigABC):
         Returns the Meilisearch URL
         """
 
-        return f"http://{self.credentials.host}:{self.credentials.port}"
+        return self.credentials.url()
 
     # ....................... #
 
@@ -62,3 +134,23 @@ class MeilisearchConfig(ConfigABC):
         """
 
         return self._default_helper("index")
+
+
+# ----------------------- #
+
+__all__ = [
+    "MeilisearchConfig",
+    "MeilisearchCredentials",
+    "MeilisearchSettings",
+    "JsonDict",
+    "TypoTolerance",
+    "Faceting",
+    "Pagination",
+    "ProximityPrecision",
+    "LocalizedAttributes",
+    "OpenAiEmbedder",
+    "OllamaEmbedder",
+    "RestEmbedder",
+    "UserProvidedEmbedder",
+    "HuggingFaceEmbedder",
+]

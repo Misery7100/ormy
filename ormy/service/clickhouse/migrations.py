@@ -49,10 +49,10 @@ class RunSQLWithSettings(migrations.RunSQL):
 # ....................... #
 
 
-class ModelOperation(migrations.ModelOperation):  # ????
+class ModelOperation(migrations.ModelOperation):
     def __init__(self, model_class: Type[ChM] | Type[ChB]):
         if issubclass(model_class, ClickHouseBase):
-            model_class = model_class._model
+            model_class = model_class._model  # type: ignore
 
         super().__init__(model_class)
 

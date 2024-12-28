@@ -9,6 +9,16 @@ from ormy.base.pydantic import Base
 
 
 class ClickHouseCredentials(Base):
+    """
+    ClickHouse connect credentials
+
+    Attributes:
+        host (str): ClickHouse host
+        port (int, optional): ClickHouse port
+        username (SecretStr, optional): ClickHouse username
+        password (SecretStr, optional): ClickHouse password
+    """
+
     host: str = "localhost"
     port: Optional[int] = None
     username: Optional[SecretStr] = None
@@ -16,20 +26,31 @@ class ClickHouseCredentials(Base):
 
     # ....................... #
 
-    def db_url(self) -> str:
-        host = self.host
-        port = self.port
+    def url(self) -> str:
+        """
+        Returns the ClickHouse database URL
+        """
 
-        if port:
-            return f"http://{host}:{port}/"
+        if self.port:
+            return f"http://{self.host}:{self.port}/"
 
-        return f"http://{host}/"
+        return f"http://{self.host}/"
 
 
 # ....................... #
 
 
 class ClickHouseConfig(ConfigABC):
+    """
+    ClickHouse extension config
+
+    Attributes:
+        database (str): ClickHouse database
+        table (str): ClickHouse table
+        include_to_registry (bool): Whether to include to registry
+        credentials (ClickHouseCredentials): ClickHouse connection credentials
+    """
+
     database: str = "default"
     table: str = "default"
     include_to_registry: bool = True
@@ -47,5 +68,9 @@ class ClickHouseConfig(ConfigABC):
 
     # ....................... #
 
-    def db_url(self) -> str:
-        return self.credentials.db_url()
+    def url(self) -> str:
+        """
+        Returns the ClickHouse database URL
+        """
+
+        return self.credentials.url()

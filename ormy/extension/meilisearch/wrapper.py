@@ -158,7 +158,7 @@ class MeilisearchExtension(AbstractABC):
         cfg = cls.get_config(type_=MeilisearchConfig)
 
         if not cfg.is_default():
-            with cls._meili_client() as c:
+            with cls._meili_client() as c:  # type: ignore
                 try:
                     ix = c.get_index(cfg.index)
                     logger.debug(f"Index `{cfg.index}` already exists")
@@ -246,7 +246,7 @@ class MeilisearchExtension(AbstractABC):
         """Check Meilisearch health"""
 
         try:
-            with cls._meili_client() as c:
+            with cls._meili_client() as c:  # type: ignore
                 h = c.health()
                 status = h.status == "available"
 
@@ -263,7 +263,7 @@ class MeilisearchExtension(AbstractABC):
 
         cfg = cls.get_config(type_=MeilisearchConfig)
 
-        with cls._meili_client() as c:
+        with cls._meili_client() as c:  # type: ignore
             return c.get_index(cfg.index)
 
     # ....................... #
@@ -274,7 +274,7 @@ class MeilisearchExtension(AbstractABC):
 
         cfg = cls.get_config(type_=MeilisearchConfig)
 
-        async with cls._ameili_client() as c:
+        async with cls._ameili_client() as c:  # type: ignore
             return await c.get_index(cfg.index)
 
     # ....................... #

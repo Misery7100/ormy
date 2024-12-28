@@ -16,6 +16,7 @@ class ConfigABC(Base, ABC):
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    include_to_registry: bool = True
 
     # ....................... #
 

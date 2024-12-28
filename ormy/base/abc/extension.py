@@ -39,7 +39,8 @@ class ExtensionABC(Base, ABC):
         if cfg is None:
             msg = f"Configuration {type_} for {cls.__name__} not found"
             logger.error(msg)
-            raise ValueError(msg)
+
+            raise ValueError(msg)  # TODO: use ormy.base.error
 
         logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
 
@@ -154,3 +155,27 @@ class ExtensionABC(Base, ABC):
         logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
         cls._registry = cls._merge_registry_helper(reg, cls._registry)
+
+    # ....................... #
+
+    @classmethod
+    def _register_subclass_helper(
+        cls: Type[E],
+        config: Type[C],
+        discriminator: str,
+    ):
+        cfg = cls.get_extension_config(type_=config)
+        key = getattr(cfg, discriminator, None)
+
+        if key is None:
+            # TODO: replace with ormy.base.error
+            raise ValueError(f"Discriminator {discriminator} not found in {cfg}")
+
+        if cfg.include_to_registry and not cfg.is_default():
+            logger.debug(f"Registering {cls.__name__} in {key}")
+            logger.debug(f"Registry before: {cls._registry}")
+
+            cls._registry[config] = cls._registry.get(config, {})
+            cls._registry[config][key] = cls
+
+            logger.debug(f"Registry after: {cls._registry}")

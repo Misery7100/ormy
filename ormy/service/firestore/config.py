@@ -15,7 +15,8 @@ class FirestoreCredentials(Base):
 
     Attributes:
         project_id (str): Firebase project ID
-        credentials (firebase_admin.App): Firebase app to bind
+        app (firebase_admin.App, optional): Firebase app to bind
+        app_name (str, optional): Firebase app name
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -37,7 +38,7 @@ class FirestoreCredentials(Base):
             )
 
         if self.project_id is None:
-            self.project_id = self.app.project_id
+            self.project_id = self.app.project_id  # type: ignore
 
         return self
 
@@ -52,7 +53,8 @@ class FirestoreConfig(ConfigABC):
     Attributes:
         database (str): Database name to assign
         collection (str): Collection name to assign
-        credentials (ormy.service.firestore.FirestoreCredentials): Connection credentials
+        include_to_registry (bool): Whether to include to registry
+        credentials (ormy.service.firestore.FirestoreCredentials): Firestore connection credentials
     """
 
     # Local configuration

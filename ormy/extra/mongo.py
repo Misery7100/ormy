@@ -7,13 +7,17 @@ from ormy.extension.meilisearch import (
     MeilisearchExtension,
     MeilisearchExtensionV2,
 )
+from ormy.extension.s3 import S3Config, S3Extension
 from ormy.service.mongo import MongoBase, MongoConfig
 
 # ----------------------- #
 
 MwMb = TypeVar("MwMb", bound="MongoWithMeilisearchBackground")
+MwM = TypeVar("MwM", bound="MongoWithMeilisearch")
+M = TypeVar("M", bound="MongoWithMeilisearchBackgroundV2")
+S = TypeVar("S", bound="MongoMeilisearchS3")
 
-# ....................... #
+# ----------------------- #
 
 
 class MongoWithMeilisearchBackground(MongoBase, MeilisearchExtension):
@@ -93,10 +97,6 @@ class MongoWithMeilisearchBackground(MongoBase, MeilisearchExtension):
 
 # ----------------------- #
 
-MwM = TypeVar("MwM", bound="MongoWithMeilisearch")
-
-# ....................... #
-
 
 class MongoWithMeilisearch(MongoBase, MeilisearchExtension):
     configs = [MongoConfig(), MeilisearchConfig()]
@@ -158,14 +158,27 @@ class MongoWithMeilisearch(MongoBase, MeilisearchExtension):
         await cls.ameili_update_documents(data)
 
 
-# ....................... #
-
-M = TypeVar("M", bound="MongoWithMeilisearchBackgroundV2")
+# ----------------------- #
 
 
 class MongoWithMeilisearchBackgroundV2(MongoBase, MeilisearchExtensionV2):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
+
+    # ....................... #
+
+    def __init_subclass__(cls: Type[M], **kwargs):
+        try:
+            cfg_meili = cls.get_extension_config(type_=MeilisearchConfig)
+
+        except ValueError:
+            cfg_meili = MeilisearchConfig()
+
+        other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_meili]]
+        cfg_meili.index = f"{cls.config.database}__{cls.config.collection}"
+        cls.extension_configs = [cfg_meili] + other_ext_configs
+
+        super().__init_subclass__(**kwargs)
 
     # ....................... #
 
@@ -237,3 +250,26 @@ class MongoWithMeilisearchBackgroundV2(MongoBase, MeilisearchExtensionV2):
 
         # Run in background
         asyncio.create_task(cls.ameili_update_documents(data))
+
+
+# ----------------------- #
+
+
+class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
+    config: ClassVar[MongoConfig] = MongoConfig()
+    extension_configs: ClassVar[List[Any]] = [MeilisearchConfig(), S3Config()]
+
+    # ....................... #
+
+    def __init_subclass__(cls: Type[S], **kwargs):
+        try:
+            cfg_s3 = cls.get_extension_config(type_=S3Config)
+
+        except ValueError:
+            cfg_s3 = S3Config()
+
+        other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_s3]]
+        cfg_s3.bucket = f"{cls.config.database}__{cls.config.collection}"
+        cls.extension_configs = [cfg_s3] + other_ext_configs
+
+        super().__init_subclass__(**kwargs)

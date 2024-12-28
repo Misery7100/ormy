@@ -1,4 +1,19 @@
-from .config import MeilisearchConfig, MeilisearchCredentials, MeilisearchSettings
+from .config import (
+    Faceting,
+    HuggingFaceEmbedder,
+    JsonDict,
+    LocalizedAttributes,
+    MeilisearchConfig,
+    MeilisearchCredentials,
+    MeilisearchSettings,
+    OllamaEmbedder,
+    OpenAiEmbedder,
+    Pagination,
+    ProximityPrecision,
+    RestEmbedder,
+    TypoTolerance,
+    UserProvidedEmbedder,
+)
 from .schema import (
     ArrayFilter,
     BooleanFilter,
@@ -30,4 +45,15 @@ __all__ = [
     "BooleanFilter",
     "DatetimeFilter",
     "NumberFilter",
+    "JsonDict",
+    "TypoTolerance",
+    "Faceting",
+    "Pagination",
+    "ProximityPrecision",
+    "LocalizedAttributes",
+    "OpenAiEmbedder",
+    "OllamaEmbedder",
+    "RestEmbedder",
+    "UserProvidedEmbedder",
+    "HuggingFaceEmbedder",
 ]

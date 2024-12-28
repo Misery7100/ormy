@@ -84,7 +84,7 @@ class AsyncDatabase(database.Database):
         for line in lines:
             # skip blank line left by WITH TOTALS modifier
             if line:
-                yield model_class.from_tsv(
+                yield model_class.from_tsv(  # type: ignore
                     line, field_names, self.server_timezone, self
                 )
 
@@ -231,7 +231,7 @@ class AsyncDatabase(database.Database):
 
         return database.Page(
             objects=(
-                list(await self.aselect(query, model_class, settings)) if count else []
+                list(await self.aselect(query, model_class, settings)) if count else []  # type: ignore
             ),
             number_of_objects=count,
             pages_total=pages_total,

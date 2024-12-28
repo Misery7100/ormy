@@ -11,7 +11,7 @@ from ormy.base.abc import ExtensionABC
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import MeilisearchConfig
-from .schema import (  # noqa: F401
+from .schema import (
     ArrayFilter,
     BooleanFilter,
     DatetimeFilter,
@@ -56,17 +56,10 @@ class MeilisearchExtensionV2(ExtensionABC):
     def _meili_register_subclass(cls: Type[M]):
         """Register subclass in the registry"""
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
-        ix = cfg.index
-
-        if cfg.include_to_registry and not cfg.is_default():
-            logger.debug(f"Registering {cls.__name__} in {ix}")
-            logger.debug(f"Registry before: {cls._registry}")
-
-            cls._registry[MeilisearchConfig] = cls._registry.get(MeilisearchConfig, {})
-            cls._registry[MeilisearchConfig][ix] = cls
-
-            logger.debug(f"Registry after: {cls._registry}")
+        return cls._register_subclass_helper(
+            config=MeilisearchConfig,
+            discriminator="index",
+        )
 
     # ....................... #
 

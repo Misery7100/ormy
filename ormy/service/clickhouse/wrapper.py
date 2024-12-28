@@ -4,6 +4,7 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    Optional,
     Type,
     TypeVar,
 )
@@ -172,10 +173,10 @@ class ClickHouseModel(models.Model):
 class ClickHouseBase(AbstractABC):
 
     configs = [ClickHouseConfig()]
-    engine: ClassVar[engines.Engine] = None
+    engine: ClassVar[Optional[engines.Engine]] = None
 
     _registry = {ClickHouseConfig: {}}
-    _model: ClassVar[ClickHouseModel] = None  # type: ignore[assignment]
+    _model: ClassVar[Optional[ClickHouseModel]] = None  # type: ignore[assignment]
 
     # ....................... #
 
@@ -191,7 +192,7 @@ class ClickHouseBase(AbstractABC):
             cls._registry,
         )
 
-        cls._model.set_database(cls, cls._get_adatabase())
+        cls._model.set_database(cls._get_adatabase())  # type: ignore
 
     # ....................... #
 
@@ -283,14 +284,14 @@ class ClickHouseBase(AbstractABC):
             db_name=cfg.database,
             username=username,
             password=password,
-            db_url=cfg.db_url(),
+            db_url=cfg.url(),
         )
 
     # ....................... #
 
     @classmethod
     def objects(cls: Type[Ch]) -> ClickHouseQuerySet:
-        return cls._model.objects_in(cls._get_adatabase())
+        return cls._model.objects_in(cls._get_adatabase())  # type: ignore
 
     # ....................... #
 
@@ -318,9 +319,9 @@ class ClickHouseBase(AbstractABC):
         model_records = [
             cls._model(
                 **record.model_dump(
-                    exclude=cls._get_materialized_fields(),
+                    exclude=cls._get_materialized_fields(),  # type: ignore
                 )
-            )
+            )  # type: ignore
             for record in records
         ]
         return cls._get_adatabase().insert(model_records, batch_size=batch_size)
@@ -339,9 +340,9 @@ class ClickHouseBase(AbstractABC):
         model_records = [
             cls._model(
                 **record.model_dump(
-                    exclude=cls._get_materialized_fields(),
+                    exclude=cls._get_materialized_fields(),  # type: ignore
                 )
-            )
+            )  # type: ignore
             for record in records
         ]
         return await cls._get_adatabase().ainsert(model_records, batch_size=batch_size)
