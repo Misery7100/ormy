@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Self, Type, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
@@ -13,8 +13,6 @@ class Base(BaseModel):
     """
     Base class for all Pydantic models within the package
     """
-
-    # TODO: write about the `specific_fields` attribute
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -204,7 +202,7 @@ class Base(BaseModel):
 
     # ....................... #
 
-    def model_dump_with_secrets(self: T) -> Dict[str, Any]:
+    def model_dump_with_secrets(self: Self) -> Dict[str, Any]:
         """
         Dump the model with secrets
 
@@ -288,7 +286,7 @@ class BaseReference(BaseModel):
 
     # ....................... #
 
-    def merge(self, *others: Br):
+    def merge(self: Br, *others: Br):
         """
         Merge two references
 
@@ -310,7 +308,7 @@ class BaseReference(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def filter_schema_fields(cls, v):
+    def filter_schema_fields(cls: Type[Br], v):
         v["table_schema"] = [
             {k: v for k, v in field.items() if k in ["key", "title", "type"]}
             for field in v["table_schema"]
@@ -328,14 +326,14 @@ class TableResponse(BaseModel):
         title="Data",
     )
     size: int = Field(
-        ...,
+        default=...,
         title="Rows per page",
     )
     page: int = Field(
-        ...,
+        default=...,
         title="Current page",
     )
     count: int = Field(
-        ...,
+        default=...,
         title="Total number of rows",
     )

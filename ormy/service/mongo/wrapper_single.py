@@ -1,16 +1,17 @@
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import ClassVar, List, Optional, Sequence, Type, TypeVar
 
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
     AsyncIOMotorCollection,
     AsyncIOMotorDatabase,
 )
-from pymongo import InsertOne, MongoClient
+from pymongo import InsertOne, MongoClient, UpdateMany, UpdateOne  # noqa: F401
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from ormy.base.abc import DocumentABC, DocumentID
+from ormy.base.abc import DocumentID, DocumentSingleABC
+from ormy.base.error import BadInput, Conflict, NotFound
 from ormy.base.generic import TabularData
 from ormy.utils.logging import LogLevel, console_logger
 
@@ -19,17 +20,16 @@ from .typing import MongoRequest
 
 # ----------------------- #
 
-M = TypeVar("M", bound="MongoBase")
+M = TypeVar("M", bound="MongoSingleBase")
 
 logger = console_logger(__name__, level=LogLevel.INFO)
 
 # ....................... #
 
 
-class MongoBase(DocumentABC):  # TODO: add docstrings
-
-    configs = [MongoConfig()]
-    _registry = {MongoConfig: {}}
+class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
+    config: ClassVar[MongoConfig] = MongoConfig()
+    _registry = {MongoConfig: {}}  #! - ?????
 
     # ....................... #
 
@@ -38,10 +38,9 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
 
         cls._mongo_register_subclass()
         cls._merge_registry()
-        cls._enable_streaming()
 
-        MongoBase._registry = cls._merge_registry_helper(
-            MongoBase._registry,
+        MongoSingleBase._registry = cls._merge_registry_helper(
+            MongoSingleBase._registry,
             cls._registry,
         )
 
@@ -51,11 +50,10 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
     def _mongo_register_subclass(cls: Type[M]):
         """Register subclass in the registry"""
 
-        cfg = cls.get_config(type_=MongoConfig)
-        db = cfg.database
-        col = cfg.collection
+        db = cls.config.database
+        col = cls.config.collection
 
-        if cfg.include_to_registry and not cfg.is_default():
+        if cls.config.include_to_registry and not cls.config.is_default():
             logger.debug(f"Registering {cls.__name__} in {db}.{col}")
             logger.debug(f"Registry before: {cls._registry}")
 
@@ -67,105 +65,93 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    @classmethod
-    def _enable_streaming(cls: Type[M]):
-        """Enable watch streams for the collection"""
-
-        cfg = cls.get_config(type_=MongoConfig)
-        is_streaming = cfg.streaming
-
-        if is_streaming and not cfg.is_default():
-            database = cls._get_database()
-            collection = cls._get_collection()
-
-            collection_info = database.command(
-                {"listCollections": 1, "filter": {"name": collection.name}}
-            )
-            firstBatch = collection_info["cursor"]["firstBatch"]
-
-            if firstBatch:
-                options = firstBatch[0].get("options", {})
-                change_stream_enabled = options.get(
-                    "changeStreamPreAndPostImages", {}
-                ).get("enabled", False)
-            else:
-                change_stream_enabled = False
-
-            if not change_stream_enabled:
-                collection.insert_one({"_id": f"{collection.name}_dummy"})
-                database.command(
-                    {
-                        "collMod": collection.name,
-                        "changeStreamPreAndPostImages": {"enabled": True},
-                    }
-                )
-                collection.delete_one({"_id": f"{collection.name}_dummy"})
-
-    # ....................... #
-
-    @classmethod
+    @classmethod  #! TODO: Unauthorized or Forbidden raise ?
     def _client(cls: Type[M]) -> MongoClient:
-        """Get syncronous MongoDB client"""
+        """
+        Get syncronous MongoDB client
 
-        cfg = cls.get_config(type_=MongoConfig)
-        creds_dict = cfg.credentials.model_dump_with_secrets()
+        Returns:
+            client (pymongo.MongoClient): Syncronous MongoDB client
+        """
 
-        return MongoClient(**creds_dict)
+        creds = cls.config.credentials.model_dump_with_secrets()
+
+        return MongoClient(**creds)
 
     # ....................... #
 
-    @classmethod
+    @classmethod  #! TODO: Unauthorized or Forbidden raise ?
     def _aclient(cls: Type[M]) -> AsyncIOMotorClient:
-        """Get asyncronous MongoDB client"""
+        """
+        Get asyncronous MongoDB client
 
-        cfg = cls.get_config(type_=MongoConfig)
-        creds_dict = cfg.credentials.model_dump_with_secrets()
+        Returns:
+            client (motor.motor_asyncio.AsyncIOMotorClient): Asyncronous MongoDB client
+        """
 
-        return AsyncIOMotorClient(**creds_dict)
+        creds = cls.config.credentials.model_dump_with_secrets()
+
+        return AsyncIOMotorClient(**creds)
 
     # ....................... #
 
     @classmethod
     def _get_database(cls: Type[M]) -> Database:
-        """Get assigned MongoDB database in syncronous mode"""
+        """
+        Get assigned MongoDB database in syncronous mode
 
-        cfg = cls.get_config(type_=MongoConfig)
+        Returns:
+            database (pymongo.database.Database): Syncronous MongoDB database
+        """
+
         client = cls._client()
 
-        return client.get_database(cfg.database)
+        return client.get_database(cls.config.database)
 
     # ....................... #
 
     @classmethod
     def _aget_database(cls: Type[M]) -> AsyncIOMotorDatabase:
-        """Get assigned MongoDB database in asyncronous mode"""
+        """
+        Get assigned MongoDB database in asyncronous mode
 
-        cfg = cls.get_config(type_=MongoConfig)
+        Returns:
+            database (motor.motor_asyncio.AsyncIOMotorDatabase): Asyncronous MongoDB database
+        """
+
         client = cls._aclient()
 
-        return client.get_database(cfg.database)
+        return client.get_database(cls.config.database)
 
     # ....................... #
 
     @classmethod
     def _get_collection(cls: Type[M]) -> Collection:
-        """Get assigned MongoDB collection in syncronous mode"""
+        """
+        Get assigned MongoDB collection in syncronous mode
 
-        cfg = cls.get_config(type_=MongoConfig)
+        Returns:
+            collection (pymongo.collection.Collection): Syncronous MongoDB collection
+        """
+
         database = cls._get_database()
 
-        return database.get_collection(cfg.collection)
+        return database.get_collection(cls.config.collection)
 
     # ....................... #
 
     @classmethod
     def _aget_collection(cls: Type[M]) -> AsyncIOMotorCollection:
-        """Get assigned MongoDB collection in asyncronous mode"""
+        """
+        Get assigned MongoDB collection in asyncronous mode
 
-        cfg = cls.get_config(type_=MongoConfig)
+        Returns:
+            collection (motor.motor_asyncio.AsyncIOMotorCollection): Asyncronous MongoDB collection
+        """
+
         database = cls._aget_database()
 
-        return database.get_collection(cfg.collection)
+        return database.get_collection(cls.config.collection)
 
     # ....................... #
 
@@ -179,15 +165,18 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
 
         Returns:
             res (MongoBase): Created data model
+
+        Raises:
+            Conflict: Document already exists
         """
 
         collection = cls._get_collection()
-        document = data.model_dump()
+        document = data.model_dump(mode="json")
 
         _id = document["id"]
 
         if collection.find_one({"_id": _id}):
-            raise ValueError("Document already exists")
+            raise Conflict("Document already exists")
 
         collection.insert_one({**document, "_id": _id})
 
@@ -205,15 +194,18 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
 
         Returns:
             res (MongoBase): Created data model
+
+        Raises:
+            Conflict: Document already exists
         """
 
         collection = cls._aget_collection()
-        document = data.model_dump()
+        document = data.model_dump(mode="json")
 
         _id: DocumentID = document["id"]
 
         if await collection.find_one({"_id": _id}):
-            raise ValueError("Document already exists")
+            raise Conflict("Document already exists")
 
         await collection.insert_one({**document, "_id": _id})
 
@@ -225,6 +217,9 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         """
         Save a document in the collection.
         Document will be updated if exists
+
+        Returns:
+            self (MongoBase): Saved data model
         """
 
         collection = self._get_collection()
@@ -246,6 +241,9 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         """
         Save a document in the collection in asyncronous mode.
         Document will be updated if exists
+
+        Returns:
+            self (MongoBase): Saved data model
         """
 
         collection = self._aget_collection()
@@ -269,9 +267,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         data: List[M],
         ordered: bool = False,
     ):
-        """
-        ...
-        """
+        """Create multiple documents in the collection"""
 
         collection = cls._get_collection()
 
@@ -293,9 +289,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         data: List[M],
         ordered: bool = False,
     ):
-        """
-        ...
-        """
+        """Create multiple documents in the collection in asyncronous mode"""
 
         collection = cls._aget_collection()
 
@@ -321,7 +315,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         ...
         """
 
-        pass
+        raise NotImplementedError
 
     # ....................... #
 
@@ -335,7 +329,7 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         ...
         """
 
-        pass
+        raise NotImplementedError
 
     # ....................... #
 
@@ -344,30 +338,36 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         cls: Type[M],
         id_: Optional[DocumentID] = None,
         request: MongoRequest = {},
-        bypass: bool = False,
-    ) -> Optional[M]:
+    ) -> M:
         """
-        ...
+        Find a document in the collection
+
+        Args:
+            id_ (DocumentID, optional): Document ID
+            request (MongoRequest, optional): Request to find the document
+
+        Returns:
+            res (MongoBase): Found data model
+
+        Raises:
+            BadInput: Request or value is required
+            NotFound: Document not found
         """
 
         collection = cls._get_collection()
 
         if not (request or id_):
-            # TODO: raise a specific error (ormy.base.error)
-            raise ValueError("Request or value is required")
+            raise BadInput("Request or value is required")
 
         elif not request:
             request = {"_id": id_}
 
         document = collection.find_one(request)
 
-        if document:
-            return cls(**document)
+        if not document:
+            raise NotFound(f"Document with ID {id_} not found")
 
-        elif not bypass:
-            raise ValueError(f"Document with ID {id_} not found")
-
-        return document
+        return cls(**document)
 
     # ....................... #
 
@@ -376,30 +376,72 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         cls: Type[M],
         id_: Optional[DocumentID] = None,
         request: MongoRequest = {},
-        bypass: bool = False,
-    ) -> Optional[M]:
+    ) -> M:
         """
-        ...
+        Find a document in the collection in asyncronous mode
+
+        Args:
+            id_ (DocumentID, optional): Document ID
+            request (MongoRequest, optional): Request to find the document
+
+        Returns:
+            res (MongoBase): Found data model
+
+        Raises:
+            BadInput: Request or value is required
+            NotFound: Document not found
         """
 
         collection = cls._aget_collection()
 
         if not (request or id_):
-            # TODO: raise a specific error (ormy.base.error)
-            raise ValueError("Request or value is required")
+            raise BadInput("Request or value is required")
 
         elif not request:
             request = {"_id": id_}
 
         document = await collection.find_one(request)
 
-        if document:
-            return cls(**document)
+        if not document:
+            raise NotFound(f"Document with ID {id_} not found")
 
-        elif not bypass:
-            raise ValueError(f"Document with ID {id_} not found")
+        return cls(**document)
 
-        return document
+    # ....................... #
+
+    @classmethod
+    def count(cls: Type[M], request: MongoRequest = {}) -> int:
+        """
+        Count documents in the collection
+
+        Args:
+            request (MongoRequest, optional): Request to count the documents
+
+        Returns:
+            res (int): Number of documents
+        """
+
+        collection = cls._get_collection()
+
+        return collection.count_documents(request)
+
+    # ....................... #
+
+    @classmethod
+    async def acount(cls: Type[M], request: MongoRequest = {}) -> int:
+        """
+        Count documents in the collection in asyncronous mode
+
+        Args:
+            request (MongoRequest, optional): Request to count the documents
+
+        Returns:
+            res (int): Number of documents
+        """
+
+        collection = cls._aget_collection()
+
+        return await collection.count_documents(request)
 
     # ....................... #
 
@@ -409,18 +451,22 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         request: MongoRequest = {},
         limit: int = 100,
         offset: int = 0,
-        tabular: bool = True,
-    ) -> TabularData | List[M]:
+    ) -> List[M]:
         """
-        ...
+        Find multiple documents in the collection
+
+        Args:
+            request (MongoRequest, optional): Request to find the documents
+            limit (int, optional): Limit the number of documents
+            offset (int, optional): Offset the number of documents
+
+        Returns:
+            res (List[MongoBase]): Found data models
         """
 
         collection = cls._get_collection()
         documents = collection.find(request).limit(limit).skip(offset)
         clsdocs = [cls(**doc) for doc in documents]
-
-        if tabular:
-            return TabularData(clsdocs)
 
         return clsdocs
 
@@ -432,50 +478,24 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         request: MongoRequest = {},
         limit: int = 100,
         offset: int = 0,
-        tabular: bool = True,
-    ) -> TabularData | List[M]:
+    ) -> List[M]:
         """
-        ...
+        Find multiple documents in the collection in asyncronous mode
+
+        Args:
+            request (MongoRequest, optional): Request to find the documents
+            limit (int, optional): Limit the number of documents
+            offset (int, optional): Offset the number of documents
+
+        Returns:
+            res (List[MongoBase]): Found data models
         """
 
         collection = cls._aget_collection()
         cursor = collection.find(request).limit(limit).skip(offset)
         clsdocs = [cls(**doc) async for doc in cursor]
 
-        if tabular:
-            return TabularData(clsdocs)
-
         return clsdocs
-
-    # ....................... #
-
-    @classmethod
-    def count(
-        cls: Type[M],
-        request: MongoRequest = {},
-    ) -> int:
-        """
-        ...
-        """
-
-        collection = cls._get_collection()
-
-        return collection.count_documents(request)
-
-    # ....................... #
-
-    @classmethod
-    async def acount(
-        cls: Type[M],
-        request: MongoRequest = {},
-    ) -> int:
-        """
-        ...
-        """
-
-        collection = cls._aget_collection()
-
-        return await collection.count_documents(request)
 
     # ....................... #
 
@@ -484,25 +504,30 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         cls: Type[M],
         request: MongoRequest = {},
         batch_size: int = 100,
-        tabular: bool = False,
-    ) -> TabularData | List[M]:
+    ) -> List[M]:
         """
-        ...
+        Find all documents in the collection
+
+        Args:
+            request (MongoRequest, optional): Request to find the documents
+            batch_size (int, optional): Batch size
+
+        Returns:
+            res (List[MongoBase]): Found data models
         """
 
         cnt = cls.count(request=request)
-        found: TabularData | List[M] = []
+        found: List[M] = []
 
         for j in range(0, cnt, batch_size):
             docs = cls.find_many(
                 request,
                 limit=batch_size,
                 offset=j,
-                tabular=tabular,
             )
             found.extend(docs)
 
-        return TabularData(found) if tabular else found
+        return found
 
     # ....................... #
 
@@ -511,25 +536,30 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
         cls: Type[M],
         request: MongoRequest = {},
         batch_size: int = 100,
-        tabular: bool = False,
-    ) -> TabularData | List[M]:
+    ) -> List[M]:
         """
-        ...
+        Find all documents in the collection in asyncronous mode
+
+        Args:
+            request (MongoRequest, optional): Request to find the documents
+            batch_size (int, optional): Batch size
+
+        Returns:
+            res (List[MongoBase]): Found data models
         """
 
         cnt = await cls.acount(request=request)
-        found: TabularData | List[M] = []
+        found: List[M] = []
 
         for j in range(0, cnt, batch_size):
             docs = await cls.afind_many(
                 request,
                 limit=batch_size,
                 offset=j,
-                tabular=tabular,
             )
             found.extend(docs)
 
-        return TabularData(found) if tabular else found
+        return found
 
     # ....................... #
 
@@ -537,40 +567,57 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
     def patch(
         cls: Type[M],
         data: TabularData,
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
+        include: Optional[Sequence[str]] = None,
+        exclude: Optional[Sequence[str]] = None,
         on: Optional[str] = None,
         left_on: Optional[str] = None,
         right_on: Optional[str] = None,
         prefix: Optional[str] = None,
     ) -> TabularData:
         """
-        ...
+        Extend data with documents from the collection
+
+        Args:
+            data (TabularData): Data to be extended
+            include (Sequence[str], optional): Fields to include
+            exclude (Sequence[str], optional): Fields to exclude
+            on (str, optional): Field to join on
+            left_on (str, optional): Field to join on the left
+            right_on (str, optional): Field to join on the right
+            prefix (str, optional): Prefix for the fields
+
+        Returns:
+            res (TabularData): Extended data
+
+        Raises:
+            BadInput: `data` is required
+            BadInput: Fields `left_on` and `right_on` are required
         """
 
         if not data:
-            return data
+            raise BadInput("`data` is required")
 
         if on is not None:
             left_on = on
             right_on = on
 
-        assert left_on is not None and right_on is not None, "Fields are required"
+        if left_on is None or right_on is None:
+            raise BadInput("Fields `left_on` and `right_on` are required")
 
-        find = cls.find_all(
-            request={right_on: {"$in": list(data.unique(left_on))}},
-            tabular=True,
-        )
+        docs = cls.find_all(request={right_on: {"$in": list(data.unique(left_on))}})
+        tab_docs = TabularData(docs)
 
         if include is not None:
+            include = list(include)
             include.append(right_on)
             include = list(set(include))
 
         if exclude is not None:
             exclude = [x for x in exclude if x != right_on]
+            exclude = list(set(exclude))
 
         return data.join(
-            find.slice(include, exclude),  # type: ignore
+            other=tab_docs.slice(include=include, exclude=exclude),
             on=on,
             left_on=left_on,
             right_on=right_on,
@@ -583,106 +630,61 @@ class MongoBase(DocumentABC):  # TODO: add docstrings
     async def apatch(
         cls: Type[M],
         data: TabularData,
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
+        include: Optional[Sequence[str]] = None,
+        exclude: Optional[Sequence[str]] = None,
         on: Optional[str] = None,
         left_on: Optional[str] = None,
         right_on: Optional[str] = None,
         prefix: Optional[str] = None,
     ) -> TabularData:
         """
-        ...
+        Extend data with documents from the collection
+
+        Args:
+            data (TabularData): Data to be extended
+            include (Sequence[str], optional): Fields to include
+            exclude (Sequence[str], optional): Fields to exclude
+            on (str, optional): Field to join on
+            left_on (str, optional): Field to join on the left
+            right_on (str, optional): Field to join on the right
+            prefix (str, optional): Prefix for the fields
+
+        Returns:
+            res (TabularData): Extended data
+
+        Raises:
+            BadInput: `data` is required
+            BadInput: Fields `left_on` and `right_on` are required
         """
 
         if not data:
-            return data
+            raise BadInput("`data` is required")
 
         if on is not None:
             left_on = on
             right_on = on
 
-        assert left_on is not None and right_on is not None, "Fields are required"
+        if left_on is None or right_on is None:
+            raise BadInput("Fields `left_on` and `right_on` are required")
 
-        find = await cls.afind_all(
-            request={right_on: {"$in": list(data.unique(left_on))}},
-            tabular=True,
+        docs = await cls.afind_all(
+            request={right_on: {"$in": list(data.unique(left_on))}}
         )
+        tab_docs = TabularData(docs)
 
         if include is not None:
+            include = list(include)
             include.append(right_on)
             include = list(set(include))
 
         if exclude is not None:
             exclude = [x for x in exclude if x != right_on]
+            exclude = list(set(exclude))
 
         return data.join(
-            find.slice(include, exclude),  # type: ignore
+            other=tab_docs.slice(include=include, exclude=exclude),
             on=on,
             left_on=left_on,
             right_on=right_on,
             prefix=prefix,
         )
-
-    # ....................... #
-
-    #! TODO: refactor or remove
-
-    @classmethod
-    def patch_records(
-        cls: Type[M],
-        records: List[Dict[str, Any]],
-        fields: List[str],
-        prefix: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
-        """
-        ...
-        """
-
-        prefix = "" if prefix is None else f"{prefix}_"
-        id_field = prefix + "id"
-
-        unique_ids = list(set([x[id_field] for x in records]))
-        res = cls.find_all({"_id": {"$in": unique_ids}})
-
-        for x in records:
-            try:
-                r = next((y for y in res if y.id == x[id_field]))
-                for k in fields:
-                    x[f"{prefix}{k}"] = getattr(r, k)
-
-            except Exception as e:
-                print(res, x, id_field)  # TODO: rewrite
-                raise e
-
-        return records
-
-    # ....................... #
-
-    #! TODO: refactor or remove
-
-    @classmethod  # TODO: rewrite
-    def patch_schema(
-        cls: Type[M],
-        schema: List[Dict[str, Any]],
-        fields: List[str],
-        prefix: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
-        """
-        ...
-        """
-
-        model_schema = cls.model_json_schema()
-        upd = []
-        prefix = "" if prefix is None else f"{prefix}_"
-
-        for k, v in model_schema["properties"].items():
-            if k in fields:
-                upd.append(
-                    {
-                        "key": f"{prefix}{k}",
-                        "title": v["title"],
-                        "type": v.get("type", "string"),
-                    }
-                )
-
-        return schema + upd

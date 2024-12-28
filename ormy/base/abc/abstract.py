@@ -1,6 +1,6 @@
 import inspect
 from abc import ABC, abstractmethod  # noqa: F401
-from typing import Any, ClassVar, Dict, List, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from ormy.base.pydantic import Base
 from ormy.utils.logging import LogLevel, console_logger
@@ -10,9 +10,12 @@ from .config import ConfigABC
 # ----------------------- #
 
 A = TypeVar("A", bound="AbstractABC")
+As = TypeVar("As", bound="AbstractSingleABC")
 C = TypeVar("C", bound=ConfigABC)
 
 logger = console_logger(__name__, level=LogLevel.INFO)
+
+# ----------------------- #
 
 
 class AbstractABC(Base, ABC):
@@ -147,6 +150,113 @@ class AbstractABC(Base, ABC):
         for p in parents:
             if hasattr(p, "_registry"):
                 reg = p._registry
+
+        logger.debug(f"Parent registry for {cls.__name__}: {reg}")
+        logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
+
+        cls._registry = cls._merge_registry_helper(reg, cls._registry)
+
+
+# ----------------------- #
+
+
+class AbstractSingleABC(Base, ABC):
+    """
+    Abstract ABC Base Class
+    """
+
+    config: ClassVar[Optional[Any]] = None
+    include_to_registry: ClassVar[bool] = True
+    _registry: ClassVar[Dict[Any, dict]] = {}
+
+    # ....................... #
+
+    def __init_subclass__(cls: Type[As], **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        cls._update_ignored_types()
+        cls._merge_configs()
+
+    # ....................... #
+
+    @classmethod
+    def _update_ignored_types(cls: Type[As]):
+        """
+        Update ignored types for the model configuration
+        """
+
+        ignored_types = cls.model_config.get("ignored_types", tuple())
+
+        if (tx := type(cls.config)) not in ignored_types:
+            ignored_types += (tx,)
+
+        cls.model_config["ignored_types"] = ignored_types
+
+        logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
+
+    # ....................... #
+
+    @classmethod
+    def _merge_configs(cls: Type[As]):
+        """
+        ...
+        """
+
+        parents = inspect.getmro(cls)[1:]
+        parent_config = None
+
+        for p in parents:
+            if issubclass(p, cls) and p.config is not None:
+                parent_config = p.config
+                break
+
+        if parent_config is None:
+            logger.debug(f"Parent config for {cls.__name__} not found")
+            return
+
+        if cls.config is not None:
+            merged_config = cls.config.merge(parent_config)
+            logger.debug(
+                f"Merging configs for {cls.__name__}: {cls.config} <- {parent_config}"
+            )
+
+        else:
+            merged_config = parent_config
+            logger.debug(f"Using parent config for {cls.__name__}: {parent_config}")
+
+        cls.config = merged_config
+        logger.debug(f"Final config for {cls.__name__}: {merged_config}")
+
+    # ....................... #
+
+    @classmethod
+    def _merge_registry_helper(cls: Type[As], d1: dict, d2: dict) -> dict:
+        for k in d2.keys():
+            if k in d1:
+                if isinstance(d1[k], dict) and isinstance(d2[k], dict):
+                    cls._merge_registry_helper(d1[k], d2[k])
+
+                else:
+                    d1[k] = d2[k]
+                    logger.debug(f"Overwriting {k} in registry: {d1[k]} -> {d2[k]}")
+
+            else:
+                d1[k] = d2[k]
+                logger.debug(f"Adding {k} in registry: {d1[k]} -> {d2[k]}")
+
+        return d1
+
+    # ....................... #
+
+    @classmethod
+    def _merge_registry(cls: Type[As]):
+        parents = inspect.getmro(cls)[1:]
+        reg = dict()
+
+        for p in parents:
+            if issubclass(p, cls) and hasattr(p, "_registry"):
+                reg = p._registry
+                break
 
         logger.debug(f"Parent registry for {cls.__name__}: {reg}")
         logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")

@@ -38,8 +38,7 @@ from google.cloud.firestore_v1.transforms import (
     Sentinel,
 )
 
-from ormy.base.abc import ConfigABC, DocumentABC
-from ormy.base.typing import DocumentID
+from ormy.base.abc import ConfigABC, DocumentABC, DocumentID
 
 from .config import FirestoreConfig
 
@@ -187,7 +186,8 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         """
 
         collection = cls._get_collection()
-        ref = collection.document(id_)
+        _id = str(id_) if id_ is not None else None
+        ref = collection.document(_id)
 
         return ref
 
@@ -200,7 +200,8 @@ class FirestoreBase(DocumentABC):  # TODO: add docstrings
         """
 
         collection = await cls._aget_collection()
-        ref = collection.document(id_)
+        _id = str(id_) if id_ is not None else None
+        ref = collection.document(_id)  # type: ignore
 
         return ref
 

@@ -4,18 +4,21 @@ from typing import Any, Optional, Type, TypeVar
 from pydantic import Field
 
 from ormy.base.func import hex_uuid4
-from ormy.base.typing import AbstractData, DocumentID
 from ormy.utils.logging import LogLevel, console_logger
 
-from .abstract import AbstractABC
+from .abstract import AbstractABC, AbstractSingleABC
 from .config import ConfigABC
+from .typing import AbstractData, DocumentID
 
 # ----------------------- #
 
 D = TypeVar("D", bound="DocumentABC")
 C = TypeVar("C", bound="ConfigABC")
+Ds = TypeVar("Ds", bound="DocumentSingleABC")
 
 logger = console_logger(__name__, level=LogLevel.INFO)
+
+# ----------------------- #
 
 
 class DocumentABC(AbstractABC):
@@ -171,6 +174,177 @@ class DocumentABC(AbstractABC):
         autosave: bool = True,
         **kwargs,
     ) -> Optional[D]:
+
+        instance = await cls.afind(id_)
+
+        if instance:
+            return await instance.aupdate(
+                data,
+                *args,
+                ignore_none=ignore_none,
+                autosave=autosave,
+                **kwargs,
+            )
+
+        return None
+
+
+# ----------------------- #
+
+
+class DocumentSingleABC(AbstractSingleABC):
+    """
+    Abstract Base Class for Document-Oriented Object-Relational Mapping
+    """
+
+    id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
+
+    # ....................... #
+
+    @classmethod
+    @abstractmethod
+    def create(cls: Type[Ds], data: Ds) -> Ds: ...
+
+    # ....................... #
+
+    @classmethod
+    @abstractmethod
+    async def acreate(cls: Type[Ds], data: Ds) -> Ds: ...
+
+    # ....................... #
+
+    @abstractmethod
+    def save(self: Ds) -> Ds: ...
+
+    # ....................... #
+
+    @abstractmethod
+    async def asave(self: Ds) -> Ds: ...
+
+    # ....................... #
+
+    @classmethod
+    @abstractmethod
+    def find(
+        cls: Type[Ds],
+        id_: DocumentID,
+        *args,
+        **kwargs,
+    ) -> Optional[Ds | Any]: ...
+
+    # ....................... #
+
+    @classmethod
+    @abstractmethod
+    async def afind(
+        cls: Type[Ds],
+        id_: DocumentID,
+        *args,
+        **kwargs,
+    ) -> Optional[Ds | Any]: ...
+
+    # ....................... #
+
+    def update(
+        self: Ds,
+        data: AbstractData,
+        *args,
+        ignore_none: bool = True,
+        autosave: bool = True,
+        **kwargs,
+    ) -> Ds:
+        """
+        ...
+        """
+
+        if isinstance(data, dict):
+            keys = data.keys()
+
+        else:
+            keys = data.model_fields.keys()
+            data = data.model_dump()
+
+        for k in keys:
+            val = data.get(k, None)
+
+            if not (val is None and ignore_none) and hasattr(self, k):
+                setattr(self, k, val)
+
+        if autosave:
+            return self.save()
+
+        return self
+
+    # ....................... #
+
+    async def aupdate(
+        self: Ds,
+        data: AbstractData,
+        *args,
+        ignore_none: bool = True,
+        autosave: bool = True,
+        **kwargs,
+    ) -> Ds:
+        """
+        ...
+        """
+
+        if isinstance(data, dict):
+            keys = data.keys()
+
+        else:
+            keys = data.model_fields.keys()
+            data = data.model_dump()
+
+        for k in keys:
+            val = data.get(k, None)
+
+            if not (val is None and ignore_none) and hasattr(self, k):
+                setattr(self, k, val)
+
+        if autosave:
+            return await self.asave()
+
+        return self
+
+    # ....................... #
+
+    @classmethod
+    def update_by_id(
+        cls: Type[Ds],
+        id_: DocumentID,
+        data: AbstractData,
+        *args,
+        ignore_none: bool = True,
+        autosave: bool = True,
+        **kwargs,
+    ) -> Optional[Ds]:
+
+        instance = cls.find(id_)
+
+        if instance:
+            return instance.update(
+                data,
+                *args,
+                ignore_none=ignore_none,
+                autosave=autosave,
+                **kwargs,
+            )
+
+        return None
+
+    # ....................... #
+
+    @classmethod
+    async def aupdate_by_id(
+        cls: Type[Ds],
+        id_: DocumentID,
+        data: AbstractData,
+        *args,
+        ignore_none: bool = True,
+        autosave: bool = True,
+        **kwargs,
+    ) -> Optional[Ds]:
 
         instance = await cls.afind(id_)
 

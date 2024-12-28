@@ -1,6 +1,17 @@
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Dict, Literal, Optional, Sequence, Set, TypeVar
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Literal,
+    Optional,
+    Sequence,
+    Set,
+    SupportsIndex,
+    TypeVar,
+    overload,
+)
 
 from pydantic import BaseModel, GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
@@ -26,7 +37,6 @@ class ExtendedEnum(Enum):
 # ----------------------- #
 
 
-# TODO: add paginate method
 class TabularData(list):
     _valid_keys: Set[str] = set()
 
@@ -50,7 +60,74 @@ class TabularData(list):
 
     # ....................... #
 
-    def _validate_item(self: Tb, item: Dict[str, Any]):
+    @overload
+    def __getitem__(self, index: SupportsIndex) -> Any: ...
+
+    # ....................... #
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Any]: ...
+
+    # ....................... #
+
+    @overload
+    def __getitem__(self, index: str) -> list[Any]: ...
+
+    # ....................... #
+
+    def __getitem__(self, index: str | SupportsIndex | slice):
+        if isinstance(index, str):
+            if index not in self._valid_keys:
+                raise KeyError(f"Column '{index}' not found")
+
+            return [row[index] for row in self]
+
+        elif isinstance(index, slice):  # ???
+            return self.__class__(super().__getitem__(index))
+
+        else:
+            return super().__getitem__(index)
+
+    # ....................... #
+
+    @overload
+    def __setitem__(self, index: SupportsIndex, value: Any) -> None: ...
+
+    # ....................... #
+
+    @overload
+    def __setitem__(self, index: slice, value: Iterable[Any]) -> None: ...
+
+    # ....................... #
+
+    @overload
+    def __setitem__(self, index: str, value: Any): ...
+
+    # ....................... #
+
+    def __setitem__(
+        self, index: str | SupportsIndex | slice, value: Any | Iterable[Any]
+    ):
+        if isinstance(index, str):
+            if not isinstance(value, (list, tuple)):
+                for row in self:
+                    row[index] = value
+
+            else:
+                if len(value) != len(self):
+                    raise ValueError("Length of values must match the number of rows")
+
+                for i, row in enumerate(self):
+                    row[index] = value[i]
+
+            self._valid_keys.add(index)
+
+        else:
+            super().__setitem__(index, value)
+
+    # ....................... #
+
+    def _validate_item(self, item: Dict[str, Any]):
         assert isinstance(item, dict), "Item must be a dictionary"
 
         if set(item.keys()) != self._valid_keys:
@@ -60,7 +137,7 @@ class TabularData(list):
 
     # ....................... #
 
-    def _validate_data(self, data: Sequence[Dict[str, Any] | Bm] | Tb = []):
+    def _validate_data(self: Tb, data: Sequence[Dict[str, Any] | Bm] | Tb = []):
         if not data:
             return []
 

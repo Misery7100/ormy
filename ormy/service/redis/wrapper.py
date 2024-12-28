@@ -1,14 +1,13 @@
 import json
 from contextlib import asynccontextmanager, contextmanager
-from typing import Optional, Type, TypeVar
+from typing import Optional, Self, Type, TypeVar
 
 from redis import Redis
 from redis import asyncio as aioredis
 from redis.asyncio.client import Pipeline as Apipeline
 from redis.client import Pipeline
 
-from ormy.base.abc import DocumentABC
-from ormy.base.typing import DocumentID
+from ormy.base.abc import DocumentABC, DocumentID
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import RedisConfig
@@ -112,7 +111,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    def _build_key(cls: Type[T], key: str) -> str:
+    def _build_key(cls: Type[T], key: DocumentID) -> str:
         """Build key for Redis storage"""
 
         cfg = cls.get_config(type_=RedisConfig)
@@ -140,7 +139,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         if cls.find(_id, bypass=True) is not None:
             raise ValueError(f"Document with ID {_id} already exists")
 
-        with cls._client() as client:
+        with cls._client() as client:  # type: ignore
             client.set(key, json.dumps(document))
 
         return data
@@ -166,7 +165,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         if await cls.afind(_id, bypass=True) is not None:
             raise ValueError(f"Document with ID {_id} already exists")
 
-        async with cls._aclient() as client:
+        async with cls._aclient() as client:  # type: ignore
             await client.set(key, json.dumps(document))
 
         return data
@@ -176,7 +175,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     @classmethod
     @contextmanager
     def pipe(cls: Type[T], **kwargs):
-        with cls._client() as client:
+        with cls._client() as client:  # type: ignore
             p = client.pipeline(**kwargs)
 
         try:
@@ -190,7 +189,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     @classmethod
     @asynccontextmanager
     async def apipe(cls: Type[T], **kwargs):
-        async with cls._aclient() as client:
+        async with cls._aclient() as client:  # type: ignore
             p = client.pipeline(**kwargs)
 
         try:
@@ -201,7 +200,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    def watch(self: T, pipe: Pipeline) -> None:
+    def watch(self: Self, pipe: Pipeline) -> None:
         """
         ...
         """
@@ -211,7 +210,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    async def awatch(self: T, pipe: Apipeline) -> None:
+    async def awatch(self: Self, pipe: Apipeline) -> None:
         """
         ...
         """
@@ -230,7 +229,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         key = self._build_key(self.id)
 
         if pipe is None:
-            with self._client() as client:
+            with self._client() as client:  # type: ignore
                 client.set(key, json.dumps(document))
 
         else:
@@ -251,7 +250,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
         key = self._build_key(self.id)
 
         if pipe is None:
-            async with self._aclient() as client:
+            async with self._aclient() as client:  # type: ignore
                 await client.set(key, json.dumps(document))
 
         else:
@@ -268,7 +267,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     def find(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
         key = cls._build_key(id_)
 
-        with cls._client() as client:
+        with cls._client() as client:  # type: ignore
             res = client.get(key)
 
         if res:
@@ -285,7 +284,7 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     async def afind(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
         key = cls._build_key(id_)
 
-        async with cls._aclient() as client:
+        async with cls._aclient() as client:  # type: ignore
             res = await client.get(key)
 
         if res:

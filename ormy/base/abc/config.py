@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import Self, TypeVar
 
 from pydantic import ConfigDict
 
@@ -19,7 +19,7 @@ class ConfigABC(Base, ABC):
 
     # ....................... #
 
-    def _default_helper(self: C, *fields: str) -> bool:
+    def _default_helper(self: Self, *fields: str) -> bool:
         """
         Helper function to check if a field has default value
         """
@@ -65,4 +65,4 @@ class ConfigABC(Base, ABC):
     # ....................... #
 
     @abstractmethod
-    def is_default(self: C) -> bool: ...
+    def is_default(self: Self) -> bool: ...
