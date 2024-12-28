@@ -1,6 +1,6 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, ClassVar, List, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Self, Type, TypeVar
 
 from ormy.extension.meilisearch import (
     MeilisearchConfig,
@@ -281,3 +281,117 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
         cls.extension_configs = [cfg_s3] + other_ext_configs
 
         super().__init_subclass__(**kwargs)
+
+    # ....................... #
+
+    def add_file(
+        self: Self,
+        file: bytes,
+        name: str,
+        avoid_duplicates: bool = True,
+        tags: Dict[str, str] = {},
+    ):
+        """
+        Add an attachment to the entity
+
+        Args:
+            file (bytes): The file to add
+            name (str): The name of the file
+            avoid_duplicates (bool): Whether to avoid duplicates
+            tags (Dict[str, str]): The tags to add to the file
+
+        Returns:
+            result (str): The key of the attachment
+        """
+
+        key = f"{self.id}/{name}"
+
+        f = self.s3_upload_file(
+            key=key,
+            file=file,
+            avoid_duplicates=avoid_duplicates,
+        )
+
+        if tags:
+            self.s3_add_file_tags(
+                key=key,
+                tags=tags,
+            )
+
+        return f
+
+    # ....................... #
+
+    def download_file(self: Self, name: str):
+        """
+        Download an attachment from the entity
+
+        Args:
+            name (str): The name of the attachment to download
+
+        Returns:
+            result (bytes): The attachment
+        """
+
+        key = f"{self.id}/{name}"
+        data = self.s3_download_file(key=key)
+
+        return data["Body"]
+
+    # ....................... #
+
+    def remove_file(self: Self, name: str):
+        """
+        Remove a file from the entity
+
+        Args:
+            name (str): The name of the attachment to remove
+        """
+
+        key = f"{self.id}/{name}"
+
+        return self.s3_delete_file(key=key)
+
+    # ....................... #
+
+    def list_files(
+        self: Self,
+        page: int = 1,
+        size: int = 20,
+    ):
+        """
+        List files from the entity
+
+        Args:
+            page (int): The page number
+            size (int): The page size
+
+        Returns:
+            result (ormy.base.pydantic.TableResponse): The attachments
+        """
+
+        return self.s3_list_files(
+            blob=str(self.id),
+            page=page,
+            size=size,
+        )
+
+    # ....................... #
+
+    def file_exists(self: Self, name: Optional[str] = None) -> bool:
+        """
+        Check if a file exists
+
+        Args:
+            name (str): The name of the file to check
+
+        Returns:
+            result (bool): Whether the file exists
+        """
+
+        if not name:
+            return False
+
+        key: str = f"{self.id}/{name}"
+
+        return self.s3_file_exists(key=key)
