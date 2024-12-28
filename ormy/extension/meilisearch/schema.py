@@ -38,7 +38,7 @@ class SortField(BaseModel):
     """
 
     key: str
-    title: str
+    title: str  # TODO: remove title
     default: bool = False
 
 
@@ -59,7 +59,7 @@ class FilterABC(ABC, BaseModel):
     """
 
     key: str
-    title: Optional[str] = None
+    title: Optional[str] = None  # TODO: remove title
     value: Optional[Any] = None
     type: str = "abc"
 
@@ -228,6 +228,8 @@ class SearchResponse(TableResponse):
         """
         ...
         """
+
+        # TODO: Replace with ormy errors
 
         assert res.hits is not None, "Hits must be provided"
         assert res.hits_per_page is not None, "Hits per page must be provided"

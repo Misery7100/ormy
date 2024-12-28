@@ -11,6 +11,7 @@ from .schema import (
     SortOrder,
 )
 from .wrapper import MeilisearchExtension
+from .wrapper_new import MeilisearchExtensionV2
 
 # ----------------------- #
 
@@ -19,6 +20,7 @@ __all__ = [
     "MeilisearchCredentials",
     "MeilisearchSettings",
     "MeilisearchExtension",
+    "MeilisearchExtensionV2",
     "SortOrder",
     "SearchRequest",
     "SearchResponse",

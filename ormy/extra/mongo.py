@@ -1,6 +1,6 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Type, TypeVar
+from typing import Any, ClassVar, List, Type, TypeVar
 
 from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtension
 from ormy.service.mongo import MongoBase, MongoConfig
@@ -40,7 +40,7 @@ class MongoWithMeilisearchBackground(MongoBase, MeilisearchExtension):
 
     @classmethod
     def create(cls: Type[MwMb], data: MwMb) -> MwMb:
-        res = super().create(data)
+        res = super().create(data)  # type: ignore
 
         # Run in background
         with ThreadPoolExecutor() as executor:
@@ -52,7 +52,7 @@ class MongoWithMeilisearchBackground(MongoBase, MeilisearchExtension):
 
     @classmethod
     async def acreate(cls: Type[MwMb], data: MwMb) -> MwMb:
-        res = await super().acreate(data)
+        res = await super().acreate(data)  # type: ignore
 
         # Run in background
         asyncio.create_task(cls.ameili_update_documents(res))
@@ -67,7 +67,7 @@ class MongoWithMeilisearchBackground(MongoBase, MeilisearchExtension):
         data: List[MwMb],
         ordered: bool = False,
     ):
-        super().create_many(data, ordered=ordered)
+        super().create_many(data, ordered=ordered)  # type: ignore
 
         # Run in background
         with ThreadPoolExecutor() as executor:
@@ -81,7 +81,7 @@ class MongoWithMeilisearchBackground(MongoBase, MeilisearchExtension):
         data: List[MwMb],
         ordered: bool = False,
     ):
-        await super().acreate_many(data, ordered=ordered)
+        await super().acreate_many(data, ordered=ordered)  # type: ignore
 
         # Run in background
         asyncio.create_task(cls.ameili_update_documents(data))
@@ -117,7 +117,7 @@ class MongoWithMeilisearch(MongoBase, MeilisearchExtension):
 
     @classmethod
     def create(cls: Type[MwM], data: MwM) -> MwM:
-        res = super().create(data)
+        res = super().create(data)  # type: ignore
         cls.meili_update_documents(res)
 
         return res
@@ -126,7 +126,7 @@ class MongoWithMeilisearch(MongoBase, MeilisearchExtension):
 
     @classmethod
     async def acreate(cls: Type[MwM], data: MwM) -> MwM:
-        res = await super().acreate(data)
+        res = await super().acreate(data)  # type: ignore
         await cls.ameili_update_documents(res)
 
         return res
@@ -139,7 +139,7 @@ class MongoWithMeilisearch(MongoBase, MeilisearchExtension):
         data: List[MwM],
         ordered: bool = False,
     ):
-        super().create_many(data, ordered=ordered)
+        super().create_many(data, ordered=ordered)  # type: ignore
         cls.meili_update_documents(data)
 
     # ....................... #
@@ -150,5 +150,86 @@ class MongoWithMeilisearch(MongoBase, MeilisearchExtension):
         data: List[MwM],
         ordered: bool = False,
     ):
-        await super().acreate_many(data, ordered=ordered)
+        await super().acreate_many(data, ordered=ordered)  # type: ignore
         await cls.ameili_update_documents(data)
+
+
+# ....................... #
+
+M = TypeVar("M", bound="MongoWithMeilisearchBackgroundV2")
+
+
+class MongoWithMeilisearchBackgroundV2(MongoBase, MeilisearchExtension):
+    config: ClassVar[MongoConfig] = MongoConfig()
+    extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
+
+    # ....................... #
+
+    def save(self: M) -> M:
+        super().save()
+
+        # Run in background
+        with ThreadPoolExecutor() as executor:
+            executor.submit(self.meili_update_documents, self)
+
+        return self
+
+    # ....................... #
+
+    async def asave(self: M) -> M:
+        await super().asave()
+
+        # Run in background
+        asyncio.create_task(self.ameili_update_documents(self))
+
+        return self
+
+    # ....................... #
+
+    @classmethod
+    def create(cls: Type[M], data: M) -> M:
+        res = super().create(data)  # type: ignore
+
+        # Run in background
+        with ThreadPoolExecutor() as executor:
+            executor.submit(cls.meili_update_documents, res)
+
+        return res
+
+    # ....................... #
+
+    @classmethod
+    async def acreate(cls: Type[M], data: M) -> M:
+        res = await super().acreate(data)  # type: ignore
+
+        # Run in background
+        asyncio.create_task(cls.ameili_update_documents(res))
+
+        return res
+
+    # ....................... #
+
+    @classmethod
+    def create_many(
+        cls: Type[M],
+        data: List[M],
+        ordered: bool = False,
+    ):
+        super().create_many(data, ordered=ordered)  # type: ignore
+
+        # Run in background
+        with ThreadPoolExecutor() as executor:
+            executor.submit(cls.meili_update_documents, data)
+
+    # ....................... #
+
+    @classmethod
+    async def acreate_many(
+        cls: Type[M],
+        data: List[M],
+        ordered: bool = False,
+    ):
+        await super().acreate_many(data, ordered=ordered)  # type: ignore
+
+        # Run in background
+        asyncio.create_task(cls.ameili_update_documents(data))

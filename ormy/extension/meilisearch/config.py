@@ -10,7 +10,7 @@ from ormy.base.pydantic import Base
 
 
 class MeilisearchSettings(MsSettings):
-    default_sort: Optional[str] = None
+    default_sort: Optional[str] = None  #! - ??????
 
     # ....................... #
 
