@@ -29,7 +29,7 @@ class ExtensionABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def get_config(cls: Type[E], type_: Type[C]) -> C:
+    def get_extension_config(cls: Type[E], type_: Type[C]) -> C:
         """
         ...
         """

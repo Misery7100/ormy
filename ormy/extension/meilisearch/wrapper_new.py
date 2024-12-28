@@ -56,7 +56,7 @@ class MeilisearchExtensionV2(ExtensionABC):
     def _meili_register_subclass(cls: Type[M]):
         """Register subclass in the registry"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
         ix = cfg.index
 
         if cfg.include_to_registry and not cfg.is_default():
@@ -99,7 +99,7 @@ class MeilisearchExtensionV2(ExtensionABC):
         )
 
         full_schema = cls.model_flat_schema()
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
         sort = []
         filters = []
@@ -155,10 +155,10 @@ class MeilisearchExtensionV2(ExtensionABC):
         If the index exists and settings were updated, index will be updated.
         """
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
         if not cfg.is_default():
-            with cls._meili_client() as c:
+            with cls._meili_client() as c:  # type: ignore
                 try:
                     ix = c.get_index(cfg.index)
                     logger.debug(f"Index `{cfg.index}` already exists")
@@ -188,7 +188,7 @@ class MeilisearchExtensionV2(ExtensionABC):
     def _meili_client(cls: Type[M]):
         """Get syncronous Meilisearch client"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
         url = cfg.url()
         key = cfg.credentials.master_key
 
@@ -217,7 +217,7 @@ class MeilisearchExtensionV2(ExtensionABC):
     async def _ameili_client(cls: Type[M]):
         """Get asyncronous Meilisearch client"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
         url = cfg.url()
         key = cfg.credentials.master_key
 
@@ -246,7 +246,7 @@ class MeilisearchExtensionV2(ExtensionABC):
         """Check Meilisearch health"""
 
         try:
-            with cls._meili_client() as c:
+            with cls._meili_client() as c:  # type: ignore
                 h = c.health()
                 status = h.status == "available"
 
@@ -261,9 +261,9 @@ class MeilisearchExtensionV2(ExtensionABC):
     def _meili_index(cls: Type[M]) -> Index:
         """Get associated Meilisearch index"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
-        with cls._meili_client() as c:
+        with cls._meili_client() as c:  # type: ignore
             return c.get_index(cfg.index)
 
     # ....................... #
@@ -272,9 +272,9 @@ class MeilisearchExtensionV2(ExtensionABC):
     async def _ameili_index(cls: Type[M]) -> AsyncIndex:
         """Get associated Meilisearch index in asyncronous mode"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
-        async with cls._ameili_client() as c:
+        async with cls._ameili_client() as c:  # type: ignore
             return await c.get_index(cfg.index)
 
     # ....................... #
@@ -300,7 +300,7 @@ class MeilisearchExtensionV2(ExtensionABC):
     ):
         """Prepare search request"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
         sortable = cfg.settings.sortable_attributes
         filterable = cfg.settings.filterable_attributes
 
