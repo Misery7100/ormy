@@ -175,7 +175,11 @@ class MongoWithMeilisearchBackgroundV2(MongoBase, MeilisearchExtensionV2):
             cfg_meili = MeilisearchConfig()
 
         other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_meili]]
-        cfg_meili.index = f"{cls.config.database}__{cls.config.collection}"
+
+        # Prevent overriding default meilisearch index if mongo config is default
+        if not cls.config.is_default():
+            cfg_meili.index = f"{cls.config.database}__{cls.config.collection}"
+
         cls.extension_configs = [cfg_meili] + other_ext_configs
 
         super().__init_subclass__(**kwargs)
@@ -269,7 +273,11 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
             cfg_s3 = S3Config()
 
         other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_s3]]
-        cfg_s3.bucket = f"{cls.config.database}__{cls.config.collection}"
+
+        # Prevent overriding default s3 bucket if mongo config is default
+        if not cls.config.is_default():
+            cfg_s3.bucket = f"{cls.config.database}__{cls.config.collection}"
+
         cls.extension_configs = [cfg_s3] + other_ext_configs
 
         super().__init_subclass__(**kwargs)
