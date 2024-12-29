@@ -7,8 +7,26 @@
 
 Pydantic-compatible ORM (and ORM-like) wrappers of various kinds.
 
+## Features
+
+Services:
+
+- MongoDB;
+- Firestore;
+- Redis;
+- Clickhouse (with partial async support);
+- BigQuery (partial implementation).
+
+Extensions:
+
+- MeiliSearch;
+- S3;
+- Redlock (custom implementation).
+
 ## TO DO
 
+- [ ] Improve logging;
+- [ ] Non-context clients with corresponding option in config;
 - [ ] Check `pytest-benchmark` for performance testing;
 - [ ] Check `pytest-meilisearch` for MeiliSearch testing;
-- [ ] Add unit tests, finish `clickhouse` wrapper.
+- [ ] Extend unit tests.
