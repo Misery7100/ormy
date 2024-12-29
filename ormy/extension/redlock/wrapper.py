@@ -61,7 +61,7 @@ class RedlockExtension(ExtensionABC):
         m = None
 
         try:
-            m = cast(RedLockFactory, RedLockFactory([url]))
+            m = cast(RedLockFactory, RedLockFactory([{"url": url}]))
             yield m
 
         finally:

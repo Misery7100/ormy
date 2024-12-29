@@ -1,7 +1,7 @@
 # Ormy the Ferret
 <!-- markdownlint-disable MD033 -->
 
-<p>
+<p align="center">
   <img src="/images/ormy_1.png" alt="Ormy the Ferret" height="400">
 </p>
 
