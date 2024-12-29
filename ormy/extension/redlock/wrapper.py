@@ -1,3 +1,6 @@
+import asyncio
+import threading
+import time
 import uuid
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar
@@ -6,7 +9,7 @@ from redis import Redis
 from redis import asyncio as aioredis
 
 from ormy.base.abc import ExtensionABC
-from ormy.base.error import Conflict
+from ormy.base.error import BadInput, Conflict, InternalError
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import RedlockConfig
@@ -314,12 +317,37 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     @contextmanager
-    def redlock_cls(
+    def redlock_cls(  # TODO: exponential backoff, retry logic
         cls,
         id_: str,
         timeout: int = 10,
+        extend_interval: int = 5,
     ):
-        """Get Redlock"""
+        """
+        Lock entity instance with automatic extension
+
+        Args:
+            id_ (str): The unique identifier of the entity.
+            timeout (int): The timeout for the lock in seconds.
+            extend_interval (int): The interval to extend the lock in seconds.
+
+        Yields:
+            result (bool): True if the lock was acquired, False otherwise.
+
+        Raises:
+            Conflict: If the lock already exists.
+            BadInput: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
+            InternalError: If the lock aquisition or extension fails.
+        """
+
+        if timeout <= 0:
+            raise BadInput("timeout must be greater than 0")
+
+        if extend_interval <= 0:
+            raise BadInput("extend_interval must be greater than 0")
+
+        if extend_interval >= timeout:
+            raise BadInput("extend_interval must be less than timeout")
 
         col = cls._get_redlock_collection()
         resource = f"{col}.{id_}"
@@ -333,10 +361,42 @@ class RedlockExtension(ExtensionABC):
                 f"{resource} already locked",
             )
 
+        extend_task = None
+        stop_extend = threading.Event()
+
+        def extend_lock_periodically(resource: str, unique_id: str):
+            try:
+                while not stop_extend.is_set():
+                    time.sleep(extend_interval)
+                    success = cls._extend_lock(
+                        key=resource,
+                        unique_id=unique_id,
+                        additional_time=timeout,
+                    )
+                    if not success:
+                        raise InternalError(f"Failed to extend lock for {resource}")
+            except Exception as e:
+                raise InternalError(f"Error in lock extension: {e}")
+
         try:
+            extend_task = threading.Thread(
+                target=extend_lock_periodically,
+                kwargs={
+                    "resource": resource,
+                    "unique_id": unique_id,
+                },
+                daemon=True,
+            )
+            extend_task.start()
+
             yield result
 
         finally:
+            stop_extend.set()
+
+            if extend_task:
+                extend_task.join()
+
             if result and unique_id:
                 cls._release_lock(
                     key=resource,
@@ -347,12 +407,37 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     @asynccontextmanager
-    async def aredlock_cls(
+    async def aredlock_cls(  # TODO: exponential backoff, retry logic
         cls,
         id_: str,
         timeout: int = 10,
+        extend_interval: int = 5,
     ):
-        """Get Redlock"""
+        """
+        Lock entity instance with automatic extension
+
+        Args:
+            id_ (str): The unique identifier of the entity.
+            timeout (int): The timeout for the lock in seconds.
+            extend_interval (int): The interval to extend the lock in seconds.
+
+        Yields:
+            result (bool): True if the lock was acquired, False otherwise.
+
+        Raises:
+            Conflict: If the lock already exists.
+            BadInput: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
+            InternalError: If the lock aquisition or extension fails.
+        """
+
+        if timeout <= 0:
+            raise BadInput("timeout must be greater than 0")
+
+        if extend_interval <= 0:
+            raise BadInput("extend_interval must be greater than 0")
+
+        if extend_interval >= timeout:
+            raise BadInput("extend_interval must be less than timeout")
 
         col = cls._get_redlock_collection()
         resource = f"{col}.{id_}"
@@ -366,10 +451,47 @@ class RedlockExtension(ExtensionABC):
                 f"{resource} already locked",
             )
 
+        if not unique_id:
+            raise InternalError(f"Failed to acquire lock for {resource}")
+
+        extend_task = None
+        stop_extend = asyncio.Event()
+
+        async def extend_lock_periodically(resource: str, unique_id: str):
+            try:
+                while not stop_extend.is_set():
+                    await asyncio.sleep(extend_interval)
+                    success = await cls._aextend_lock(
+                        key=resource,
+                        unique_id=unique_id,
+                        additional_time=timeout,
+                    )
+                    if not success:
+                        raise InternalError(f"Failed to extend lock for {resource}")
+
+            except asyncio.CancelledError:
+                pass
+
         try:
+            extend_task = asyncio.create_task(
+                extend_lock_periodically(
+                    resource=resource,
+                    unique_id=unique_id,
+                )
+            )
+
             yield result
 
         finally:
+            stop_extend.set()
+
+            if extend_task:
+                extend_task.cancel()
+                try:
+                    await extend_task
+                except asyncio.CancelledError:
+                    pass
+
             if result and unique_id:
                 await cls._arelease_lock(
                     key=resource,

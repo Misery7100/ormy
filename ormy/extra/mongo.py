@@ -414,6 +414,8 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
     # ....................... #
 
     def __init_subclass__(cls: Type[R], **kwargs):
+        """Initialize subclass"""
+
         try:
             cfg_redlock = cls.get_extension_config(type_=RedlockConfig)
 
@@ -433,16 +435,45 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
     # ....................... #
 
     @contextmanager
-    def lock(self, **kwargs):
-        """Get Redlock"""
+    def lock(self, timeout: int = 10):
+        """
+        Lock entity instance
 
-        with self.redlock_cls(id_=str(self.id), **kwargs) as res:
+        Args:
+            timeout (int): The timeout for the lock in seconds.
+
+        Yields:
+            result (bool): True if the lock was acquired, False otherwise.
+
+        Raises:
+            Conflict: If the lock already exists.
+        """
+
+        with self.redlock_cls(
+            id_=str(self.id),
+            timeout=timeout,
+        ) as res:
             yield res
 
     # ....................... #
 
     @asynccontextmanager
-    async def alock(self, **kwargs):
-        """Get asyncronous Redlock"""
-        async with self.aredlock_cls(id_=str(self.id), **kwargs) as res:
+    async def alock(self, timeout: int = 10):
+        """
+        Lock entity instance
+
+        Args:
+            timeout (int): The timeout for the lock in seconds.
+
+        Yields:
+            result (bool): True if the lock was acquired, False otherwise.
+
+        Raises:
+            Conflict: If the lock already exists.
+        """
+
+        async with self.aredlock_cls(
+            id_=str(self.id),
+            timeout=timeout,
+        ) as res:
             yield res
