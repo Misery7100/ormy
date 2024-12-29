@@ -18,7 +18,7 @@ T = TypeVar("T", bound="RedisBase")
 
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
+# ----------------------- #
 
 
 class RedisBase(DocumentABC):  # TODO: add docstrings

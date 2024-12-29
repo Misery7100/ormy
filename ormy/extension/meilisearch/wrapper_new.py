@@ -28,7 +28,7 @@ from .schema import (
 M = TypeVar("M", bound="MeilisearchExtensionV2")
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
+# ----------------------- #
 
 
 class MeilisearchExtensionV2(ExtensionABC):
@@ -151,7 +151,7 @@ class MeilisearchExtensionV2(ExtensionABC):
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
         if not cfg.is_default():
-            with cls._meili_client() as c:  # type: ignore
+            with cls._meili_client() as c:
                 try:
                     ix = c.get_index(cfg.index)
                     logger.debug(f"Index `{cfg.index}` already exists")
@@ -178,7 +178,7 @@ class MeilisearchExtensionV2(ExtensionABC):
 
     @classmethod
     @contextmanager
-    def _meili_client(cls: Type[M]):
+    def _meili_client(cls):
         """Get syncronous Meilisearch client"""
 
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
@@ -207,7 +207,7 @@ class MeilisearchExtensionV2(ExtensionABC):
 
     @classmethod
     @asynccontextmanager
-    async def _ameili_client(cls: Type[M]):
+    async def _ameili_client(cls):
         """Get asyncronous Meilisearch client"""
 
         cfg = cls.get_extension_config(type_=MeilisearchConfig)

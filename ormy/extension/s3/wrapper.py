@@ -1,6 +1,6 @@
 import re
 from contextlib import contextmanager
-from typing import Any, ClassVar, Dict, List, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, TypeVar
 
 import boto3  # type: ignore[import-untyped]
 from botocore.client import Config  # type: ignore[import-untyped]
@@ -18,7 +18,7 @@ from .schema import S3File
 S = TypeVar("S", bound="S3Extension")
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
+# ----------------------- #
 
 
 class S3Extension(ExtensionABC):
@@ -31,7 +31,7 @@ class S3Extension(ExtensionABC):
 
     # ....................... #
 
-    def __init_subclass__(cls: Type[S], **kwargs):
+    def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
         cls._s3_register_subclass()
@@ -47,7 +47,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _s3_register_subclass(cls: Type[S]):
+    def _s3_register_subclass(cls):
         """Register subclass in the registry"""
 
         return cls._register_subclass_helper(
@@ -58,7 +58,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _s3_get_bucket(cls: Type[S]) -> str:
+    def _s3_get_bucket(cls) -> str:
         """Get bucket name"""
 
         cfg = cls.get_extension_config(type_=S3Config)
@@ -67,7 +67,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _s3_create_bucket(cls: Type[S]):
+    def _s3_create_bucket(cls):
         """Create a bucket"""
 
         cfg = cls.get_extension_config(type_=S3Config)
@@ -79,7 +79,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _s3_bucket_exists(cls: Type[S]):
+    def _s3_bucket_exists(cls):
         """
         Check if a bucket exists
 
@@ -90,7 +90,7 @@ class S3Extension(ExtensionABC):
             result (bool): Whether the bucket exists
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             try:
                 client.head_bucket(Bucket=cls._s3_get_bucket())
                 return True
@@ -106,7 +106,7 @@ class S3Extension(ExtensionABC):
 
     @classmethod
     @contextmanager
-    def _s3_client(cls: Type[S]):
+    def _s3_client(cls):
         """Get syncronous S3 client"""
 
         cfg = cls.get_extension_config(type_=S3Config)
@@ -133,7 +133,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def s3_list_buckets(cls: Type[S]):
+    def s3_list_buckets(cls):
         """List all buckets"""
 
         with cls._s3_client() as client:  # type: ignore
@@ -142,7 +142,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def s3_file_exists(cls: Type[S], key: str):
+    def s3_file_exists(cls, key: str):
         """
         Check if a file exists
 
@@ -171,10 +171,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def s3_get_file_tags(
-        cls: Type[S],
-        key: str,
-    ) -> Dict[str, str]:
+    def s3_get_file_tags(cls, key: str) -> Dict[str, str]:
         """
         Get file tags
 
@@ -196,11 +193,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def s3_add_file_tags(
-        cls: Type[S],
-        key: str,
-        tags: Dict[str, str],
-    ):
+    def s3_add_file_tags(cls, key: str, tags: Dict[str, str]):
         """
         Add file tags
 
@@ -223,11 +216,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def s3_remove_file_tags(
-        cls: Type[S],
-        key: str,
-        tags: List[str],
-    ):
+    def s3_remove_file_tags(cls, key: str, tags: List[str]):
         """
         Remove file tags
 
@@ -250,12 +239,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def s3_list_files(
-        cls: Type[S],
-        blob: str,
-        page: int = 1,
-        size: int = 20,
-    ):
+    def s3_list_files(cls, blob: str, page: int = 1, size: int = 20):
         """
         List bucket files
 
@@ -300,7 +284,7 @@ class S3Extension(ExtensionABC):
 
     @classmethod
     def s3_upload_file(
-        cls: Type[S],
+        cls,
         key: str,
         file: bytes,
         avoid_duplicates: bool = False,
@@ -357,7 +341,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def s3_download_file(cls: Type[S], key: str):
+    def s3_download_file(cls, key: str):
         """
         Download a file
 
@@ -377,7 +361,7 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def s3_delete_file(cls: Type[S], key: str):
+    def s3_delete_file(cls, key: str):
         """
         Delete a file
 

@@ -1,5 +1,6 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Dict, List, Optional, Self, Type, TypeVar
 
 from ormy.extension.meilisearch import (
@@ -7,6 +8,7 @@ from ormy.extension.meilisearch import (
     MeilisearchExtension,
     MeilisearchExtensionV2,
 )
+from ormy.extension.redlock import RedlockConfig, RedlockExtension
 from ormy.extension.s3 import S3Config, S3Extension
 from ormy.service.mongo import MongoBase, MongoConfig, MongoSingleBase
 
@@ -16,6 +18,7 @@ MwMb = TypeVar("MwMb", bound="MongoWithMeilisearchBackground")
 MwM = TypeVar("MwM", bound="MongoWithMeilisearch")
 M = TypeVar("M", bound="MongoWithMeilisearchBackgroundV2")
 S = TypeVar("S", bound="MongoMeilisearchS3")
+R = TypeVar("R", bound="MongoMeilisearchS3Redlock")
 
 # ----------------------- #
 
@@ -176,7 +179,7 @@ class MongoWithMeilisearchBackgroundV2(MongoSingleBase, MeilisearchExtensionV2):
 
         other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_meili]]
 
-        # Prevent overriding default meilisearch index if mongo config is default
+        # Prevent overriding if mongo config is default
         if not cls.config.is_default():
             cfg_meili.index = f"{cls.config.database}-{cls.config.collection}"
 
@@ -274,7 +277,7 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
 
         other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_s3]]
 
-        # Prevent overriding default s3 bucket if mongo config is default
+        # Prevent overriding if mongo config is default
         if not cls.config.is_default():
             cfg_s3.bucket = f"{cls.config.database}-{cls.config.collection}"
 
@@ -395,3 +398,51 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
         key: str = f"{self.id}/{name}"
 
         return self.s3_file_exists(key=key)
+
+
+# ----------------------- #
+
+
+class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
+    config: ClassVar[MongoConfig] = MongoConfig()
+    extension_configs: ClassVar[List[Any]] = [
+        MeilisearchConfig(),
+        S3Config(),
+        RedlockConfig(),
+    ]
+
+    # ....................... #
+
+    def __init_subclass__(cls: Type[R], **kwargs):
+        try:
+            cfg_redlock = cls.get_extension_config(type_=RedlockConfig)
+
+        except ValueError:
+            cfg_redlock = RedlockConfig()
+
+        other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_redlock]]
+
+        # Prevent overriding if mongo config is default
+        if not cls.config.is_default():
+            cfg_redlock.collection = f"{cls.config.database}_{cls.config.collection}"
+
+        cls.extension_configs = [cfg_redlock] + other_ext_configs
+
+        super().__init_subclass__(**kwargs)
+
+    # ....................... #
+
+    @contextmanager
+    def redlock(self, **kwargs):
+        """Get Redlock"""
+
+        with self.redlock_cls(id_=str(self.id), **kwargs) as lock:
+            yield lock
+
+    # ....................... #
+
+    @asynccontextmanager
+    async def aredlock(self, **kwargs):
+        """Get asyncronous Redlock"""
+        async with self.aredlock_cls(id_=str(self.id), **kwargs) as lock:
+            yield lock

@@ -8,6 +8,8 @@ from .generic import TabularData
 
 T = TypeVar("T", bound="Base")
 
+# ----------------------- #
+
 
 class Base(BaseModel):
     """

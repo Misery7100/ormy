@@ -2668,6 +2668,20 @@ hiredis = ["hiredis (>=1.0.0)"]
 ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
 
 [[package]]
+name = "redlock"
+version = "1.2.0"
+description = "Distributed locks with Redis"
+optional = false
+python-versions = "*"
+files = [
+    {file = "redlock-1.2.0-py2-none-any.whl", hash = "sha256:ce7e6ab404882b64a9c5017c7a78b1a3714f2c712635bcb22cbb74d20719bbd1"},
+    {file = "redlock-1.2.0.tar.gz", hash = "sha256:b718646239d300745475a76e81d350ec523e7146cf84d696b3c4a7dfdd5dd4d4"},
+]
+
+[package.dependencies]
+redis = "*"
+
+[[package]]
 name = "requests"
 version = "2.32.3"
 description = "Python HTTP for Humans."
@@ -3071,4 +3085,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">3.10,<3.12"
-content-hash = "6d3a155ea776a358c8058e7e0cdcefdc0d696e83db238052ae78fe6e4d482d95"
+content-hash = "8b23e0a4961cf85c133189bdd695844b39c6cabc2919bf7175d0f896f5e6adb7"

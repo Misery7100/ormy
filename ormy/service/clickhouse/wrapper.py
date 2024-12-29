@@ -31,7 +31,7 @@ from .func import get_clickhouse_db
 Ch = TypeVar("Ch", bound="ClickHouseBase")
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
+# ----------------------- #
 
 
 class ClickHouseFieldInfo(FieldInfo):

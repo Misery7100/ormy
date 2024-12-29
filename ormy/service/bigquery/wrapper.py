@@ -21,7 +21,7 @@ from .exceptions import BigQueryBackendInsertError, BigQueryInsertError
 Bq = TypeVar("Bq", bound="BigQueryBase")
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
+# ----------------------- #
 
 
 class BigQueryBase(AbstractABC):
@@ -365,11 +365,11 @@ class BigQueryBase(AbstractABC):
             except (BadRequest, GoogleCloudError) as e:
                 if (
                     "Your client has issued a malformed or illegal request."
-                    in e.response.text
+                    in e.response.text  # type: ignore
                     or "Request payload size exceeds the limit: 10485760 bytes."
-                    in e.response.text
+                    in e.response.text  # type: ignore
                     or "Your client issued a request that was too large"
-                    in e.response.text
+                    in e.response.text  # type: ignore
                 ):
 
                     # Use bisect to reduce payload size
@@ -389,7 +389,7 @@ class BigQueryBase(AbstractABC):
 
     # ....................... #
 
-    def save(self: Bq):
+    def save(self):
         """
         ...
         """

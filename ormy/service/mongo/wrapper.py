@@ -23,7 +23,7 @@ M = TypeVar("M", bound="MongoBase")
 
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
+# ----------------------- #
 
 
 class MongoBase(DocumentABC):  # TODO: add docstrings

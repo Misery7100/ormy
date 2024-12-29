@@ -28,7 +28,7 @@ from .schema import (  # noqa: F401
 M = TypeVar("M", bound="MeilisearchExtension")
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
+# ----------------------- #
 
 
 class MeilisearchExtension(AbstractABC):

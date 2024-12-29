@@ -50,7 +50,7 @@ C = TypeVar("C", bound="ConfigABC")
 # ! ???
 FsTransform = Union[Sentinel, ArrayRemove, ArrayUnion, Increment, Maximum, Minimum]
 
-# ....................... #
+# ----------------------- #
 
 
 class FirestoreBase(DocumentABC):  # TODO: add docstrings

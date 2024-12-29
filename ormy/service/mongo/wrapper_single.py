@@ -24,7 +24,7 @@ M = TypeVar("M", bound="MongoSingleBase")
 
 logger = console_logger(__name__, level=LogLevel.INFO)
 
-# ....................... #
+# ----------------------- #
 
 
 class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings

@@ -9,6 +9,8 @@ from ormy.base.pydantic import Base
 
 C = TypeVar("C", bound="ConfigABC")
 
+# ----------------------- #
+
 
 class ConfigABC(Base, ABC):
     """
