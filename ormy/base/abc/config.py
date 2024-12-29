@@ -15,7 +15,10 @@ class ConfigABC(Base, ABC):
     Abstract Base Class for ORM Configuration
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        validate_assignment=True,
+    )
     include_to_registry: bool = True
 
     # ....................... #

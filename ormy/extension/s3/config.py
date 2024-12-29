@@ -1,7 +1,7 @@
 import re
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from pydantic import SecretStr, model_validator
+from pydantic import SecretStr, field_validator
 
 from ormy.base.abc import ConfigABC
 from ormy.base.pydantic import Base
@@ -62,19 +62,18 @@ class S3Config(ConfigABC):
 
     # ....................... #
 
-    @model_validator(mode="before")
-    def validate_and_transform_bucket(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @field_validator("bucket", mode="before")
+    def validate_and_transform_bucket(cls, v: str) -> str:
         """
         Validate and transform bucket name
         """
 
-        bucket = values["bucket"].lower()
+        bucket = v.lower()
         bucket = re.sub(r"[^a-z0-9.-]", "-", bucket)
         bucket = re.sub(r"\.\.+|-+", "-", bucket)
         bucket = bucket.strip("-")
-        values["bucket"] = bucket
 
-        return values
+        return bucket
 
     # ....................... #
 
