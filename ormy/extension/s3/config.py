@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Self
+from typing import Any, Dict, Optional
 
 from pydantic import SecretStr, model_validator
 
@@ -62,20 +62,19 @@ class S3Config(ConfigABC):
 
     # ....................... #
 
-    @model_validator(mode="after")
-    def validate_and_transform_bucket(self) -> Self:
+    @model_validator(mode="before")
+    def validate_and_transform_bucket(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate and transform bucket name
         """
 
-        if not self.is_default():
-            bucket = self.bucket.lower()
-            bucket = re.sub(r"[^a-z0-9.-]", "-", bucket)
-            bucket = re.sub(r"\.\.+|-+", "-", bucket)
-            bucket = bucket.strip("-")
-            self.bucket = bucket
+        bucket = values["bucket"].lower()
+        bucket = re.sub(r"[^a-z0-9.-]", "-", bucket)
+        bucket = re.sub(r"\.\.+|-+", "-", bucket)
+        bucket = bucket.strip("-")
+        values["bucket"] = bucket
 
-        return self
+        return values
 
     # ....................... #
 
