@@ -158,7 +158,7 @@ class ExtensionABC(Base, ABC):
 
     # ....................... #
 
-    @classmethod
+    @classmethod  # TODO: multikey discriminator (*discriminator) - ?
     def _register_subclass_helper(
         cls: Type[E],
         config: Type[C],

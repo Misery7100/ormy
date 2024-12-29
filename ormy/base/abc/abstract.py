@@ -83,7 +83,6 @@ class AbstractABC(Base, ABC):
         parents = inspect.getmro(cls)[1:]
         cfgs = []
 
-        # ! TODO: use `issubclass` instead of `hasattr` ??
         for p in parents:
             if hasattr(p, "_registry") and hasattr(p, "configs"):
                 cfgs = p.configs
@@ -206,7 +205,7 @@ class AbstractSingleABC(Base, ABC):
         parent_config = None
 
         for p in parents:
-            if issubclass(p, cls) and p.config is not None:
+            if hasattr(p, "_registry") and hasattr(p, "config"):
                 parent_config = p.config
                 break
 
@@ -254,7 +253,7 @@ class AbstractSingleABC(Base, ABC):
         reg = dict()
 
         for p in parents:
-            if issubclass(p, cls) and hasattr(p, "_registry"):
+            if hasattr(p, "_registry"):
                 reg = p._registry
                 break
 
