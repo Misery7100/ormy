@@ -46,7 +46,7 @@ class RedlockExtension(ExtensionABC):
 
         return cls._register_subclass_helper(
             config=RedlockConfig,
-            discriminator="index",
+            discriminator="collection",
         )
 
     # ....................... #
