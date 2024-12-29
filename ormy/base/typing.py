@@ -1,4 +1,13 @@
-from typing import Annotated, Any, Dict, Literal, TypeAlias
+from typing import (
+    Annotated,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Literal,
+    TypeAlias,
+    TypeVar,
+)
 
 from pydantic import BaseModel
 
@@ -19,3 +28,8 @@ DocumentID = Annotated[str, "Document ID"]
 
 # Aliases
 Wildcard: TypeAlias = Literal["*", "all"]
+
+T = TypeVar("T")
+R = TypeVar("R")
+
+AsyncCallable = Callable[[T], Awaitable[R]]

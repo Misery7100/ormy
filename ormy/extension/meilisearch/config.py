@@ -106,6 +106,7 @@ class MeilisearchConfig(ConfigABC):
         settings (MeilisearchSettings): Meilisearch settings
         include_to_registry (bool): Whether to include to registry
         credentials (MeilisearchCredentials): Meilisearch connect credentials
+        context_client (bool): Whether to use context manager for Meilisearch client
     """
 
     # Local configuration
@@ -116,6 +117,7 @@ class MeilisearchConfig(ConfigABC):
 
     # Global configuration
     credentials: MeilisearchCredentials = MeilisearchCredentials()
+    context_client: bool = True
 
     # ....................... #
 

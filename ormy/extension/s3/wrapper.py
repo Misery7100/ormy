@@ -6,6 +6,7 @@ import boto3  # type: ignore[import-untyped]
 from botocore.client import Config  # type: ignore[import-untyped]
 
 from ormy.base.abc import ExtensionABC
+from ormy.base.error import BadInput, Conflict
 from ormy.base.generic import TabularData
 from ormy.base.pydantic import TableResponse
 from ormy.utils.logging import LogLevel, console_logger
@@ -90,7 +91,7 @@ class S3Extension(ExtensionABC):
             result (bool): Whether the bucket exists
         """
 
-        with cls._s3_client() as client:
+        with cls._s3_client() as client: # type: ignore
             try:
                 client.head_bucket(Bucket=cls._s3_get_bucket())
                 return True
@@ -113,8 +114,7 @@ class S3Extension(ExtensionABC):
         credentials = cfg.credentials
 
         if credentials.username is None or credentials.password is None:
-            # TODO: replace with ormy.base.error
-            raise ValueError("S3 credentials are not set")
+            raise BadInput("S3 credentials are not set")
 
         c = boto3.client(
             "s3",
@@ -327,8 +327,7 @@ class S3Extension(ExtensionABC):
                     key = f"{new_key}.{ext}"
 
                 else:
-                    # TODO: replace with ormy.base.error.Conflict
-                    raise ValueError("File already exists.")
+                    raise Conflict("File already exists.")
 
             client.upload_fileobj(
                 Fileobj=file,

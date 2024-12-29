@@ -3,13 +3,14 @@ import threading
 import time
 import uuid
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar
+from typing import Any, Callable, ClassVar, List, Optional, Tuple, Type, TypeVar
 
 from redis import Redis
 from redis import asyncio as aioredis
 
 from ormy.base.abc import ExtensionABC
 from ormy.base.error import BadInput, Conflict, InternalError
+from ormy.base.typing import AsyncCallable
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import RedlockConfig
@@ -71,11 +72,11 @@ class RedlockExtension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _is_static_redlock(cls: Type[R]):
+    def __is_static_redlock(cls: Type[R]):
         """Check if static Redis client is used"""
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
-        use_static = cfg.use_static
+        use_static = not cfg.context_client
 
         return use_static
 
@@ -142,6 +143,40 @@ class RedlockExtension(ExtensionABC):
     # ....................... #
 
     @classmethod
+    def __redlock_execute_task(
+        cls: Type[R],
+        task: Callable[[Redis], Any],
+    ):
+        """Execute task"""
+
+        if cls.__is_static_redlock():
+            c = cls._redlock_static_client()
+            return task(c)
+
+        else:
+            with cls._redlock_client() as c:
+                return task(c)
+
+    # ....................... #
+
+    @classmethod
+    async def __aredlock_execute_task(
+        cls: Type[R],
+        task: AsyncCallable[aioredis.Redis, Any],
+    ):
+        """Execute async task"""
+
+        if cls.__is_static_redlock():
+            c = await cls._aredlock_static_client()
+            return await task(c)
+
+        else:
+            async with cls._aredlock_client() as c:
+                return await task(c)
+
+    # ....................... #
+
+    @classmethod
     def _acquire_lock(
         cls,
         key: str,
@@ -163,25 +198,17 @@ class RedlockExtension(ExtensionABC):
 
         unique_id = unique_id or str(uuid.uuid4())
 
-        if cls._is_static_redlock():
-            r = cls._redlock_static_client()
-            result = r.set(
+        def _task(c: Redis):
+            result = c.set(
                 key,
                 unique_id,
                 nx=True,
                 ex=timeout,
             )
 
-        else:
-            with cls._redlock_client() as r:
-                result = r.set(
-                    key,
-                    unique_id,
-                    nx=True,
-                    ex=timeout,
-                )
+            return result, unique_id if result else None
 
-        return result, unique_id if result else None
+        return cls.__redlock_execute_task(_task)
 
     # ....................... #
 
@@ -207,25 +234,17 @@ class RedlockExtension(ExtensionABC):
 
         unique_id = unique_id or str(uuid.uuid4())
 
-        if cls._is_static_redlock():
-            r = await cls._aredlock_static_client()
-            result = await r.set(
+        async def _task(c: aioredis.Redis):
+            result = await c.set(
                 key,
                 unique_id,
                 nx=True,
                 ex=timeout,
             )
 
-        else:
-            async with cls._aredlock_client() as r:
-                result = await r.set(
-                    key,
-                    unique_id,
-                    nx=True,
-                    ex=timeout,
-                )
+            return result, unique_id if result else None
 
-        return result, unique_id if result else None
+        return await cls.__aredlock_execute_task(_task)
 
     # ....................... #
 
@@ -250,25 +269,17 @@ class RedlockExtension(ExtensionABC):
         end
         """
 
-        if cls._is_static_redlock():
-            r = cls._redlock_static_client()
-            result = r.eval(
+        def _task(c: Redis):
+            result = c.eval(
                 script,
                 1,
                 key,
                 unique_id,
             )
 
-        else:
-            with cls._redlock_client() as r:
-                result = r.eval(
-                    script,
-                    1,
-                    key,
-                    unique_id,
-                )
+            return result
 
-        return result
+        return cls.__redlock_execute_task(_task)
 
     # ....................... #
 
@@ -293,25 +304,17 @@ class RedlockExtension(ExtensionABC):
         end
         """
 
-        if cls._is_static_redlock():
-            r = await cls._aredlock_static_client()
-            result = await r.eval(
+        async def _task(c: aioredis.Redis):
+            result = await c.eval(
                 script,
                 1,
                 key,
                 unique_id,
             )
 
-        else:
-            async with cls._aredlock_client() as r:
-                result = await r.eval(
-                    script,
-                    1,
-                    key,
-                    unique_id,
-                )
+            return result
 
-        return result
+        return await cls.__aredlock_execute_task(_task)
 
     # ....................... #
 
@@ -342,9 +345,8 @@ class RedlockExtension(ExtensionABC):
         end
         """
 
-        if cls._is_static_redlock():
-            r = cls._redlock_static_client()
-            result = r.eval(
+        def _task(c: Redis):
+            result = c.eval(
                 script,
                 1,
                 key,
@@ -352,17 +354,9 @@ class RedlockExtension(ExtensionABC):
                 additional_time,
             )
 
-        else:
-            with cls._redlock_client() as r:
-                result = r.eval(
-                    script,
-                    1,
-                    key,
-                    unique_id,
-                    additional_time,
-                )
+            return result == 1
 
-        return result == 1
+        return cls.__redlock_execute_task(_task)
 
     # ....................... #
 
@@ -393,9 +387,8 @@ class RedlockExtension(ExtensionABC):
         end
         """
 
-        if cls._is_static_redlock():
-            r = await cls._aredlock_static_client()
-            result = await r.eval(
+        async def _task(c: aioredis.Redis):
+            result = await c.eval(
                 script,
                 1,
                 key,
@@ -403,17 +396,9 @@ class RedlockExtension(ExtensionABC):
                 additional_time,
             )
 
-        else:
-            async with cls._aredlock_client() as r:
-                result = await r.eval(
-                    script,
-                    1,
-                    key,
-                    unique_id,
-                    additional_time,
-                )
+            return result == 1
 
-        return result == 1
+        return await cls.__aredlock_execute_task(_task)
 
     # ....................... #
 
