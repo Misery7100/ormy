@@ -1,6 +1,7 @@
-from typing import Optional
+import re
+from typing import Optional, Self
 
-from pydantic import SecretStr
+from pydantic import SecretStr, model_validator
 
 from ormy.base.abc import ConfigABC
 from ormy.base.pydantic import Base
@@ -53,11 +54,28 @@ class S3Config(ConfigABC):
     """
 
     # Local configuration
-    bucket: str = "_default_"
+    bucket: str = "default-bucket"
     include_to_registry: bool = True
 
     # Global configuration
     credentials: S3Credentials = S3Credentials()
+
+    # ....................... #
+
+    @model_validator(mode="after")
+    def validate_and_transform_bucket(self) -> Self:
+        """
+        Validate and transform bucket name
+        """
+
+        if not self.is_default():
+            bucket = self.bucket.lower()
+            bucket = re.sub(r"[^a-z0-9.-]", "-", bucket)
+            bucket = re.sub(r"\.\.+|-+", "-", bucket)
+            bucket = bucket.strip("-")
+            self.bucket = bucket
+
+        return self
 
     # ....................... #
 

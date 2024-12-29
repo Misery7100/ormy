@@ -178,7 +178,7 @@ class MongoWithMeilisearchBackgroundV2(MongoSingleBase, MeilisearchExtensionV2):
 
         # Prevent overriding default meilisearch index if mongo config is default
         if not cls.config.is_default():
-            cfg_meili.index = f"{cls.config.database}__{cls.config.collection}"
+            cfg_meili.index = f"{cls.config.database}-{cls.config.collection}"
 
         cls.extension_configs = [cfg_meili] + other_ext_configs
 
