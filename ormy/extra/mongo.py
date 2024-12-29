@@ -8,7 +8,7 @@ from ormy.extension.meilisearch import (
     MeilisearchExtension,
     MeilisearchExtensionV2,
 )
-from ormy.extension.redlock import RedlockConfig, RedlockExtension
+from ormy.extension.redlock import RedlockConfig, RedlockCustomExtension
 from ormy.extension.s3 import S3Config, S3Extension
 from ormy.service.mongo import MongoBase, MongoConfig, MongoSingleBase
 
@@ -403,7 +403,7 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
 # ----------------------- #
 
 
-class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
+class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockCustomExtension):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [
         MeilisearchConfig(),
@@ -436,13 +436,13 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
     def redlock(self, **kwargs):
         """Get Redlock"""
 
-        with self.redlock_cls(id_=str(self.id), **kwargs) as lock:
-            yield lock
+        with self.redlock_cls(id_=str(self.id), **kwargs) as res:
+            yield res
 
     # ....................... #
 
     @asynccontextmanager
     async def aredlock(self, **kwargs):
         """Get asyncronous Redlock"""
-        async with self.aredlock_cls(id_=str(self.id), **kwargs) as lock:
-            yield lock
+        async with self.aredlock_cls(id_=str(self.id), **kwargs) as res:
+            yield res

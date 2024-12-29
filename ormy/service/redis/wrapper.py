@@ -97,19 +97,6 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    # @classmethod
-    # def _alock_manager(cls: Type[T]):
-    #     """
-    #     ...
-    #     """
-
-    #     cfg = cls.get_config(type_=RedisConfig)
-    #     url = cfg.url()
-
-    #     return Aioredlock([url])
-
-    # ....................... #
-
     @classmethod
     def _build_key(cls: Type[T], key: DocumentID) -> str:
         """Build key for Redis storage"""
