@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, AsyncGenerator, ClassVar, Generator, List, Type, TypeVar, cast
+from typing import Any, ClassVar, List, Type, TypeVar, cast
 
-from aioredlock import Aioredlock, Lock  # type: ignore[import-untyped]
-from redlock import RedLock, RedLockFactory  # type: ignore[import-untyped]
+from aioredlock import Aioredlock  # type: ignore[import-untyped]
+from redlock import RedLockFactory  # type: ignore[import-untyped]
 
 from ormy.base.abc import ExtensionABC
 from ormy.utils.logging import LogLevel, console_logger
@@ -53,7 +53,7 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     @contextmanager
-    def _redlock_manager(cls) -> Generator[RedLockFactory, None]:
+    def _redlock_manager(cls):
         """Get syncronous Redlock manager"""
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
@@ -71,7 +71,7 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     @asynccontextmanager
-    async def _aredlock_manager(cls) -> AsyncGenerator[Aioredlock, None]:
+    async def _aredlock_manager(cls):
         """Get asyncronous Redlock manager"""
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
@@ -89,7 +89,7 @@ class RedlockExtension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _get_collection(cls):
+    def _get_redlock_collection(cls: Type[R]):
         """Get collection"""
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
@@ -101,10 +101,10 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     @contextmanager
-    def redlock_cls(cls, id_: str, **kwargs) -> Generator[RedLock, None]:
+    def redlock_cls(cls, id_: str, **kwargs):
         """Get Redlock"""
 
-        col = cls._get_collection()
+        col = cls._get_redlock_collection()
         resource = f"{col}.{id_}"
 
         with cls._redlock_manager() as m:
@@ -121,10 +121,10 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     @asynccontextmanager
-    async def aredlock_cls(cls, id_: str, **kwargs) -> AsyncGenerator[Lock, None]:
+    async def aredlock_cls(cls, id_: str, **kwargs):
         """Get asyncronous Redlock"""
 
-        col = cls._get_collection()
+        col = cls._get_redlock_collection()
         resource = f"{col}.{id_}"
 
         async with cls._aredlock_manager() as m:
