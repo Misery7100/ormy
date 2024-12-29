@@ -158,7 +158,12 @@ class MeilisearchExtensionV2(ExtensionABC):
 
     @classmethod
     def __is_static_meili(cls: Type[M]):
-        """Check if static Meilisearch client is used"""
+        """
+        Check if static Meilisearch client is used
+
+        Returns:
+            use_static (bool): Whether to use static Meilisearch client
+        """
 
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
         use_static = not cfg.context_client
@@ -169,7 +174,12 @@ class MeilisearchExtensionV2(ExtensionABC):
 
     @classmethod
     def _meili_static_client(cls):
-        """Get static Meilisearch client"""
+        """
+        Get static Meilisearch client
+
+        Returns:
+            client (meilisearch_python_sdk.Client): Static Meilisearch client
+        """
 
         health = False
 
@@ -204,7 +214,12 @@ class MeilisearchExtensionV2(ExtensionABC):
 
     @classmethod
     async def _ameili_static_client(cls):
-        """Get static async Meilisearch client"""
+        """
+        Get static async Meilisearch client
+
+        Returns:
+            client (meilisearch_python_sdk.AsyncClient): Static async Meilisearch client
+        """
 
         health = False
 

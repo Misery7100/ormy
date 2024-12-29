@@ -54,7 +54,7 @@ class FirestoreConfig(ConfigABC):
         database (str): Database name to assign
         collection (str): Collection name to assign
         include_to_registry (bool): Whether to include to registry
-        credentials (ormy.service.firestore.FirestoreCredentials): Firestore connection credentials
+        credentials (FirestoreCredentials): Firestore connection credentials
     """
 
     # Local configuration

@@ -31,9 +31,14 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
     config: ClassVar[MongoConfig] = MongoConfig()
     _registry = {MongoConfig: {}}  #! - ?????
 
+    _static: ClassVar[Optional[MongoClient]] = None
+    _astatic: ClassVar[Optional[AsyncIOMotorClient]] = None
+
     # ....................... #
 
     def __init_subclass__(cls: Type[M], **kwargs):
+        """Initialize subclass"""
+
         super().__init_subclass__(**kwargs)
 
         cls._mongo_register_subclass()
@@ -46,7 +51,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
 
     # ....................... #
 
-    @classmethod
+    @classmethod  # TODO: use `_register_subclass_helper` (update it)
     def _mongo_register_subclass(cls: Type[M]):
         """Register subclass in the registry"""
 
@@ -74,14 +79,26 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             client (pymongo.MongoClient): Syncronous MongoDB client
         """
 
-        creds = cls.config.credentials.model_dump_with_secrets()
+        health = False
 
-        return MongoClient(**creds)
+        if cls._static is not None:
+            try:
+                check = cls._static.admin.command("ping")
+                health = check.get("ok", 0) == 1
+
+            except Exception:
+                pass
+
+        if not health or cls._static is None:
+            creds = cls.config.credentials.model_dump_with_secrets()
+            cls._static = MongoClient(**creds)
+
+        return cls._static
 
     # ....................... #
 
     @classmethod  #! TODO: Unauthorized or Forbidden raise ?
-    def _aclient(cls: Type[M]) -> AsyncIOMotorClient:
+    async def _aclient(cls: Type[M]) -> AsyncIOMotorClient:
         """
         Get asyncronous MongoDB client
 
@@ -89,9 +106,21 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             client (motor.motor_asyncio.AsyncIOMotorClient): Asyncronous MongoDB client
         """
 
-        creds = cls.config.credentials.model_dump_with_secrets()
+        health = False
 
-        return AsyncIOMotorClient(**creds)
+        if cls._astatic is not None:
+            try:
+                check = await cls._astatic.admin.command("ping")
+                health = check.get("ok", 0) == 1
+
+            except Exception:
+                pass
+
+        if not health or cls._astatic is None:
+            creds = cls.config.credentials.model_dump_with_secrets()
+            cls._astatic = AsyncIOMotorClient(**creds)
+
+        return cls._astatic
 
     # ....................... #
 
@@ -111,7 +140,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    def _aget_database(cls: Type[M]) -> AsyncIOMotorDatabase:
+    async def _aget_database(cls: Type[M]) -> AsyncIOMotorDatabase:
         """
         Get assigned MongoDB database in asyncronous mode
 
@@ -119,7 +148,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             database (motor.motor_asyncio.AsyncIOMotorDatabase): Asyncronous MongoDB database
         """
 
-        client = cls._aclient()
+        client = await cls._aclient()
 
         return client.get_database(cls.config.database)
 
@@ -141,7 +170,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    def _aget_collection(cls: Type[M]) -> AsyncIOMotorCollection:
+    async def _aget_collection(cls: Type[M]) -> AsyncIOMotorCollection:
         """
         Get assigned MongoDB collection in asyncronous mode
 
@@ -149,7 +178,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             collection (motor.motor_asyncio.AsyncIOMotorCollection): Asyncronous MongoDB collection
         """
 
-        database = cls._aget_database()
+        database = await cls._aget_database()
 
         return database.get_collection(cls.config.collection)
 
@@ -199,7 +228,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             Conflict: Document already exists
         """
 
-        collection = cls._aget_collection()
+        collection = await cls._aget_collection()
         document = data.model_dump(mode="json")
 
         _id: DocumentID = document["id"]
@@ -246,7 +275,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             self (MongoBase): Saved data model
         """
 
-        collection = self._aget_collection()
+        collection = await self._aget_collection()
         document = self.model_dump()
 
         _id: DocumentID = document["id"]
@@ -291,7 +320,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
     ):
         """Create multiple documents in the collection in asyncronous mode"""
 
-        collection = cls._aget_collection()
+        collection = await cls._aget_collection()
 
         _data = [item.model_dump() for item in data]
         operations = [InsertOne({**d, "_id": d["id"]}) for d in _data]
@@ -392,7 +421,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             NotFound: Document not found
         """
 
-        collection = cls._aget_collection()
+        collection = await cls._aget_collection()
 
         if not (request or id_):
             raise BadInput("Request or value is required")
@@ -439,7 +468,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             res (int): Number of documents
         """
 
-        collection = cls._aget_collection()
+        collection = await cls._aget_collection()
 
         return await collection.count_documents(request)
 
@@ -491,7 +520,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             res (List[MongoBase]): Found data models
         """
 
-        collection = cls._aget_collection()
+        collection = await cls._aget_collection()
         cursor = collection.find(request).limit(limit).skip(offset)
         clsdocs = [cls(**doc) async for doc in cursor]
 

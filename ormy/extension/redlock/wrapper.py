@@ -84,9 +84,23 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     def _redlock_static_client(cls):
-        """Get static Redis client for lock purposes"""
+        """
+        Get static Redis client for lock purposes
 
-        if cls._redlock_static is None or not cls._redlock_static.ping():
+        Returns:
+            client (redis.Redis): Static Redis client
+        """
+
+        health = False
+
+        if cls._redlock_static is not None:
+            try:
+                health = cls._redlock_static.ping()
+
+            except Exception:
+                pass
+
+        if not health or cls._redlock_static is None:
             cfg = cls.get_extension_config(type_=RedlockConfig)
             url = cfg.url()
             cls._redlock_static = Redis.from_url(url, decode_responses=True)
@@ -97,9 +111,23 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     async def _aredlock_static_client(cls):
-        """Get static async Redis client for lock purposes"""
+        """
+        Get static async Redis client for lock purposes
 
-        if cls._aredlock_static is None or not await cls._aredlock_static.ping():
+        Returns:
+            client (redis.Redis): Static async Redis client
+        """
+
+        health = False
+
+        if cls._aredlock_static is not None:
+            try:
+                health = await cls._aredlock_static.ping()
+
+            except Exception:
+                pass
+
+        if not health or cls._aredlock_static is None:
             cfg = cls.get_extension_config(type_=RedlockConfig)
             url = cfg.url()
             cls._aredlock_static = aioredis.from_url(url, decode_responses=True)

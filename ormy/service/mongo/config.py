@@ -40,7 +40,8 @@ class MongoConfig(ConfigABC):
         database (str): Database name to assign
         collection (str): Collection name to assign
         streaming (bool): Whether to enable watch on collection
-        credentials (ormy.service.mongo.MongoCredentials): Connection credentials
+        include_to_registry (bool): Whether to include the config to registry
+        credentials (MongoCredentials): Connection credentials
     """
 
     # Local configuration
