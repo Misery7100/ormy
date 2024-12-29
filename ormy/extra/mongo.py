@@ -8,7 +8,7 @@ from ormy.extension.meilisearch import (
     MeilisearchExtensionV2,
 )
 from ormy.extension.s3 import S3Config, S3Extension
-from ormy.service.mongo import MongoBase, MongoConfig
+from ormy.service.mongo import MongoBase, MongoConfig, MongoSingleBase
 
 # ----------------------- #
 
@@ -161,7 +161,7 @@ class MongoWithMeilisearch(MongoBase, MeilisearchExtension):
 # ----------------------- #
 
 
-class MongoWithMeilisearchBackgroundV2(MongoBase, MeilisearchExtensionV2):
+class MongoWithMeilisearchBackgroundV2(MongoSingleBase, MeilisearchExtensionV2):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
 
