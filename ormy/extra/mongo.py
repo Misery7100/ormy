@@ -276,7 +276,7 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
 
         # Prevent overriding default s3 bucket if mongo config is default
         if not cls.config.is_default():
-            cfg_s3.bucket = f"{cls.config.database}__{cls.config.collection}"
+            cfg_s3.bucket = f"{cls.config.database}-{cls.config.collection}"
 
         cls.extension_configs = [cfg_s3] + other_ext_configs
 
