@@ -28,7 +28,9 @@ class RedlockConfig(RedisConfig):
         database (int): Database number to assign
         collection (str): Collection name to assign
         credentials (RedlockCredentials): Connection credentials
+        use_static (bool): Whether to use static Redis client
     """
 
     # Global configuration
     credentials: RedlockCredentials = RedlockCredentials()
+    use_static: bool = False

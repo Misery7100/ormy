@@ -23,16 +23,19 @@ logger = console_logger(__name__, level=LogLevel.INFO)
 
 
 class RedlockExtension(ExtensionABC):
-    """
-    Redlock extension
-    """
+    """Redlock extension"""
 
     extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
     _registry = {RedlockConfig: {}}
 
+    _redlock_static: ClassVar[Optional[Redis]] = None
+    _aredlock_static: ClassVar[Optional[aioredis.Redis]] = None
+
     # ....................... #
 
     def __init_subclass__(cls: Type[R], **kwargs):
+        """Initialize subclass"""
+
         super().__init_subclass__(**kwargs)
 
         cls._redlock_register_subclass()
@@ -64,6 +67,43 @@ class RedlockExtension(ExtensionABC):
         col = cfg.collection
 
         return col
+
+    # ....................... #
+
+    @classmethod
+    def _is_static_redlock(cls: Type[R]):
+        """Check if static Redis client is used"""
+
+        cfg = cls.get_extension_config(type_=RedlockConfig)
+        use_static = cfg.use_static
+
+        return use_static
+
+    # ....................... #
+
+    @classmethod
+    def _redlock_static_client(cls):
+        """Get static Redis client for lock purposes"""
+
+        if cls._redlock_static is None or not cls._redlock_static.ping():
+            cfg = cls.get_extension_config(type_=RedlockConfig)
+            url = cfg.url()
+            cls._redlock_static = Redis.from_url(url, decode_responses=True)
+
+        return cls._redlock_static
+
+    # ....................... #
+
+    @classmethod
+    async def _aredlock_static_client(cls):
+        """Get static async Redis client for lock purposes"""
+
+        if cls._aredlock_static is None or not await cls._aredlock_static.ping():
+            cfg = cls.get_extension_config(type_=RedlockConfig)
+            url = cfg.url()
+            cls._aredlock_static = aioredis.from_url(url, decode_responses=True)
+
+        return cls._aredlock_static
 
     # ....................... #
 
@@ -123,13 +163,23 @@ class RedlockExtension(ExtensionABC):
 
         unique_id = unique_id or str(uuid.uuid4())
 
-        with cls._redlock_client() as r:
+        if cls._is_static_redlock():
+            r = cls._redlock_static_client()
             result = r.set(
                 key,
                 unique_id,
                 nx=True,
                 ex=timeout,
             )
+
+        else:
+            with cls._redlock_client() as r:
+                result = r.set(
+                    key,
+                    unique_id,
+                    nx=True,
+                    ex=timeout,
+                )
 
         return result, unique_id if result else None
 
@@ -157,13 +207,23 @@ class RedlockExtension(ExtensionABC):
 
         unique_id = unique_id or str(uuid.uuid4())
 
-        async with cls._aredlock_client() as r:
+        if cls._is_static_redlock():
+            r = await cls._aredlock_static_client()
             result = await r.set(
                 key,
                 unique_id,
                 nx=True,
                 ex=timeout,
             )
+
+        else:
+            async with cls._aredlock_client() as r:
+                result = await r.set(
+                    key,
+                    unique_id,
+                    nx=True,
+                    ex=timeout,
+                )
 
         return result, unique_id if result else None
 
@@ -190,13 +250,23 @@ class RedlockExtension(ExtensionABC):
         end
         """
 
-        with cls._redlock_client() as r:
+        if cls._is_static_redlock():
+            r = cls._redlock_static_client()
             result = r.eval(
                 script,
                 1,
                 key,
                 unique_id,
             )
+
+        else:
+            with cls._redlock_client() as r:
+                result = r.eval(
+                    script,
+                    1,
+                    key,
+                    unique_id,
+                )
 
         return result
 
@@ -223,13 +293,23 @@ class RedlockExtension(ExtensionABC):
         end
         """
 
-        async with cls._aredlock_client() as r:
+        if cls._is_static_redlock():
+            r = await cls._aredlock_static_client()
             result = await r.eval(
                 script,
                 1,
                 key,
                 unique_id,
             )
+
+        else:
+            async with cls._aredlock_client() as r:
+                result = await r.eval(
+                    script,
+                    1,
+                    key,
+                    unique_id,
+                )
 
         return result
 
@@ -262,7 +342,8 @@ class RedlockExtension(ExtensionABC):
         end
         """
 
-        with cls._redlock_client() as r:
+        if cls._is_static_redlock():
+            r = cls._redlock_static_client()
             result = r.eval(
                 script,
                 1,
@@ -270,6 +351,16 @@ class RedlockExtension(ExtensionABC):
                 unique_id,
                 additional_time,
             )
+
+        else:
+            with cls._redlock_client() as r:
+                result = r.eval(
+                    script,
+                    1,
+                    key,
+                    unique_id,
+                    additional_time,
+                )
 
         return result == 1
 
@@ -302,7 +393,8 @@ class RedlockExtension(ExtensionABC):
         end
         """
 
-        async with cls._aredlock_client() as r:
+        if cls._is_static_redlock():
+            r = await cls._aredlock_static_client()
             result = await r.eval(
                 script,
                 1,
@@ -310,6 +402,16 @@ class RedlockExtension(ExtensionABC):
                 unique_id,
                 additional_time,
             )
+
+        else:
+            async with cls._aredlock_client() as r:
+                result = await r.eval(
+                    script,
+                    1,
+                    key,
+                    unique_id,
+                    additional_time,
+                )
 
         return result == 1
 
@@ -322,6 +424,7 @@ class RedlockExtension(ExtensionABC):
         id_: str,
         timeout: int = 10,
         extend_interval: int = 5,
+        auto_extend: bool = True,
     ):
         """
         Lock entity instance with automatic extension
@@ -330,6 +433,7 @@ class RedlockExtension(ExtensionABC):
             id_ (str): The unique identifier of the entity.
             timeout (int): The timeout for the lock in seconds.
             extend_interval (int): The interval to extend the lock in seconds.
+            auto_extend (bool): Whether to automatically extend the lock.
 
         Yields:
             result (bool): True if the lock was acquired, False otherwise.
@@ -379,23 +483,25 @@ class RedlockExtension(ExtensionABC):
                 raise InternalError(f"Error in lock extension: {e}")
 
         try:
-            extend_task = threading.Thread(
-                target=extend_lock_periodically,
-                kwargs={
-                    "resource": resource,
-                    "unique_id": unique_id,
-                },
-                daemon=True,
-            )
-            extend_task.start()
+            if auto_extend:
+                extend_task = threading.Thread(
+                    target=extend_lock_periodically,
+                    kwargs={
+                        "resource": resource,
+                        "unique_id": unique_id,
+                    },
+                    daemon=True,
+                )
+                extend_task.start()
 
             yield result
 
         finally:
-            stop_extend.set()
+            if auto_extend:
+                stop_extend.set()
 
-            if extend_task:
-                extend_task.join()
+                if extend_task:
+                    extend_task.join()
 
             if result and unique_id:
                 cls._release_lock(
@@ -412,6 +518,7 @@ class RedlockExtension(ExtensionABC):
         id_: str,
         timeout: int = 10,
         extend_interval: int = 5,
+        auto_extend: bool = True,
     ):
         """
         Lock entity instance with automatic extension
@@ -420,6 +527,7 @@ class RedlockExtension(ExtensionABC):
             id_ (str): The unique identifier of the entity.
             timeout (int): The timeout for the lock in seconds.
             extend_interval (int): The interval to extend the lock in seconds.
+            auto_extend (bool): Whether to automatically extend the lock.
 
         Yields:
             result (bool): True if the lock was acquired, False otherwise.
@@ -473,24 +581,26 @@ class RedlockExtension(ExtensionABC):
                 pass
 
         try:
-            extend_task = asyncio.create_task(
-                extend_lock_periodically(
-                    resource=resource,
-                    unique_id=unique_id,
+            if auto_extend:
+                extend_task = asyncio.create_task(
+                    extend_lock_periodically(
+                        resource=resource,
+                        unique_id=unique_id,
+                    )
                 )
-            )
 
             yield result
 
         finally:
-            stop_extend.set()
+            if auto_extend:
+                stop_extend.set()
 
-            if extend_task:
-                extend_task.cancel()
-                try:
-                    await extend_task
-                except asyncio.CancelledError:
-                    pass
+                if extend_task:
+                    extend_task.cancel()
+                    try:
+                        await extend_task
+                    except asyncio.CancelledError:
+                        pass
 
             if result and unique_id:
                 await cls._arelease_lock(

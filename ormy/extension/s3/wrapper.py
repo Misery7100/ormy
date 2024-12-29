@@ -22,9 +22,7 @@ logger = console_logger(__name__, level=LogLevel.INFO)
 
 
 class S3Extension(ExtensionABC):
-    """
-    S3 extension
-    """
+    """S3 extension"""
 
     extension_configs: ClassVar[List[Any]] = [S3Config()]
     _registry = {S3Config: {}}
@@ -32,6 +30,8 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):
+        """Initialize subclass"""
+
         super().__init_subclass__(**kwargs)
 
         cls._s3_register_subclass()

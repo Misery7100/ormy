@@ -26,6 +26,7 @@ Extensions:
 ## TO DO
 
 - [ ] Improve logging;
+- [x] Non-context clients for redlock extension;
 - [ ] Non-context clients with corresponding option in config;
 - [ ] Check `pytest-benchmark` for performance testing;
 - [ ] Check `pytest-meilisearch` for MeiliSearch testing;

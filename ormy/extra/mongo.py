@@ -171,6 +171,8 @@ class MongoWithMeilisearchBackgroundV2(MongoSingleBase, MeilisearchExtensionV2):
     # ....................... #
 
     def __init_subclass__(cls: Type[M], **kwargs):
+        """Initialize subclass"""
+
         try:
             cfg_meili = cls.get_extension_config(type_=MeilisearchConfig)
 
@@ -269,6 +271,8 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
     # ....................... #
 
     def __init_subclass__(cls: Type[S], **kwargs):
+        """Initialize subclass"""
+
         try:
             cfg_s3 = cls.get_extension_config(type_=S3Config)
 
@@ -435,45 +439,67 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
     # ....................... #
 
     @contextmanager
-    def lock(self, timeout: int = 10):
+    def lock(
+        self,
+        timeout: int = 10,
+        extend_interval: int = 5,
+        auto_extend: bool = True,
+    ):
         """
-        Lock entity instance
+        Lock entity instance with automatic extension
 
         Args:
             timeout (int): The timeout for the lock in seconds.
+            extend_interval (int): The interval to extend the lock in seconds.
+            auto_extend (bool): Whether to automatically extend the lock.
 
         Yields:
             result (bool): True if the lock was acquired, False otherwise.
 
         Raises:
             Conflict: If the lock already exists.
+            BadInput: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
+            InternalError: If the lock aquisition or extension fails.
         """
 
         with self.redlock_cls(
             id_=str(self.id),
             timeout=timeout,
+            extend_interval=extend_interval,
+            auto_extend=auto_extend,
         ) as res:
             yield res
 
     # ....................... #
 
     @asynccontextmanager
-    async def alock(self, timeout: int = 10):
+    async def alock(
+        self,
+        timeout: int = 10,
+        extend_interval: int = 5,
+        auto_extend: bool = True,
+    ):
         """
-        Lock entity instance
+        Lock entity instance with automatic extension
 
         Args:
             timeout (int): The timeout for the lock in seconds.
+            extend_interval (int): The interval to extend the lock in seconds.
+            auto_extend (bool): Whether to automatically extend the lock.
 
         Yields:
             result (bool): True if the lock was acquired, False otherwise.
 
         Raises:
             Conflict: If the lock already exists.
+            BadInput: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
+            InternalError: If the lock aquisition or extension fails.
         """
 
         async with self.aredlock_cls(
             id_=str(self.id),
             timeout=timeout,
+            extend_interval=extend_interval,
+            auto_extend=auto_extend,
         ) as res:
             yield res

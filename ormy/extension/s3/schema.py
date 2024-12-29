@@ -13,6 +13,20 @@ Sf = TypeVar("Sf", bound="S3File")
 
 
 class S3File(Base):
+    """
+    S3 file schema
+
+    Attributes:
+        filename (str): The filename of the file.
+        size_bytes (int): The size of the file in bytes.
+        path (str): The path of the file.
+        last_modified (int): The last modified timestamp of the file.
+        tags (Dict[str, str]): The tags of the file.
+        size_kb (float, computed): The size of the file in kilobytes.
+        size_mb (float, computed): The size of the file in megabytes.
+        file_type (str, computed): The type of the file.
+    """
+
     filename: str = Field(
         default=...,
     )
@@ -54,6 +68,17 @@ class S3File(Base):
         obj: dict,
         tags: Dict[str, str] = {},
     ) -> Sf:
+        """
+        Create a new S3File instance from an S3 object
+
+        Args:
+            obj (dict): The S3 object.
+            tags (Dict[str, str]): The tags of the file.
+
+        Returns:
+            result (S3File): The new S3File instance.
+        """
+
         path = obj["Key"]
         filename = os.path.basename(path)
         size = int(obj["Size"])
