@@ -2,10 +2,12 @@ import inspect
 from abc import ABC
 from typing import Any, ClassVar, Dict, List, Type, TypeVar
 
+from ormy.base.error import InternalError
 from ormy.base.pydantic import Base
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import ConfigABC
+from .func import merge_registry_helper, register_subclass
 
 # ----------------------- #
 
@@ -28,27 +30,9 @@ class ExtensionABC(Base, ABC):
 
     # ....................... #
 
-    @classmethod
-    def get_extension_config(cls: Type[E], type_: Type[C]) -> C:
-        """
-        ...
-        """
-
-        cfg = next((c for c in cls.extension_configs if type(c) is type_), None)
-
-        if cfg is None:
-            msg = f"Configuration {type_} for {cls.__name__} not found"
-            logger.error(msg)
-
-            raise ValueError(msg)  # TODO: use ormy.base.error
-
-        logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
-
-        return cfg
-
-    # ....................... #
-
     def __init_subclass__(cls: Type[E], **kwargs):
+        """Initialize subclass"""
+
         super().__init_subclass__(**kwargs)
 
         cls._update_ignored_types_extension()
@@ -57,10 +41,34 @@ class ExtensionABC(Base, ABC):
     # ....................... #
 
     @classmethod
+    def get_extension_config(cls: Type[E], type_: Type[C]) -> C:
+        """
+        Get configuration for the given type
+
+        Args:
+            type_ (Type[ConfigABC]): Type of the configuration
+
+        Returns:
+            config (ConfigABC): Configuration
+        """
+
+        cfg = next((c for c in cls.extension_configs if type(c) is type_), None)
+
+        if cfg is None:
+            msg = f"Configuration {type_} for {cls.__name__} not found"
+            logger.error(msg)
+
+            raise InternalError(msg)
+
+        logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
+
+        return cfg
+
+    # ....................... #
+
+    @classmethod
     def _update_ignored_types_extension(cls: Type[E]):
-        """
-        Update ignored types for the model configuration
-        """
+        """Update ignored types for the model configuration"""
 
         ignored_types = cls.model_config.get("ignored_types", tuple())
 
@@ -76,16 +84,13 @@ class ExtensionABC(Base, ABC):
 
     @classmethod
     def _merge_extension_configs(cls: Type[E]):
-        """
-        ...
-        """
+        """Merge configurations for the subclass"""
 
         parents = inspect.getmro(cls)[1:]
         cfgs = []
 
-        # ! TODO: use `issubclass` instead of `hasattr` ??
         for p in parents:
-            if issubclass(p, cls) and p.extension_configs:
+            if hasattr(p, "_registry") and hasattr(p, "extension_configs"):
                 cfgs = p.extension_configs
                 break
 
@@ -125,25 +130,21 @@ class ExtensionABC(Base, ABC):
 
     @classmethod
     def _merge_registry_helper(cls: Type[E], d1: dict, d2: dict) -> dict:
-        for k in d2.keys():
-            if k in d1:
-                if isinstance(d1[k], dict) and isinstance(d2[k], dict):
-                    cls._merge_registry_helper(d1[k], d2[k])
+        """Merge registry for the subclass"""
 
-                else:
-                    d1[k] = d2[k]
-                    logger.debug(f"Overwriting {k} in registry: {d1[k]} -> {d2[k]}")
-
-            else:
-                d1[k] = d2[k]
-                logger.debug(f"Adding {k} in registry: {d1[k]} -> {d2[k]}")
-
-        return d1
+        return merge_registry_helper(
+            cls=cls,
+            d1=d1,
+            d2=d2,
+            logger=logger,
+        )
 
     # ....................... #
 
     @classmethod
     def _merge_registry(cls: Type[E]):
+        """Merge registry for the subclass"""
+
         parents = inspect.getmro(cls)[1:]
         reg = dict()
 
@@ -154,28 +155,34 @@ class ExtensionABC(Base, ABC):
         logger.debug(f"Parent registry for {cls.__name__}: {reg}")
         logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
-        cls._registry = cls._merge_registry_helper(reg, cls._registry)
+        cls._registry = merge_registry_helper(
+            cls=cls,
+            d1=reg,
+            d2=cls._registry,
+            logger=logger,
+        )
 
     # ....................... #
 
-    @classmethod  # TODO: multikey discriminator (*discriminator) - ?
+    @classmethod
     def _register_subclass_helper(
         cls: Type[E],
         config: Type[C],
-        discriminator: str,
+        discriminator: str | List[str],
     ):
+        """
+        Register subclass in the registry
+
+        Args:
+            config (Type[C]): Configuration
+            discriminator (str): Discriminator
+        """
+
         cfg = cls.get_extension_config(type_=config)
-        key = getattr(cfg, discriminator, None)
 
-        if key is None:
-            # TODO: replace with ormy.base.error
-            raise ValueError(f"Discriminator {discriminator} not found in {cfg}")
-
-        if cfg.include_to_registry and not cfg.is_default():
-            logger.debug(f"Registering {cls.__name__} in {key}")
-            logger.debug(f"Registry before: {cls._registry}")
-
-            cls._registry[config] = cls._registry.get(config, {})
-            cls._registry[config][key] = cls
-
-            logger.debug(f"Registry after: {cls._registry}")
+        register_subclass(
+            cls=cls,
+            config=cfg,
+            discriminator=discriminator,
+            logger=logger,
+        )

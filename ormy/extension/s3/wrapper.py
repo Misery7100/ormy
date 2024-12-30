@@ -91,7 +91,7 @@ class S3Extension(ExtensionABC):
             result (bool): Whether the bucket exists
         """
 
-        with cls._s3_client() as client: # type: ignore
+        with cls._s3_client() as client:  # type: ignore
             try:
                 client.head_bucket(Bucket=cls._s3_get_bucket())
                 return True

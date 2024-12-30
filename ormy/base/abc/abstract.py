@@ -2,10 +2,12 @@ import inspect
 from abc import ABC, abstractmethod  # noqa: F401
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
+from ormy.base.error import InternalError
 from ormy.base.pydantic import Base
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import ConfigABC
+from .func import merge_registry_helper
 
 # ----------------------- #
 
@@ -19,9 +21,7 @@ logger = console_logger(__name__, level=LogLevel.INFO)
 
 
 class AbstractABC(Base, ABC):
-    """
-    Abstract ABC Base Class
-    """
+    """Abstract ABC Base Class"""
 
     configs: ClassVar[List[Any]] = list()
     include_to_registry: ClassVar[bool] = True
@@ -32,7 +32,13 @@ class AbstractABC(Base, ABC):
     @classmethod
     def get_config(cls: Type[A], type_: Type[C]) -> C:
         """
-        ...
+        Get configuration for the given type
+
+        Args:
+            type_ (Type[C]): Type of the configuration
+
+        Returns:
+            config (C): Configuration
         """
 
         cfg = next((c for c in cls.configs if type(c) is type_), None)
@@ -40,7 +46,8 @@ class AbstractABC(Base, ABC):
         if cfg is None:
             msg = f"Configuration {type_} for {cls.__name__} not found"
             logger.error(msg)
-            raise ValueError(msg)
+
+            raise InternalError(msg)
 
         logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
 
@@ -157,20 +164,23 @@ class AbstractABC(Base, ABC):
 
 
 # ----------------------- #
+# ----------------------- #
+# ----------------------- #
 
 
 class AbstractSingleABC(Base, ABC):
-    """
-    Abstract ABC Base Class
-    """
+    """Abstract ABC Base Class"""
 
     config: ClassVar[Optional[Any]] = None
     include_to_registry: ClassVar[bool] = True
+
     _registry: ClassVar[Dict[Any, dict]] = {}
 
     # ....................... #
 
     def __init_subclass__(cls: Type[As], **kwargs):
+        """Initialize subclass"""
+
         super().__init_subclass__(**kwargs)
 
         cls._update_ignored_types()
@@ -180,9 +190,7 @@ class AbstractSingleABC(Base, ABC):
 
     @classmethod
     def _update_ignored_types(cls: Type[As]):
-        """
-        Update ignored types for the model configuration
-        """
+        """Update ignored types for the model configuration"""
 
         ignored_types = cls.model_config.get("ignored_types", tuple())
 
@@ -197,9 +205,7 @@ class AbstractSingleABC(Base, ABC):
 
     @classmethod
     def _merge_configs(cls: Type[As]):
-        """
-        ...
-        """
+        """Merge configurations for the subclass"""
 
         parents = inspect.getmro(cls)[1:]
         parent_config = None
@@ -230,25 +236,23 @@ class AbstractSingleABC(Base, ABC):
 
     @classmethod
     def _merge_registry_helper(cls: Type[As], d1: dict, d2: dict) -> dict:
-        for k in d2.keys():
-            if k in d1:
-                if isinstance(d1[k], dict) and isinstance(d2[k], dict):
-                    cls._merge_registry_helper(d1[k], d2[k])
+        """Merge registry for the subclass"""
 
-                else:
-                    d1[k] = d2[k]
-                    logger.debug(f"Overwriting {k} in registry: {d1[k]} -> {d2[k]}")
-
-            else:
-                d1[k] = d2[k]
-                logger.debug(f"Adding {k} in registry: {d1[k]} -> {d2[k]}")
-
-        return d1
+        return merge_registry_helper(
+            cls=cls,
+            d1=d1,
+            d2=d2,
+            logger=logger,
+        )
 
     # ....................... #
 
     @classmethod
     def _merge_registry(cls: Type[As]):
+        """
+        Merge registry for the subclass
+        """
+
         parents = inspect.getmro(cls)[1:]
         reg = dict()
 
@@ -260,4 +264,9 @@ class AbstractSingleABC(Base, ABC):
         logger.debug(f"Parent registry for {cls.__name__}: {reg}")
         logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
-        cls._registry = cls._merge_registry_helper(reg, cls._registry)
+        cls._registry = merge_registry_helper(
+            cls=cls,
+            d1=reg,
+            d2=cls._registry,
+            logger=logger,
+        )

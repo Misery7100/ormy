@@ -19,6 +19,7 @@ class MongoCredentials(Base):
         password (SecretStr): MongoDB password
         replicaset (str, optional): MongoDB replicaset
         directConnection (bool): Whether to connect to replica directly
+        ping_database (str): Database to ping for health check
     """
 
     host: str = "localhost"
@@ -52,6 +53,7 @@ class MongoConfig(ConfigABC):
 
     # Global configuration
     credentials: MongoCredentials = MongoCredentials()
+    ping_database: str = "admin"
 
     # ....................... #
 

@@ -254,7 +254,15 @@ class DocumentSingleABC(AbstractSingleABC):
         **kwargs,
     ) -> Ds:
         """
-        ...
+        Update the document with the given data
+
+        Args:
+            data (AbstractData): Data to update the document with
+            ignore_none (bool): Ignore None values
+            autosave (bool): Save the document after updating
+
+        Returns:
+            self (Ds): Updated document
         """
 
         if isinstance(data, dict):
@@ -286,7 +294,15 @@ class DocumentSingleABC(AbstractSingleABC):
         **kwargs,
     ) -> Ds:
         """
-        ...
+        Update the document with the given data
+
+        Args:
+            data (AbstractData): Data to update the document with
+            ignore_none (bool): Ignore None values
+            autosave (bool): Save the document after updating
+
+        Returns:
+            self (Ds): Updated document
         """
 
         if isinstance(data, dict):
@@ -319,6 +335,18 @@ class DocumentSingleABC(AbstractSingleABC):
         autosave: bool = True,
         **kwargs,
     ) -> Optional[Ds]:
+        """
+        Update the document with the given data
+
+        Args:
+            id_ (DocumentID): ID of the document to update
+            data (AbstractData): Data to update the document with
+            ignore_none (bool): Ignore None values
+            autosave (bool): Save the document after updating
+
+        Returns:
+            res (Optional[Ds]): Updated document or None if not found
+        """
 
         instance = cls.find(id_)
 
@@ -345,6 +373,18 @@ class DocumentSingleABC(AbstractSingleABC):
         autosave: bool = True,
         **kwargs,
     ) -> Optional[Ds]:
+        """
+        Update the document with the given data by ID
+
+        Args:
+            id_ (DocumentID): ID of the document to update
+            data (AbstractData): Data to update the document with
+            ignore_none (bool): Ignore None values
+            autosave (bool): Save the document after updating
+
+        Returns:
+            res (Optional[Ds]): Updated document or None if not found
+        """
 
         instance = await cls.afind(id_)
 

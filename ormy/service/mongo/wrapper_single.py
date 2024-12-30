@@ -8,10 +8,10 @@ from motor.motor_asyncio import (
 from pymongo import InsertOne, MongoClient, UpdateMany, UpdateOne  # noqa: F401
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo.errors import BulkWriteError
+from pymongo.errors import BulkWriteError, ConnectionFailure, OperationFailure
 
 from ormy.base.abc import DocumentID, DocumentSingleABC
-from ormy.base.error import BadInput, Conflict, NotFound
+from ormy.base.error import BadInput, Conflict, Forbidden, InternalError, NotFound
 from ormy.base.generic import TabularData
 from ormy.utils.logging import LogLevel, console_logger
 
@@ -70,7 +70,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
 
     # ....................... #
 
-    @classmethod  #! TODO: Unauthorized or Forbidden raise ?
+    @classmethod
     def _client(cls: Type[M]) -> MongoClient:
         """
         Get syncronous MongoDB client
@@ -83,8 +83,16 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
 
         if cls._static is not None:
             try:
-                check = cls._static.admin.command("ping")
+                check = cls._static[cls.config.ping_database].command("ping")
                 health = check.get("ok", 0) == 1
+
+            except ConnectionFailure as e:
+                logger.error(f"Connection failure: {e}")
+                raise InternalError(e._message)
+
+            except OperationFailure as e:
+                logger.error(f"Operation failure: {e}")
+                raise Forbidden(e._message)
 
             except Exception:
                 pass
@@ -97,7 +105,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
 
     # ....................... #
 
-    @classmethod  #! TODO: Unauthorized or Forbidden raise ?
+    @classmethod
     async def _aclient(cls: Type[M]) -> AsyncIOMotorClient:
         """
         Get asyncronous MongoDB client
@@ -110,8 +118,16 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
 
         if cls._astatic is not None:
             try:
-                check = await cls._astatic.admin.command("ping")
+                check = await cls._astatic[cls.config.ping_database].command("ping")
                 health = check.get("ok", 0) == 1
+
+            except ConnectionFailure as e:
+                logger.error(f"Connection failure: {e}")
+                raise InternalError(e._message)
+
+            except OperationFailure as e:
+                logger.error(f"Operation failure: {e}")
+                raise Forbidden(e._message)
 
             except Exception:
                 pass
