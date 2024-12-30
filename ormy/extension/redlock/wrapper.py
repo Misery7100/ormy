@@ -39,23 +39,15 @@ class RedlockExtension(ExtensionABC):
 
         super().__init_subclass__(**kwargs)
 
-        cls._redlock_register_subclass()
+        cls._register_extension_subclass_helper(
+            config=RedlockConfig,
+            discriminator="collection",
+        )
         cls._merge_registry()
 
         RedlockExtension._registry = cls._merge_registry_helper(
             RedlockExtension._registry,
             cls._registry,
-        )
-
-    # ....................... #
-
-    @classmethod
-    def _redlock_register_subclass(cls: Type[R]):
-        """Register subclass in the registry"""
-
-        return cls._register_subclass_helper(
-            config=RedlockConfig,
-            discriminator="collection",
         )
 
     # ....................... #

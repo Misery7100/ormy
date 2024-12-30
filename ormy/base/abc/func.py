@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import List, TypeVar
+from typing import List, Optional, TypeVar
 
 from ormy.base.error import InternalError
 from ormy.utils.logging import LogLevel, console_logger
@@ -17,7 +17,7 @@ logger = console_logger(__name__, level=LogLevel.INFO)
 
 def register_subclass(
     cls,
-    config: C,  # type: ignore
+    config: Optional[C],  # type: ignore
     discriminator: str | List[str],
     logger: Logger = logger,
 ):
@@ -32,6 +32,12 @@ def register_subclass(
 
     if isinstance(discriminator, str):
         discriminator = [discriminator]
+
+    if config is None:
+        msg = "Config is None"
+        logger.error(msg)
+
+        raise InternalError(msg)
 
     keys = []
 

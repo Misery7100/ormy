@@ -165,7 +165,7 @@ class ExtensionABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def _register_subclass_helper(
+    def _register_extension_subclass_helper(
         cls: Type[E],
         config: Type[C],
         discriminator: str | List[str],

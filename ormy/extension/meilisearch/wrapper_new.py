@@ -57,24 +57,16 @@ class MeilisearchExtensionV2(ExtensionABC):
 
         super().__init_subclass__(**kwargs)
 
-        cls._meili_register_subclass()
+        cls._register_extension_subclass_helper(
+            config=MeilisearchConfig,
+            discriminator="index",
+        )
         cls._merge_registry()
         cls._meili_safe_create_or_update()
 
         MeilisearchExtensionV2._registry = cls._merge_registry_helper(
             MeilisearchExtensionV2._registry,
             cls._registry,
-        )
-
-    # ....................... #
-
-    @classmethod
-    def _meili_register_subclass(cls: Type[M]):
-        """Register subclass in the registry"""
-
-        return cls._register_subclass_helper(
-            config=MeilisearchConfig,
-            discriminator="index",
         )
 
     # ....................... #

@@ -1,7 +1,9 @@
 from .config import ClickHouseConfig, ClickHouseCredentials
 from .func import get_clickhouse_db
 from .migrations import RunSQLWithSettings
-from .wrapper import ClickHouseBase, ClickHouseField
+from .models import ClickHouseField
+from .wrapper import ClickHouseBase
+from .wrapper_new import ClickHouseSingleBase
 
 # ----------------------- #
 
@@ -10,6 +12,7 @@ __all__ = [
     "ClickHouseCredentials",
     "ClickHouseBase",
     "ClickHouseField",
+    "ClickHouseSingleBase",
     "get_clickhouse_db",
     "RunSQLWithSettings",
 ]

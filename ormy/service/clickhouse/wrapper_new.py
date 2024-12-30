@@ -9,9 +9,12 @@ from typing import (
     TypeVar,
 )
 
-from infi.clickhouse_orm import engines, fields  # type: ignore[import-untyped]
+from infi.clickhouse_orm import (  # type: ignore[import-untyped]
+    engines,
+    fields,
+)
 
-from ormy.base.abc import AbstractABC
+from ormy.base.abc import AbstractSingleABC
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import ClickHouseConfig
@@ -20,15 +23,16 @@ from .models import ClickHouseFieldInfo, ClickHouseModel, ClickHouseQuerySet
 
 # ----------------------- #
 
-Ch = TypeVar("Ch", bound="ClickHouseBase")
+Ch = TypeVar("Ch", bound="ClickHouseSingleBase")
 logger = console_logger(__name__, level=LogLevel.INFO)
 
 # ----------------------- #
 
 
-class ClickHouseBase(AbstractABC):
+class ClickHouseSingleBase(AbstractSingleABC):
+    """ClickHouse base class"""
 
-    configs = [ClickHouseConfig()]
+    config: ClassVar[ClickHouseConfig] = ClickHouseConfig()
     engine: ClassVar[Optional[engines.Engine]] = None
 
     _registry = {ClickHouseConfig: {}}
@@ -37,14 +41,16 @@ class ClickHouseBase(AbstractABC):
     # ....................... #
 
     def __init_subclass__(cls: type[Ch], **kwargs):
+        """Initialize subclass"""
+
         super().__init_subclass__(**kwargs)
 
-        cls.__clickhouse_register_subclass()
+        cls._register_subclass_helper(discriminator=["database", "table"])
         cls.__construct_model()
         cls._merge_registry()
 
-        ClickHouseBase._registry = cls._merge_registry_helper(
-            ClickHouseBase._registry,
+        ClickHouseSingleBase._registry = cls._merge_registry_helper(
+            ClickHouseSingleBase._registry,
             cls._registry,
         )
 
@@ -54,6 +60,8 @@ class ClickHouseBase(AbstractABC):
 
     @classmethod
     def __construct_model(cls: Type[Ch]):
+        """Construct ClickHouse model"""
+
         _dict_: Dict[str, Any] = {}
         orm_fields = {}
         engine = None
@@ -61,7 +69,7 @@ class ClickHouseBase(AbstractABC):
         parents = inspect.getmro(cls)
 
         for p in parents[::-1]:
-            if issubclass(p, ClickHouseBase):
+            if issubclass(p, ClickHouseSingleBase):
                 for attr_name, attr_value in p.__dict__.items():
                     if isinstance(attr_value, ClickHouseFieldInfo) or isinstance(
                         attr_value, engines.Engine
@@ -87,33 +95,12 @@ class ClickHouseBase(AbstractABC):
         orm_attrs = {"engine": engine, **orm_fields}
 
         cls._model = type(f"{cls.__name__}_infi", (ClickHouseModel,), orm_attrs)  # type: ignore[assignment]
+
         setattr(
             cls._model,
             "table_name",
-            lambda: cls.get_config(type_=ClickHouseConfig).table,
+            lambda: cls.config.table,  # type: ignore
         )
-
-    # ....................... #
-
-    @classmethod
-    def __clickhouse_register_subclass(cls: Type[Ch]):
-        """Register subclass in the registry"""
-
-        cfg = cls.get_config(type_=ClickHouseConfig)
-        db = cfg.database
-        table = cfg.table
-
-        if cfg.include_to_registry and not cfg.is_default():
-            logger.debug(f"Registering {cls.__name__} in {db}.{table}")
-            logger.debug(f"Registry before: {cls._registry}")
-
-            cls._registry[ClickHouseConfig] = cls._registry.get(ClickHouseConfig, {})
-            cls._registry[ClickHouseConfig][db] = cls._registry[ClickHouseConfig].get(
-                db, {}
-            )
-            cls._registry[ClickHouseConfig][db][table] = cls
-
-            logger.debug(f"Registry after: {cls._registry}")
 
     # ....................... #
 
@@ -123,36 +110,38 @@ class ClickHouseBase(AbstractABC):
         Get ClickHouse database connection
         """
 
-        cfg = cls.get_config(type_=ClickHouseConfig)
-
         username = (
-            cfg.credentials.username.get_secret_value()
-            if cfg.credentials.username
+            cls.config.credentials.username.get_secret_value()
+            if cls.config.credentials.username
             else None
         )
         password = (
-            cfg.credentials.password.get_secret_value()
-            if cfg.credentials.password
+            cls.config.credentials.password.get_secret_value()
+            if cls.config.credentials.password
             else None
         )
 
         return get_clickhouse_db(
-            db_name=cfg.database,
+            db_name=cls.config.database,
             username=username,
             password=password,
-            db_url=cfg.url(),
+            db_url=cls.config.url(),
         )
 
     # ....................... #
 
     @classmethod
     def objects(cls: Type[Ch]) -> ClickHouseQuerySet:
+        """Get ClickHouse query set"""
+
         return cls._model.objects_in(cls._get_adatabase())  # type: ignore
 
     # ....................... #
 
     @classmethod
     def _get_materialized_fields(cls: Type[Ch]):
+        """Get materialized fields"""
+
         fields = []
 
         for x, v in cls.model_fields.items():
@@ -169,6 +158,14 @@ class ClickHouseBase(AbstractABC):
         records: Ch | List[Ch],
         batch_size: int = 1000,
     ) -> None:
+        """
+        Insert records into ClickHouse
+
+        Args:
+            records (ClickHouseSingleBase | List[ClickHouseSingleBase]): Records to insert
+            batch_size (int): Batch size
+        """
+
         if not isinstance(records, list):
             records = [records]
 
@@ -180,7 +177,11 @@ class ClickHouseBase(AbstractABC):
             )  # type: ignore
             for record in records
         ]
-        return cls._get_adatabase().insert(model_records, batch_size=batch_size)
+
+        return cls._get_adatabase().insert(
+            model_instances=model_records,
+            batch_size=batch_size,
+        )
 
     # ....................... #
 
@@ -190,6 +191,14 @@ class ClickHouseBase(AbstractABC):
         records: Ch | List[Ch],
         batch_size: int = 1000,
     ) -> None:
+        """
+        Insert records into ClickHouse asynchronously
+
+        Args:
+            records (ClickHouseSingleBase | List[ClickHouseSingleBase]): Records to insert
+            batch_size (int): Batch size
+        """
+
         if not isinstance(records, list):
             records = [records]
 
@@ -201,6 +210,8 @@ class ClickHouseBase(AbstractABC):
             )  # type: ignore
             for record in records
         ]
-        return await cls._get_adatabase().ainsert(model_records, batch_size=batch_size)
 
-    # ....................... #
+        return await cls._get_adatabase().ainsert(
+            model_instances=model_records,
+            batch_size=batch_size,
+        )

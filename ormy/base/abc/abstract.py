@@ -7,7 +7,7 @@ from ormy.base.pydantic import Base
 from ormy.utils.logging import LogLevel, console_logger
 
 from .config import ConfigABC
-from .func import merge_registry_helper
+from .func import merge_registry_helper, register_subclass
 
 # ----------------------- #
 
@@ -268,5 +268,26 @@ class AbstractSingleABC(Base, ABC):
             cls=cls,
             d1=reg,
             d2=cls._registry,
+            logger=logger,
+        )
+
+    # ....................... #
+
+    @classmethod
+    def _register_subclass_helper(
+        cls: Type[As],
+        discriminator: str | List[str],
+    ):
+        """
+        Register subclass in the registry
+
+        Args:
+            discriminator (str): Discriminator
+        """
+
+        register_subclass(
+            cls=cls,
+            config=cls.config,
+            discriminator=discriminator,
             logger=logger,
         )

@@ -35,7 +35,10 @@ class S3Extension(ExtensionABC):
 
         super().__init_subclass__(**kwargs)
 
-        cls._s3_register_subclass()
+        cls._register_extension_subclass_helper(
+            config=S3Config,
+            discriminator="bucket",
+        )
         cls._merge_registry()
 
         S3Extension._registry = cls._merge_registry_helper(
@@ -44,17 +47,6 @@ class S3Extension(ExtensionABC):
         )
 
         cls._s3_create_bucket()
-
-    # ....................... #
-
-    @classmethod
-    def _s3_register_subclass(cls):
-        """Register subclass in the registry"""
-
-        return cls._register_subclass_helper(
-            config=S3Config,
-            discriminator="bucket",
-        )
 
     # ....................... #
 

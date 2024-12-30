@@ -41,32 +41,13 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
 
         super().__init_subclass__(**kwargs)
 
-        cls._mongo_register_subclass()
+        cls._register_subclass_helper(discriminator=["database", "collection"])
         cls._merge_registry()
 
         MongoSingleBase._registry = cls._merge_registry_helper(
             MongoSingleBase._registry,
             cls._registry,
         )
-
-    # ....................... #
-
-    @classmethod  # TODO: use `_register_subclass_helper` (update it)
-    def _mongo_register_subclass(cls: Type[M]):
-        """Register subclass in the registry"""
-
-        db = cls.config.database
-        col = cls.config.collection
-
-        if cls.config.include_to_registry and not cls.config.is_default():
-            logger.debug(f"Registering {cls.__name__} in {db}.{col}")
-            logger.debug(f"Registry before: {cls._registry}")
-
-            cls._registry[MongoConfig] = cls._registry.get(MongoConfig, {})
-            cls._registry[MongoConfig][db] = cls._registry[MongoConfig].get(db, {})
-            cls._registry[MongoConfig][db][col] = cls
-
-            logger.debug(f"Registry after: {cls._registry}")
 
     # ....................... #
 
