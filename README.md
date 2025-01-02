@@ -27,7 +27,9 @@ Extensions:
 
 - [ ] Improve logging;
 - [x] Non-context clients for redlock extension;
-- [ ] Non-context clients with corresponding option in config;
+- [x] Non-context clients for meilisearch extension;
+- [ ] Non-context clients for redis service;
+- [x] Cached clients for mongodb service;
 - [ ] Check `pytest-benchmark` for performance testing;
 - [ ] Check `pytest-meilisearch` for MeiliSearch testing;
 - [ ] Extend unit tests.

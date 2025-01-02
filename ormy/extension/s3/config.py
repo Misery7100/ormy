@@ -63,6 +63,7 @@ class S3Config(ConfigABC):
     # ....................... #
 
     @field_validator("bucket", mode="before")
+    @classmethod
     def validate_and_transform_bucket(cls, v: str) -> str:
         """
         Validate and transform bucket name
