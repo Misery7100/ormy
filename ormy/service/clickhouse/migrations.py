@@ -10,7 +10,7 @@ from .wrapper import ClickHouseBase, ClickHouseModel
 ChB = TypeVar("ChB", bound=ClickHouseBase)
 ChM = TypeVar("ChM", bound=ClickHouseModel)
 
-logger = logging.getLogger("migrations")
+logger = logging.getLogger("migrations")  # TODO: refactor
 
 # ----------------------- #
 

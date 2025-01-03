@@ -18,7 +18,6 @@ from meilisearch_python_sdk.types import JsonDict
 
 from ormy.base.abc import ExtensionABC
 from ormy.base.typing import AsyncCallable
-from ormy.utils.logging import LogManager
 
 from .config import MeilisearchConfig
 from .schema import (
@@ -36,7 +35,6 @@ from .schema import (
 # ----------------------- #
 
 M = TypeVar("M", bound="MeilisearchExtensionV2")
-logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 
@@ -300,12 +298,12 @@ class MeilisearchExtensionV2(ExtensionABC):
         def _task(c: Client):
             try:
                 ix = c.get_index(cfg.index)
-                logger.debug(f"Index `{cfg.index}` already exists")
+                cls._logger.debug(f"Index `{cfg.index}` already exists")
                 settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
 
                 if ix.get_settings() != settings:
                     cls._meili_update_index(settings)
-                    logger.debug(f"Update of index `{cfg.index}` is started")
+                    cls._logger.debug(f"Update of index `{cfg.index}` is started")
 
             except MeilisearchApiError:
                 settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
@@ -314,7 +312,7 @@ class MeilisearchExtensionV2(ExtensionABC):
                     primary_key=cfg.primary_key,
                     settings=settings,
                 )
-                logger.debug(f"Index `{cfg.index}` is created")
+                cls._logger.debug(f"Index `{cfg.index}` is created")
 
         if not cfg.is_default():
             cls.__meili_execute_task(_task)

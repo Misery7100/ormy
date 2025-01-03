@@ -1,10 +1,11 @@
 import inspect
+import logging
 from abc import ABC
 from typing import Any, ClassVar, Dict, List, Type, TypeVar
 
 from ormy.base.error import InternalError
 from ormy.base.pydantic import Base
-from ormy.utils.logging import LogManager
+from ormy.utils.logging import LogLevel, LogManager
 
 from .config import ConfigABC
 from .func import merge_registry_helper, register_subclass
@@ -13,8 +14,6 @@ from .func import merge_registry_helper, register_subclass
 
 E = TypeVar("E", bound="ExtensionABC")
 C = TypeVar("C", bound=ConfigABC)
-
-logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 
@@ -27,16 +26,41 @@ class ExtensionABC(Base, ABC):
     extension_configs: ClassVar[List[Any]] = []
     include_to_registry: ClassVar[bool] = True
     _registry: ClassVar[Dict[Any, dict]] = {}
+    _logger: ClassVar[logging.Logger] = LogManager.get_logger("ExtensionABC")
 
     # ....................... #
 
     def __init_subclass__(cls: Type[E], **kwargs):
         """Initialize subclass"""
 
+        cls._logger = LogManager.get_logger(cls.__name__)
+
         super().__init_subclass__(**kwargs)
 
         cls._update_ignored_types_extension()
         cls._merge_extension_configs()
+
+        min_level = LogLevel.CRITICAL
+
+        for x in cls.extension_configs:
+            if x is not None:
+                if x.log_level.value < min_level.value:
+                    min_level = x.log_level
+
+        cls.set_log_level(min_level)
+
+    # ....................... #
+
+    @classmethod
+    def set_log_level(cls: Type[E], level: LogLevel) -> None:
+        """
+        Set the log level for the logger
+
+        Args:
+            level (ormy.utils.logging.LogLevel): The new log level
+        """
+
+        LogManager.update_log_level(cls.__name__, level)
 
     # ....................... #
 
@@ -56,11 +80,11 @@ class ExtensionABC(Base, ABC):
 
         if cfg is None:
             msg = f"Configuration {type_} for {cls.__name__} not found"
-            logger.error(msg)
+            cls._logger.error(msg)
 
             raise InternalError(msg)
 
-        logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
+        cls._logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
 
         return cfg
 
@@ -78,7 +102,7 @@ class ExtensionABC(Base, ABC):
 
         cls.model_config["ignored_types"] = ignored_types
 
-        logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
+        cls._logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
 
     # ....................... #
 
@@ -94,7 +118,7 @@ class ExtensionABC(Base, ABC):
                 cfgs = p.extension_configs
                 break
 
-        logger.debug(f"Parent configs for {cls.__name__}: {list(map(type, cfgs))}")
+        cls._logger.debug(f"Parent configs for {cls.__name__}: {list(map(type, cfgs))}")
 
         deduplicated = dict()
 
@@ -120,9 +144,9 @@ class ExtensionABC(Base, ABC):
                 merge = c
                 merged.append(c)
 
-            logger.debug(f"Self: {c}")
-            logger.debug(f"Parent: {old}")
-            logger.debug(f"Merge: {merge}")
+            cls._logger.debug(f"Self: {c}")
+            cls._logger.debug(f"Parent: {old}")
+            cls._logger.debug(f"Merge: {merge}")
 
         cls.extension_configs = merged
 
@@ -136,7 +160,7 @@ class ExtensionABC(Base, ABC):
             cls=cls,
             d1=d1,
             d2=d2,
-            logger=logger,
+            logger=cls._logger,
         )
 
     # ....................... #
@@ -152,14 +176,14 @@ class ExtensionABC(Base, ABC):
             if hasattr(p, "_registry"):
                 reg = p._registry
 
-        logger.debug(f"Parent registry for {cls.__name__}: {reg}")
-        logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
+        cls._logger.debug(f"Parent registry for {cls.__name__}: {reg}")
+        cls._logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
         cls._registry = merge_registry_helper(
             cls=cls,
             d1=reg,
             d2=cls._registry,
-            logger=logger,
+            logger=cls._logger,
         )
 
     # ....................... #
@@ -184,5 +208,5 @@ class ExtensionABC(Base, ABC):
             cls=cls,
             config=cfg,
             discriminator=discriminator,
-            logger=logger,
+            logger=cls._logger,
         )

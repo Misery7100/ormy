@@ -64,7 +64,7 @@ class LogManager:
     # ....................... #
 
     @classmethod
-    def update_log_level(cls, level: LogLevel) -> None:
+    def update_global_log_level(cls, level: LogLevel) -> None:
         """
         Update the log level of all registered loggers.
         Thread-safe implementation to update loggers in the registry.
@@ -75,6 +75,27 @@ class LogManager:
 
         with cls._lock:
             for logger in cls._loggers.values():
+                logger.setLevel(level.value)
+                for handler in logger.handlers:
+                    handler.setLevel(level.value)
+
+    # ....................... #
+
+    @classmethod
+    def update_log_level(cls, name: str, level: LogLevel) -> None:
+        """
+        Update the log level of a particular logger.
+        Thread-safe implementation to update logger in the registry.
+
+        Args:
+            name (str): The name of the logger.
+            level (LogLevel): The new log level.
+        """
+
+        with cls._lock:
+            logger = cls._loggers.get(name, None)
+
+            if logger is not None:
                 logger.setLevel(level.value)
                 for handler in logger.handlers:
                     handler.setLevel(level.value)

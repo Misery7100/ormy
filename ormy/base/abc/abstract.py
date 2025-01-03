@@ -1,10 +1,11 @@
 import inspect
+import logging
 from abc import ABC, abstractmethod  # noqa: F401
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from ormy.base.error import InternalError
 from ormy.base.pydantic import Base
-from ormy.utils.logging import LogManager
+from ormy.utils.logging import LogLevel, LogManager
 
 from .config import ConfigABC
 from .func import merge_registry_helper, register_subclass
@@ -15,8 +16,6 @@ A = TypeVar("A", bound="AbstractABC")
 As = TypeVar("As", bound="AbstractSingleABC")
 C = TypeVar("C", bound=ConfigABC)
 
-logger = LogManager.get_logger(__name__)
-
 # ----------------------- #
 
 
@@ -26,6 +25,20 @@ class AbstractABC(Base, ABC):
     configs: ClassVar[List[Any]] = list()
     include_to_registry: ClassVar[bool] = True
     _registry: ClassVar[Dict[Any, dict]] = {}
+    _logger: ClassVar[logging.Logger] = LogManager.get_logger("AbstractABC")
+
+    # ....................... #
+
+    @classmethod
+    def set_log_level(cls: Type[A], level: LogLevel) -> None:
+        """
+        Set the log level for the logger
+
+        Args:
+            level (ormy.utils.logging.LogLevel): The new log level
+        """
+
+        LogManager.update_log_level(cls.__name__, level)
 
     # ....................... #
 
@@ -45,17 +58,19 @@ class AbstractABC(Base, ABC):
 
         if cfg is None:
             msg = f"Configuration {type_} for {cls.__name__} not found"
-            logger.error(msg)
+            cls._logger.error(msg)
 
             raise InternalError(msg)
 
-        logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
+        cls._logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
 
         return cfg
 
     # ....................... #
 
     def __init_subclass__(cls: Type[A], **kwargs):
+        cls._logger = LogManager.get_logger(cls.__name__)
+
         super().__init_subclass__(**kwargs)
 
         cls._update_ignored_types()
@@ -77,7 +92,7 @@ class AbstractABC(Base, ABC):
 
         cls.model_config["ignored_types"] = ignored_types
 
-        logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
+        cls._logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
 
     # ....................... #
 
@@ -95,7 +110,7 @@ class AbstractABC(Base, ABC):
                 cfgs = p.configs
                 break
 
-        logger.debug(f"Parent configs for {cls.__name__}: {list(map(type, cfgs))}")
+        cls._logger.debug(f"Parent configs for {cls.__name__}: {list(map(type, cfgs))}")
 
         deduplicated = dict()
 
@@ -121,9 +136,9 @@ class AbstractABC(Base, ABC):
                 merge = c
                 merged.append(c)
 
-            logger.debug(f"Self: {c}")
-            logger.debug(f"Parent: {old}")
-            logger.debug(f"Merge: {merge}")
+            cls._logger.debug(f"Self: {c}")
+            cls._logger.debug(f"Parent: {old}")
+            cls._logger.debug(f"Merge: {merge}")
 
         cls.configs = merged
 
@@ -138,11 +153,13 @@ class AbstractABC(Base, ABC):
 
                 else:
                     d1[k] = d2[k]
-                    logger.debug(f"Overwriting {k} in registry: {d1[k]} -> {d2[k]}")
+                    cls._logger.debug(
+                        f"Overwriting {k} in registry: {d1[k]} -> {d2[k]}"
+                    )
 
             else:
                 d1[k] = d2[k]
-                logger.debug(f"Adding {k} in registry: {d1[k]} -> {d2[k]}")
+                cls._logger.debug(f"Adding {k} in registry: {d1[k]} -> {d2[k]}")
 
         return d1
 
@@ -157,8 +174,8 @@ class AbstractABC(Base, ABC):
             if hasattr(p, "_registry"):
                 reg = p._registry
 
-        logger.debug(f"Parent registry for {cls.__name__}: {reg}")
-        logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
+        cls._logger.debug(f"Parent registry for {cls.__name__}: {reg}")
+        cls._logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
         cls._registry = cls._merge_registry_helper(reg, cls._registry)
 
@@ -175,16 +192,35 @@ class AbstractSingleABC(Base, ABC):
     include_to_registry: ClassVar[bool] = True
 
     _registry: ClassVar[Dict[Any, dict]] = {}
+    _logger: ClassVar[logging.Logger] = LogManager.get_logger("AbstractSingleABC")
 
     # ....................... #
 
     def __init_subclass__(cls: Type[As], **kwargs):
         """Initialize subclass"""
 
+        cls._logger = LogManager.get_logger(cls.__name__)
+
         super().__init_subclass__(**kwargs)
 
         cls._update_ignored_types()
         cls._merge_configs()
+
+        if cls.config is not None:
+            cls.set_log_level(cls.config.log_level)
+
+    # ....................... #
+
+    @classmethod
+    def set_log_level(cls: Type[As], level: LogLevel) -> None:
+        """
+        Set the log level for the logger
+
+        Args:
+            level (ormy.utils.logging.LogLevel): The new log level
+        """
+
+        LogManager.update_log_level(cls.__name__, level)
 
     # ....................... #
 
@@ -199,7 +235,7 @@ class AbstractSingleABC(Base, ABC):
 
         cls.model_config["ignored_types"] = ignored_types
 
-        logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
+        cls._logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
 
     # ....................... #
 
@@ -216,21 +252,23 @@ class AbstractSingleABC(Base, ABC):
                 break
 
         if parent_config is None:
-            logger.debug(f"Parent config for {cls.__name__} not found")
+            cls._logger.debug(f"Parent config for {cls.__name__} not found")
             return
 
         if cls.config is not None:
             merged_config = cls.config.merge(parent_config)
-            logger.debug(
+            cls._logger.debug(
                 f"Merging configs for {cls.__name__}: {cls.config} <- {parent_config}"
             )
 
         else:
             merged_config = parent_config
-            logger.debug(f"Using parent config for {cls.__name__}: {parent_config}")
+            cls._logger.debug(
+                f"Using parent config for {cls.__name__}: {parent_config}"
+            )
 
         cls.config = merged_config
-        logger.debug(f"Final config for {cls.__name__}: {merged_config}")
+        cls._logger.debug(f"Final config for {cls.__name__}: {merged_config}")
 
     # ....................... #
 
@@ -242,7 +280,7 @@ class AbstractSingleABC(Base, ABC):
             cls=cls,
             d1=d1,
             d2=d2,
-            logger=logger,
+            logger=cls._logger,
         )
 
     # ....................... #
@@ -261,14 +299,14 @@ class AbstractSingleABC(Base, ABC):
                 reg = p._registry
                 break
 
-        logger.debug(f"Parent registry for {cls.__name__}: {reg}")
-        logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
+        cls._logger.debug(f"Parent registry for {cls.__name__}: {reg}")
+        cls._logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
         cls._registry = merge_registry_helper(
             cls=cls,
             d1=reg,
             d2=cls._registry,
-            logger=logger,
+            logger=cls._logger,
         )
 
     # ....................... #
@@ -289,5 +327,5 @@ class AbstractSingleABC(Base, ABC):
             cls=cls,
             config=cls.config,
             discriminator=discriminator,
-            logger=logger,
+            logger=cls._logger,
         )

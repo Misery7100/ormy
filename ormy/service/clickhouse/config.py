@@ -47,13 +47,13 @@ class ClickHouseConfig(ConfigABC):
     Attributes:
         database (str): ClickHouse database
         table (str): ClickHouse table
+        log_level (ormy.utils.logging.LogLevel): Log level
         include_to_registry (bool): Whether to include to registry
         credentials (ClickHouseCredentials): ClickHouse connection credentials
     """
 
     database: str = "default"
     table: str = "default"
-    include_to_registry: bool = True
 
     credentials: ClickHouseCredentials = ClickHouseCredentials()
 

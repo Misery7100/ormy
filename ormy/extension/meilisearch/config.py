@@ -107,6 +107,7 @@ class MeilisearchConfig(ConfigABC):
         primary_key (str): Meilisearch primary key
         settings (MeilisearchSettings): Meilisearch settings
         include_to_registry (bool): Whether to include to registry
+        log_level (ormy.utils.logging.LogLevel): Log level
         credentials (MeilisearchCredentials): Meilisearch connect credentials
         context_client (bool): Whether to use context manager for Meilisearch client
     """
@@ -115,7 +116,6 @@ class MeilisearchConfig(ConfigABC):
     index: str = "_default_"
     primary_key: str = "id"
     settings: MeilisearchSettings = MeilisearchSettings(searchable_attributes=["*"])
-    include_to_registry: bool = True
 
     # Global configuration
     credentials: MeilisearchCredentials = MeilisearchCredentials()

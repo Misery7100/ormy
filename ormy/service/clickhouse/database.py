@@ -8,7 +8,7 @@ from infi.clickhouse_orm import database, models, utils  # type: ignore[import-u
 # ----------------------- #
 
 # TODO: TypeVar ????
-logger = logging.getLogger("clickhouse_orm")
+logger = logging.getLogger("clickhouse_orm")  # TODO: refactor
 
 # ----------------------- #
 

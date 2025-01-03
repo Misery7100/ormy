@@ -13,6 +13,21 @@ def get_clickhouse_db(
     verify_ssl_cert: bool = False,
     **kwargs,
 ):
+    """
+    Get ClickHouse database
+
+    Args:
+        db_name (str): ClickHouse database name
+        db_url (str): ClickHouse database URL
+        username (str, optional): ClickHouse username
+        password (str, optional): ClickHouse password
+        verify_ssl_cert (bool): Whether to verify SSL certificate
+        **kwargs: Additional keyword arguments
+
+    Returns:
+        database (ormy.service.clickhouse.database.AsyncDatabase): ClickHouse database
+    """
+
     return AsyncDatabase(
         db_name=db_name,
         verify_ssl_cert=verify_ssl_cert,  # TODO: check

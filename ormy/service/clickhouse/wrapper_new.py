@@ -15,7 +15,6 @@ from infi.clickhouse_orm import (  # type: ignore[import-untyped]
 )
 
 from ormy.base.abc import AbstractSingleABC
-from ormy.utils.logging import LogManager
 
 from .config import ClickHouseConfig
 from .func import get_clickhouse_db
@@ -24,7 +23,6 @@ from .models import ClickHouseFieldInfo, ClickHouseModel, ClickHouseQuerySet
 # ----------------------- #
 
 Ch = TypeVar("Ch", bound="ClickHouseSingleBase")
-logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

@@ -35,13 +35,14 @@ class RedisConfig(ConfigABC):
     Attributes:
         database (int): Database number to assign
         collection (str): Collection name to assign
+        log_level (ormy.utils.logging.LogLevel): Log level
+        include_to_registry (bool): Whether to include to registry
         credentials (RedisCredentials): Connection credentials
     """
 
     # Local configuration
     database: int = 0
     collection: str = "default"
-    include_to_registry: bool = True
 
     # Global configuration
     credentials: RedisCredentials = RedisCredentials()

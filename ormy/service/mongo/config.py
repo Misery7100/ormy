@@ -19,7 +19,6 @@ class MongoCredentials(Base):
         password (SecretStr): MongoDB password
         replicaset (str, optional): MongoDB replicaset
         directConnection (bool): Whether to connect to replica directly
-        ping_database (str): Database to ping for health check
     """
 
     host: str = "localhost"
@@ -41,15 +40,16 @@ class MongoConfig(ConfigABC):
         database (str): Database name to assign
         collection (str): Collection name to assign
         streaming (bool): Whether to enable watch on collection
+        log_level (ormy.utils.logging.LogLevel): Log level
         include_to_registry (bool): Whether to include the config to registry
         credentials (MongoCredentials): Connection credentials
+        ping_database (str): Database to ping for health check
     """
 
     # Local configuration
     database: str = "default"
     collection: str = "default"
-    streaming: bool = True
-    include_to_registry: bool = True
+    streaming: bool = False
 
     # Global configuration
     credentials: MongoCredentials = MongoCredentials()

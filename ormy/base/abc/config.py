@@ -4,6 +4,7 @@ from typing import Self, TypeVar
 from pydantic import ConfigDict
 
 from ormy.base.pydantic import Base
+from ormy.utils.logging import LogLevel
 
 # ----------------------- #
 
@@ -22,6 +23,7 @@ class ConfigABC(Base, ABC):
         validate_assignment=True,
     )
     include_to_registry: bool = True
+    log_level: LogLevel = LogLevel.INFO
 
     # ....................... #
 

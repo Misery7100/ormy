@@ -13,7 +13,6 @@ from pymongo.errors import BulkWriteError, ConnectionFailure, OperationFailure
 from ormy.base.abc import DocumentID, DocumentSingleABC
 from ormy.base.error import BadInput, Conflict, Forbidden, InternalError, NotFound
 from ormy.base.generic import TabularData
-from ormy.utils.logging import LogManager
 
 from .config import MongoConfig
 from .typing import MongoRequest
@@ -21,8 +20,6 @@ from .typing import MongoRequest
 # ----------------------- #
 
 M = TypeVar("M", bound="MongoSingleBase")
-
-logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 
@@ -68,11 +65,11 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
                 health = check.get("ok", 0) == 1
 
             except ConnectionFailure as e:
-                logger.error(f"Connection failure: {e}")
+                cls._logger.error(f"Connection failure: {e}")
                 raise InternalError(e._message)
 
             except OperationFailure as e:
-                logger.error(f"Operation failure: {e}")
+                cls._logger.error(f"Operation failure: {e}")
                 raise Forbidden(e._message)
 
             except Exception:
@@ -103,11 +100,11 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
                 health = check.get("ok", 0) == 1
 
             except ConnectionFailure as e:
-                logger.error(f"Connection failure: {e}")
+                cls._logger.error(f"Connection failure: {e}")
                 raise InternalError(e._message)
 
             except OperationFailure as e:
-                logger.error(f"Operation failure: {e}")
+                cls._logger.error(f"Operation failure: {e}")
                 raise Forbidden(e._message)
 
             except Exception:

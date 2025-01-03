@@ -49,13 +49,13 @@ class S3Config(ConfigABC):
 
     Attributes:
         bucket (str): S3 bucket name
+        log_level (ormy.utils.logging.LogLevel): Log level
         include_to_registry (bool): Whether to include to registry
         credentials (S3Credentials): S3 connect credentials
     """
 
     # Local configuration
     bucket: str = "default-bucket"
-    include_to_registry: bool = True
 
     # Global configuration
     credentials: S3Credentials = S3Credentials()
