@@ -59,6 +59,8 @@ def register_subclass(
         current = cls._registry.get(type(config), {})
         logger.debug(f"Current: {current}")
 
+        root = current
+
         for i, k in enumerate(keys[:-1]):
             if k not in current:
                 current[k] = {}
@@ -70,7 +72,7 @@ def register_subclass(
         current[keys[-1]] = cls
         logger.debug(f"Final current: {current}")
 
-        cls._registry[type(config)] = current
+        cls._registry[type(config)] = root
 
         logger.debug(f"Registry after: {cls._registry}")
 
