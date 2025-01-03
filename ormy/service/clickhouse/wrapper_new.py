@@ -105,6 +105,14 @@ class ClickHouseSingleBase(AbstractSingleABC):
     # ....................... #
 
     @classmethod
+    def full_table_name(cls: Type[Ch]):
+        """Get full table name"""
+
+        return f"{cls.config.database}.{cls.config.table}"
+
+    # ....................... #
+
+    @classmethod
     def _get_adatabase(cls: Type[Ch]):
         """
         Get ClickHouse database connection
