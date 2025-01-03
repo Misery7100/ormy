@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, List, Optional
 
 from meilisearch_python_sdk.models.settings import (
     Faceting,
@@ -17,6 +17,7 @@ from meilisearch_python_sdk.types import JsonDict
 from pydantic import SecretStr, model_validator
 
 from ormy.base.abc import ConfigABC
+from ormy.base.error import InternalError
 from ormy.base.pydantic import Base
 
 # ----------------------- #
@@ -49,6 +50,7 @@ class MeilisearchSettings(MsSettings):
     """
 
     default_sort: Optional[str] = None
+    exclude_mask: Optional[Dict[str, str | List[str]]] = None
 
     # ....................... #
 
@@ -56,7 +58,7 @@ class MeilisearchSettings(MsSettings):
     def validate_default_sort(self):
         if self.default_sort and self.sortable_attributes:
             if self.default_sort not in self.sortable_attributes:
-                raise ValueError(f"Invalid Default Sort Field: {self.default_sort}")
+                raise InternalError(f"Invalid Default Sort Field: {self.default_sort}")
 
         return self
 

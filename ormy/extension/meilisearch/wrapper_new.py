@@ -165,6 +165,15 @@ class MeilisearchExtensionV2(ExtensionABC):
     # ....................... #
 
     @classmethod
+    def __get_exclude_mask(cls: Type[M]) -> Optional[Dict[str, str | List[str]]]:
+        """Get exclude mask"""
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        return cfg.settings.exclude_mask
+
+    # ....................... #
+
+    @classmethod
     def _meili_static_client(cls):
         """
         Get static Meilisearch client
@@ -672,11 +681,34 @@ class MeilisearchExtensionV2(ExtensionABC):
         """
 
         ix = cls._meili_index()
+        exclude_mask = cls.__get_exclude_mask()
 
         if not isinstance(docs, list):
             docs = [docs]
 
-        doc_dicts = [d.model_dump() for d in docs]
+        masked = []
+
+        if exclude_mask:
+            for d in docs:
+                for k, v in exclude_mask.items():
+                    if hasattr(d, k):
+                        doc_value = getattr(d, k)
+
+                        if not isinstance(v, list):
+                            v = [v]
+
+                        if not isinstance(doc_value, list):
+                            doc_value = [doc_value]
+
+                        # Handle unhashable exceptions
+                        try:
+                            if set(doc_value).intersection(v):
+                                masked.append(d)
+
+                        except Exception:
+                            pass
+
+        doc_dicts = [d.model_dump() for d in docs if d not in masked]
         ix.update_documents(doc_dicts)
 
     # ....................... #
@@ -691,11 +723,34 @@ class MeilisearchExtensionV2(ExtensionABC):
         """
 
         ix = await cls._ameili_index()
+        exclude_mask = cls.__get_exclude_mask()
 
         if not isinstance(docs, list):
             docs = [docs]
 
-        doc_dicts = [d.model_dump() for d in docs]
+        masked = []
+
+        if exclude_mask:
+            for d in docs:
+                for k, v in exclude_mask.items():
+                    if hasattr(d, k):
+                        doc_value = getattr(d, k)
+
+                        if not isinstance(v, list):
+                            v = [v]
+
+                        if not isinstance(doc_value, list):
+                            doc_value = [doc_value]
+
+                        # Handle unhashable exceptions
+                        try:
+                            if set(doc_value).intersection(v):
+                                masked.append(d)
+
+                        except Exception:
+                            pass
+
+        doc_dicts = [d.model_dump() for d in docs if d not in masked]
         await ix.update_documents(doc_dicts)
 
     # ....................... #
