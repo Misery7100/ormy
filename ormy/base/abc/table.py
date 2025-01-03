@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .abstract import AbstractSingleABC
 from .config import ConfigABC
@@ -10,7 +10,7 @@ from .config import ConfigABC
 C = TypeVar("C", bound="ConfigABC")
 Ts = TypeVar("Ts", bound="TableSingleABC")
 
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

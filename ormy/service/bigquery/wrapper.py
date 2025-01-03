@@ -11,7 +11,7 @@ from pydantic.fields import ComputedFieldInfo, FieldInfo
 
 from ormy.base.abc import AbstractABC
 from ormy.base.func import hex_uuid4, utcnow
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .config import BigQueryConfig
 from .exceptions import BigQueryBackendInsertError, BigQueryInsertError
@@ -19,7 +19,7 @@ from .exceptions import BigQueryBackendInsertError, BigQueryInsertError
 # ----------------------- #
 
 Bq = TypeVar("Bq", bound="BigQueryBase")
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

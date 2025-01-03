@@ -18,7 +18,7 @@ from meilisearch_python_sdk.types import JsonDict
 
 from ormy.base.abc import ExtensionABC
 from ormy.base.typing import AsyncCallable
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .config import MeilisearchConfig
 from .schema import (
@@ -36,7 +36,7 @@ from .schema import (
 # ----------------------- #
 
 M = TypeVar("M", bound="MeilisearchExtensionV2")
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

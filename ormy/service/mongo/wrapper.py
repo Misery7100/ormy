@@ -12,7 +12,7 @@ from pymongo.errors import BulkWriteError
 
 from ormy.base.abc import DocumentABC, DocumentID
 from ormy.base.generic import TabularData
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .config import MongoConfig
 from .typing import MongoRequest
@@ -21,7 +21,7 @@ from .typing import MongoRequest
 
 M = TypeVar("M", bound="MongoBase")
 
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

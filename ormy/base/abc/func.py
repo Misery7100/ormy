@@ -2,7 +2,7 @@ from logging import Logger
 from typing import List, Optional, TypeVar
 
 from ormy.base.error import InternalError
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .config import ConfigABC
 
@@ -10,7 +10,7 @@ from .config import ConfigABC
 
 C = TypeVar("C", bound=ConfigABC)
 
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

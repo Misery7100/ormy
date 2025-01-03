@@ -9,7 +9,7 @@ from ormy.base.abc import ExtensionABC
 from ormy.base.error import BadInput, Conflict
 from ormy.base.generic import TabularData
 from ormy.base.pydantic import TableResponse
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .config import S3Config
 from .schema import S3File
@@ -17,7 +17,7 @@ from .schema import S3File
 # ----------------------- #
 
 S = TypeVar("S", bound="S3Extension")
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

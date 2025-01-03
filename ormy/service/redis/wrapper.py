@@ -8,7 +8,7 @@ from redis.asyncio.client import Pipeline as Apipeline
 from redis.client import Pipeline
 
 from ormy.base.abc import DocumentABC, DocumentID
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .config import RedisConfig
 
@@ -16,7 +16,7 @@ from .config import RedisConfig
 
 T = TypeVar("T", bound="RedisBase")
 
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

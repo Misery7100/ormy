@@ -4,7 +4,7 @@ from typing import Any, Optional, Type, TypeVar
 from pydantic import Field
 
 from ormy.base.func import hex_uuid4
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .abstract import AbstractABC, AbstractSingleABC
 from .config import ConfigABC
@@ -16,7 +16,7 @@ D = TypeVar("D", bound="DocumentABC")
 C = TypeVar("C", bound="ConfigABC")
 Ds = TypeVar("Ds", bound="DocumentSingleABC")
 
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

@@ -25,14 +25,10 @@ Extensions:
 
 ## TO DO
 
-- [ ] Improve logging;
 - [ ] Add indexing support for mongodb service;
 - [ ] Add indexing support for firestore service;
 - [ ] Add indexing support for clickhouse service;
-- [x] Non-context clients for redlock extension;
-- [x] Non-context clients for meilisearch extension;
 - [ ] Non-context clients for redis service;
-- [x] Cached clients for mongodb service;
 - [ ] Check `pytest-benchmark` for performance testing;
 - [ ] Check `pytest-meilisearch` for MeiliSearch testing;
 - [ ] Extend unit tests.

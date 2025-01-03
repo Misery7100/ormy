@@ -4,7 +4,7 @@ from typing import Any, ClassVar, Dict, List, Type, TypeVar
 
 from ormy.base.error import InternalError
 from ormy.base.pydantic import Base
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .config import ConfigABC
 from .func import merge_registry_helper, register_subclass
@@ -14,7 +14,7 @@ from .func import merge_registry_helper, register_subclass
 E = TypeVar("E", bound="ExtensionABC")
 C = TypeVar("C", bound=ConfigABC)
 
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 

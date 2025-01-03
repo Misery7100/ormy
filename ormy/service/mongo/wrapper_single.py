@@ -13,7 +13,7 @@ from pymongo.errors import BulkWriteError, ConnectionFailure, OperationFailure
 from ormy.base.abc import DocumentID, DocumentSingleABC
 from ormy.base.error import BadInput, Conflict, Forbidden, InternalError, NotFound
 from ormy.base.generic import TabularData
-from ormy.utils.logging import LogLevel, console_logger
+from ormy.utils.logging import LogManager
 
 from .config import MongoConfig
 from .typing import MongoRequest
@@ -22,7 +22,7 @@ from .typing import MongoRequest
 
 M = TypeVar("M", bound="MongoSingleBase")
 
-logger = console_logger(__name__, level=LogLevel.INFO)
+logger = LogManager.get_logger(__name__)
 
 # ----------------------- #
 
