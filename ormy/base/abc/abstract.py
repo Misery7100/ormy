@@ -234,7 +234,6 @@ class AbstractSingleABC(Base, ABC):
             ignored_types += (tx,)
 
         cls.model_config["ignored_types"] = ignored_types
-
         cls._logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
 
     # ....................... #
@@ -302,11 +301,9 @@ class AbstractSingleABC(Base, ABC):
         cls._logger.debug(f"Parent registry for {cls.__name__}: {reg}")
         cls._logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
-        cls._registry = merge_registry_helper(
-            cls=cls,
+        cls._registry = cls._merge_registry_helper(
             d1=reg,
             d2=cls._registry,
-            logger=cls._logger,
         )
 
     # ....................... #
