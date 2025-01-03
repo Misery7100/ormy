@@ -51,21 +51,24 @@ def register_subclass(
         keys.append(getattr(config, d))
 
     if config.include_to_registry and not config.is_default():
-        logger.debug(f"Registering `{type(config)}` using discriminator: {keys}")
+        logger.debug(
+            f"Registering `{type(config).__name__}` using discriminator: {keys}"
+        )
         logger.debug(f"Registry before: {cls._registry}")
 
         current = cls._registry.get(type(config), {})
         logger.debug(f"Current: {current}")
 
-        for k in keys[:-1]:
+        for i, k in enumerate(keys[:-1]):
             if k not in current:
                 current[k] = {}
+                logger.debug(f"Current {i} ({k=} not found): {current}")
 
             current = current[k]
-            logger.debug(f"Current: {current}")
+            logger.debug(f"Current {i} (after checking {k=}): {current}")
 
         current[keys[-1]] = cls
-        logger.debug(f"Current: {current}")
+        logger.debug(f"Final current: {current}")
 
         cls._registry[type(config)] = current
 
