@@ -11,7 +11,6 @@ from ormy.extension.meilisearch import (
 from ormy.extension.redlock import RedlockConfig, RedlockExtension
 from ormy.extension.s3 import S3Config, S3Extension
 from ormy.service.mongo import MongoBase, MongoConfig, MongoSingleBase
-from ormy.utils.logging import LogManager
 
 # ----------------------- #
 
@@ -189,7 +188,6 @@ class MongoWithMeilisearchBackgroundV2(MongoSingleBase, MeilisearchExtensionV2):
         cls.extension_configs = [cfg_meili] + other_ext_configs
 
         super().__init_subclass__(**kwargs)
-        cls._logger = LogManager.get_logger(cls.__name__)
 
     # ....................... #
 
@@ -290,7 +288,6 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
         cls.extension_configs = [cfg_s3] + other_ext_configs
 
         super().__init_subclass__(**kwargs)
-        cls._logger = LogManager.get_logger(cls.__name__)
 
     # ....................... #
 
@@ -438,7 +435,6 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
         cls.extension_configs = [cfg_redlock] + other_ext_configs
 
         super().__init_subclass__(**kwargs)
-        cls._logger = LogManager.get_logger(cls.__name__)
 
     # ....................... #
 

@@ -39,12 +39,12 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
         super().__init_subclass__(**kwargs)
 
         cls._register_subclass_helper(discriminator=["database", "collection"])
-        cls._merge_registry()
+        # cls._merge_registry()
 
-        MongoSingleBase._registry = cls._merge_registry_helper(
-            MongoSingleBase._registry,
-            cls._registry,
-        )
+        # MongoSingleBase._registry = cls._merge_registry_helper(
+        #     MongoSingleBase._registry,
+        #     cls._registry,
+        # )
 
     # ....................... #
 

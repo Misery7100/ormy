@@ -59,13 +59,13 @@ class MeilisearchExtensionV2(ExtensionABC):
             config=MeilisearchConfig,
             discriminator="index",
         )
-        cls._merge_registry()
+        # cls._merge_registry()
         cls._meili_safe_create_or_update()
 
-        MeilisearchExtensionV2._registry = cls._merge_registry_helper(
-            MeilisearchExtensionV2._registry,
-            cls._registry,
-        )
+        # MeilisearchExtensionV2._registry = cls._merge_registry_helper(
+        #     MeilisearchExtensionV2._registry,
+        #     cls._registry,
+        # )
 
     # ....................... #
 

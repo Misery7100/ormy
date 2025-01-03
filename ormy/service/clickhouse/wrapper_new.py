@@ -45,12 +45,12 @@ class ClickHouseSingleBase(AbstractSingleABC):
 
         cls._register_subclass_helper(discriminator=["database", "table"])
         cls.__construct_model()
-        cls._merge_registry()
+        # cls._merge_registry()
 
-        ClickHouseSingleBase._registry = cls._merge_registry_helper(
-            ClickHouseSingleBase._registry,
-            cls._registry,
-        )
+        # ClickHouseSingleBase._registry = cls._merge_registry_helper(
+        #     ClickHouseSingleBase._registry,
+        #     cls._registry,
+        # )
 
         cls._model.set_database(cls, cls._get_adatabase())  # type: ignore
 

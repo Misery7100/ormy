@@ -39,14 +39,14 @@ class RedlockExtension(ExtensionABC):
 
         cls._register_extension_subclass_helper(
             config=RedlockConfig,
-            discriminator="collection",
+            discriminator=["database", "collection"],
         )
-        cls._merge_registry()
+        # cls._merge_registry()
 
-        RedlockExtension._registry = cls._merge_registry_helper(
-            RedlockExtension._registry,
-            cls._registry,
-        )
+        # RedlockExtension._registry = cls._merge_registry_helper(
+        #     RedlockExtension._registry,
+        #     cls._registry,
+        # )
 
     # ....................... #
 

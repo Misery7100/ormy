@@ -37,12 +37,12 @@ class S3Extension(ExtensionABC):
             config=S3Config,
             discriminator="bucket",
         )
-        cls._merge_registry()
+        # cls._merge_registry()
 
-        S3Extension._registry = cls._merge_registry_helper(
-            S3Extension._registry,
-            cls._registry,
-        )
+        # S3Extension._registry = cls._merge_registry_helper(
+        #     S3Extension._registry,
+        #     cls._registry,
+        # )
 
         cls._s3_create_bucket()
 
