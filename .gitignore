@@ -169,3 +169,4 @@ tests/cache/
 firebase-export-*
 *.ipynb
 ipynb/
+sandbox/

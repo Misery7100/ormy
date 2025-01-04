@@ -1,10 +1,11 @@
 from abc import abstractmethod
-from typing import Any, List, Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from pydantic import Field
 
 from ormy.base.func import hex_uuid4
 from ormy.base.logging import LogManager
+from ormy.base.pydantic import IGNORE
 
 from .abstract import AbstractABC, AbstractSingleABC
 from .config import ConfigABC
@@ -248,7 +249,6 @@ class DocumentSingleABC(AbstractSingleABC):
     def update(
         self: Ds,
         data: AbstractData,
-        preserve_none: List[str] = [],
         autosave: bool = True,
     ) -> Ds:
         """
@@ -270,9 +270,9 @@ class DocumentSingleABC(AbstractSingleABC):
             data = data.model_dump()
 
         for k in keys:
-            val = data.get(k, None)
+            val = data.get(k, IGNORE)
 
-            if not (val is None and k not in preserve_none) and hasattr(self, k):
+            if val != IGNORE and hasattr(self, k):
                 setattr(self, k, val)
 
         if autosave:
@@ -285,7 +285,6 @@ class DocumentSingleABC(AbstractSingleABC):
     async def aupdate(
         self: Ds,
         data: AbstractData,
-        preserve_none: List[str] = [],
         autosave: bool = True,
     ) -> Ds:
         """
@@ -307,9 +306,9 @@ class DocumentSingleABC(AbstractSingleABC):
             data = data.model_dump()
 
         for k in keys:
-            val = data.get(k, None)
+            val = data.get(k, IGNORE)
 
-            if not (val is None and k not in preserve_none) and hasattr(self, k):
+            if val != IGNORE and hasattr(self, k):
                 setattr(self, k, val)
 
         if autosave:

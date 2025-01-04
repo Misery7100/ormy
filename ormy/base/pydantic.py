@@ -1,20 +1,161 @@
-from typing import Any, ClassVar, Dict, List, Optional, Self, Type, TypeVar
+from typing import (
+    Annotated,
+    Any,
+    ClassVar,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Self,
+    Type,
+    TypeVar,
+)
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    GetCoreSchemaHandler,
+    SecretStr,
+    model_validator,
+)
+from pydantic_core import core_schema
 
 from .generic import TabularData
 
 # ----------------------- #
 
 T = TypeVar("T", bound="Base")
+Br = TypeVar("Br", bound="BaseReference")
+G = TypeVar("G")
 
 # ----------------------- #
 
 
+class IgnorePlaceholder:
+    """Ignore placeholder singleton"""
+
+    _instance = None
+
+    # ....................... #
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    # ....................... #
+
+    def __repr__(self):
+        return "<IGNORE>"
+
+    # ....................... #
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source: Any,
+        handler: GetCoreSchemaHandler,
+    ) -> core_schema.CoreSchema:
+        """
+        Define how the schema handles the placeholder during validation and serialization.
+        """
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    # ....................... #
+
+    @staticmethod
+    def validate(value: Any) -> Any:
+        """
+        Validator to handle the placeholder during validation.
+        """
+        if value is IgnorePlaceholder._instance:
+            return IgnorePlaceholder._instance
+
+        return value
+
+
+IGNORE = IgnorePlaceholder()
+
+# ....................... #
+
+
+class TypeWithIgnore(Generic[G]):
+    def __class_getitem__(cls, item: G) -> Any:
+        """
+        Dynamically creates a Field instance for Annotated types.
+        Overrides default with IGNORE if not explicitly set.
+        """
+
+        return Annotated[item | IgnorePlaceholder, Field(default=IGNORE)]
+
+
+# ....................... #
+
+
+class BaseWithIgnore(BaseModel):
+    """Base class for all Pydantic models within the package with ignore placeholder"""
+
+    model_config = ConfigDict(ignored_types=(IgnorePlaceholder,))
+
+    # ....................... #
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source: Any,
+        handler: GetCoreSchemaHandler,
+    ) -> core_schema.CoreSchema:
+        """
+        Override the core schema to enforce IGNORE as default for fields.
+        """
+
+        def enforce_ignore(schema: core_schema.ModelField) -> core_schema.ModelField:
+            schema["schema"]["default"] = IGNORE  # type: ignore
+
+            return schema
+
+        original_schema = super().__get_pydantic_core_schema__(source, handler)
+
+        if isinstance(original_schema, dict):
+            schema = original_schema.get("schema", {})
+
+            if schema and "fields" in schema:
+                for fname, fschema in schema["fields"].items():  # type: ignore
+                    schema["fields"][fname] = enforce_ignore(fschema)  # type: ignore
+
+                original_schema["schema"] = schema  # type: ignore
+
+        return original_schema
+
+    # ....................... #
+
+    def model_dump(self: Self, *args, **kwargs):
+        """
+        Override the model dump to exclude IGNORE values
+        """
+
+        kwargs["exclude_defaults"] = True
+
+        return super().model_dump(*args, **kwargs)
+
+    # ....................... #
+
+    def model_dump_json(self: Self, *args, **kwargs):
+        """
+        Override the model dump to exclude IGNORE values
+        """
+
+        kwargs["exclude_defaults"] = True
+
+        return super().model_dump_json(*args, **kwargs)
+
+
+# ....................... #
+
+
 class Base(BaseModel):
-    """
-    Base class for all Pydantic models within the package
-    """
+    """Base class for all Pydantic models within the package"""
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -275,9 +416,7 @@ class Base(BaseModel):
             return "string"
 
 
-# ----------------------- #
-
-Br = TypeVar("Br", bound="BaseReference")
+# ....................... #
 
 
 class BaseReference(BaseModel):
@@ -319,7 +458,7 @@ class BaseReference(BaseModel):
         return v
 
 
-# ----------------------- #
+# ....................... #
 
 
 class TableResponse(BaseModel):
