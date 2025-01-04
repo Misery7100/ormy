@@ -43,6 +43,9 @@ class LogManager:
         if level is None:
             level = cls._global_log_level
 
+        elif cls._global_log_level.value < level.value:
+            level = cls._global_log_level
+
         with cls._lock:
             if name not in cls._loggers:
                 # Create a new logger
@@ -100,6 +103,9 @@ class LogManager:
 
         with cls._lock:
             logger = cls._loggers.get(name, None)
+
+            if cls._global_log_level.value < level.value:
+                level = cls._global_log_level
 
             if logger is not None:
                 logger.setLevel(level.value)
