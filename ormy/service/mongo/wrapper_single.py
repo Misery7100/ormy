@@ -299,11 +299,17 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
         operations = [InsertOne({**d, "_id": d["id"]}) for d in _data]
 
         try:
-            collection.bulk_write(operations, ordered=ordered)
+            result = collection.bulk_write(operations, ordered=ordered)
+            inserted_ids = list(map(str, result.upserted_ids.values()))  # type: ignore
+            successful_docs = [x for x in data if x.id in inserted_ids]
 
         # Bypass errors ????
         except BulkWriteError as e:
-            return e
+            errors = e.details.get("writeErrors", [])
+            error_idx = {err["index"]: err for err in errors}
+            successful_docs = [data[i] for i in range(len(data)) if i not in error_idx]
+
+        return successful_docs
 
     # ....................... #
 
@@ -321,11 +327,17 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
         operations = [InsertOne({**d, "_id": d["id"]}) for d in _data]
 
         try:
-            await collection.bulk_write(operations, ordered=ordered)
+            result = await collection.bulk_write(operations, ordered=ordered)
+            inserted_ids = list(map(str, result.upserted_ids.values()))  # type: ignore
+            successful_docs = [x for x in data if x.id in inserted_ids]
 
         # Bypass errors ????
         except BulkWriteError as e:
-            return e
+            errors = e.details.get("writeErrors", [])
+            error_idx = {err["index"]: err for err in errors}
+            successful_docs = [data[i] for i in range(len(data)) if i not in error_idx]
+
+        return successful_docs
 
     # ....................... #
 
