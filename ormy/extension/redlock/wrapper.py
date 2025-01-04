@@ -25,7 +25,7 @@ class RedlockExtension(ExtensionABC):
     """Redlock extension"""
 
     extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
-    _registry = {RedlockConfig: {}}
+    # _registry = {RedlockConfig: {}}
 
     _redlock_static: ClassVar[Optional[Redis]] = None
     _aredlock_static: ClassVar[Optional[aioredis.Redis]] = None

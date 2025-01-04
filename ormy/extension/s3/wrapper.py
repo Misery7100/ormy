@@ -24,7 +24,7 @@ class S3Extension(ExtensionABC):
     """S3 extension"""
 
     extension_configs: ClassVar[List[Any]] = [S3Config()]
-    _registry = {S3Config: {}}
+    # _registry = {S3Config: {}}
 
     # ....................... #
 

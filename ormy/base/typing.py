@@ -1,15 +1,6 @@
-from typing import (
-    Annotated,
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    Literal,
-    TypeAlias,
-    TypeVar,
-)
+from typing import Annotated, Awaitable, Callable, Dict, Literal, TypeAlias, TypeVar
 
-from pydantic import BaseModel
+from .abc.typing import AbstractData, DocumentID
 
 # ----------------------- #
 
@@ -22,10 +13,6 @@ FieldSchema = Annotated[
     Dict[str, FieldName | FieldTitle | FieldDataType], "The data model field"
 ]
 
-# Optional annotations
-AbstractData = Annotated[BaseModel | Dict[str, Any], "Abstract data"]
-DocumentID = Annotated[str, "Document ID"]
-
 # Aliases
 Wildcard: TypeAlias = Literal["*", "all"]
 
@@ -33,3 +20,16 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 AsyncCallable = Callable[[T], Awaitable[R]]
+
+# ----------------------- #
+
+__all__ = [
+    "AbstractData",
+    "AsyncCallable",
+    "DocumentID",
+    "FieldDataType",
+    "FieldSchema",
+    "FieldName",
+    "FieldTitle",
+    "Wildcard",
+]

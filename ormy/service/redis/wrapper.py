@@ -7,8 +7,9 @@ from redis import asyncio as aioredis
 from redis.asyncio.client import Pipeline as Apipeline
 from redis.client import Pipeline
 
-from ormy.base.abc import DocumentABC, DocumentID
-from ormy.utils.logging import LogManager
+from ormy.base.abc import DocumentABC
+from ormy.base.logging import LogManager
+from ormy.base.typing import DocumentID
 
 from .config import RedisConfig
 

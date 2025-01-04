@@ -11,7 +11,7 @@ from pydantic.fields import ComputedFieldInfo, FieldInfo
 
 from ormy.base.abc import AbstractABC
 from ormy.base.func import hex_uuid4, utcnow
-from ormy.utils.logging import LogManager
+from ormy.base.logging import LogManager
 
 from .config import BigQueryConfig
 from .exceptions import BigQueryBackendInsertError, BigQueryInsertError

@@ -1,14 +1,14 @@
 import inspect
 import logging
 from abc import ABC
-from typing import Any, ClassVar, Dict, List, Type, TypeVar
+from typing import Any, ClassVar, List, Type, TypeVar
 
 from ormy.base.error import InternalError
+from ormy.base.logging import LogLevel, LogManager
 from ormy.base.pydantic import Base
-from ormy.utils.logging import LogLevel, LogManager
 
 from .config import ConfigABC
-from .func import merge_registry_helper, register_subclass
+from .registry import Registry
 
 # ----------------------- #
 
@@ -25,7 +25,7 @@ class ExtensionABC(Base, ABC):
 
     extension_configs: ClassVar[List[Any]] = []
     include_to_registry: ClassVar[bool] = True
-    _registry: ClassVar[Dict[Any, dict]] = {}
+    # _registry: ClassVar[Dict[Any, dict]] = {}
     _logger: ClassVar[logging.Logger] = LogManager.get_logger("ExtensionABC")
 
     # ....................... #
@@ -79,7 +79,7 @@ class ExtensionABC(Base, ABC):
         cfg = next((c for c in cls.extension_configs if type(c) is type_), None)
 
         if cfg is None:
-            msg = f"Configuration {type_} for {cls.__name__} not found"
+            msg = f"Configuration `{type_.__name__}` for `{cls.__name__}` not found"
             cls._logger.error(msg)
 
             raise InternalError(msg)
@@ -110,13 +110,19 @@ class ExtensionABC(Base, ABC):
 
         parents = inspect.getmro(cls)[1:]
         cfgs = []
+        parent_selected = None
 
         for p in parents:
-            if hasattr(p, "_registry") and hasattr(p, "extension_configs"):
+            if hasattr(p, "extension_configs") and all(
+                issubclass(type(x), ConfigABC) for x in p.extension_configs
+            ):
                 cfgs = p.extension_configs
+                parent_selected = p
                 break
 
-        cls._logger.debug(f"Parent configs for {cls.__name__}: {list(map(type, cfgs))}")
+        cls._logger.debug(
+            f"Parent configs from `{parent_selected.__name__ if parent_selected else None}`: {list(map(lambda x: type(x).__name__, cfgs))}"
+        )
 
         deduplicated = dict()
 
@@ -142,47 +148,48 @@ class ExtensionABC(Base, ABC):
                 merge = c
                 merged.append(c)
 
-            cls._logger.debug(f"Self: {c}")
-            cls._logger.debug(f"Parent: {old}")
-            cls._logger.debug(f"Merge: {merge}")
+            # TODO: rewrite
+            # cls._logger.debug(f"Self: {c}")
+            # cls._logger.debug(f"Parent: {old}")
+            # cls._logger.debug(f"Merge: {merge}")
 
         cls.extension_configs = merged
 
     # ....................... #
 
-    @classmethod
-    def _merge_registry_helper(cls: Type[E], d1: dict, d2: dict) -> dict:
-        """Merge registry for the subclass"""
+    # @classmethod
+    # def _merge_registry_helper(cls: Type[E], d1: dict, d2: dict) -> dict:
+    #     """Merge registry for the subclass"""
 
-        return merge_registry_helper(
-            cls=cls,
-            d1=d1,
-            d2=d2,
-            logger=cls._logger,
-        )
+    #     return merge_registry_helper(
+    #         cls=cls,
+    #         d1=d1,
+    #         d2=d2,
+    #         logger=cls._logger,
+    #     )
 
-    # ....................... #
+    # # ....................... #
 
-    @classmethod
-    def _merge_registry(cls: Type[E]):
-        """Merge registry for the subclass"""
+    # @classmethod
+    # def _merge_registry(cls: Type[E]):
+    #     """Merge registry for the subclass"""
 
-        parents = inspect.getmro(cls)[1:]
-        reg = dict()
+    #     parents = inspect.getmro(cls)[1:]
+    #     reg = dict()
 
-        for p in parents:
-            if hasattr(p, "_registry"):
-                reg = p._registry
+    #     for p in parents:
+    #         if hasattr(p, "_registry"):
+    #             reg = p._registry
 
-        cls._logger.debug(f"Parent registry for {cls.__name__}: {reg}")
-        cls._logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
+    #     cls._logger.debug(f"Parent registry for {cls.__name__}: {reg}")
+    #     cls._logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
-        cls._registry = merge_registry_helper(
-            cls=cls,
-            d1=reg,
-            d2=cls._registry,
-            logger=cls._logger,
-        )
+    #     cls._registry = merge_registry_helper(
+    #         cls=cls,
+    #         d1=reg,
+    #         d2=cls._registry,
+    #         logger=cls._logger,
+    #     )
 
     # ....................... #
 
@@ -202,9 +209,9 @@ class ExtensionABC(Base, ABC):
 
         cfg = cls.get_extension_config(type_=config)
 
-        register_subclass(
-            cls=cls,
-            config=cfg,
+        Registry.register(
             discriminator=discriminator,
+            value=cls,
+            config=cfg,
             logger=cls._logger,
         )

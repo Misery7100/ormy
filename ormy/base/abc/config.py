@@ -3,8 +3,8 @@ from typing import Self, TypeVar
 
 from pydantic import ConfigDict
 
+from ormy.base.logging import LogLevel
 from ormy.base.pydantic import Base
-from ormy.utils.logging import LogLevel
 
 # ----------------------- #
 
@@ -22,7 +22,7 @@ class ConfigABC(Base, ABC):
         arbitrary_types_allowed=True,
         validate_assignment=True,
     )
-    include_to_registry: bool = True
+    include_to_registry: bool = True  #! TODO: remove
     log_level: LogLevel = LogLevel.INFO
 
     # ....................... #

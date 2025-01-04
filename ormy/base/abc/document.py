@@ -4,7 +4,7 @@ from typing import Any, Optional, Type, TypeVar
 from pydantic import Field
 
 from ormy.base.func import hex_uuid4
-from ormy.utils.logging import LogManager
+from ormy.base.logging import LogManager
 
 from .abstract import AbstractABC, AbstractSingleABC
 from .config import ConfigABC

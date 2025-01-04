@@ -43,7 +43,7 @@ class MeilisearchExtensionV2(ExtensionABC):
     """Meilisearch extension"""
 
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
-    _registry = {MeilisearchConfig: {}}
+    # _registry = {MeilisearchConfig: {}}
 
     _meili_static: ClassVar[Optional[Client]] = None
     _ameili_static: ClassVar[Optional[AsyncClient]] = None

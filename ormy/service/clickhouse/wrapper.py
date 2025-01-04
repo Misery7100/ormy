@@ -12,7 +12,7 @@ from typing import (
 from infi.clickhouse_orm import engines, fields  # type: ignore[import-untyped]
 
 from ormy.base.abc import AbstractABC
-from ormy.utils.logging import LogManager
+from ormy.base.logging import LogManager
 
 from .config import ClickHouseConfig
 from .func import get_clickhouse_db

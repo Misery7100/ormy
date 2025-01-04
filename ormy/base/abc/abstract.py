@@ -4,11 +4,11 @@ from abc import ABC, abstractmethod  # noqa: F401
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from ormy.base.error import InternalError
+from ormy.base.logging import LogLevel, LogManager
 from ormy.base.pydantic import Base
-from ormy.utils.logging import LogLevel, LogManager
 
 from .config import ConfigABC
-from .func import merge_registry_helper, register_subclass
+from .registry import Registry
 
 # ----------------------- #
 
@@ -189,7 +189,7 @@ class AbstractSingleABC(Base, ABC):
     config: ClassVar[Optional[Any]] = None
     include_to_registry: ClassVar[bool] = True
 
-    _registry: ClassVar[Dict[Any, dict]] = {}
+    # _registry: ClassVar[Dict[Any, dict]] = {}
     _logger: ClassVar[logging.Logger] = LogManager.get_logger("AbstractSingleABC")
 
     # ....................... #
@@ -242,67 +242,67 @@ class AbstractSingleABC(Base, ABC):
 
         parents = inspect.getmro(cls)[1:]
         parent_config = None
+        parent_selected = None
 
         for p in parents:
-            if hasattr(p, "_registry") and hasattr(p, "config"):
+            if hasattr(p, "config") and issubclass(type(p.config), ConfigABC):
                 parent_config = p.config
+                parent_selected = p
                 break
 
-        if parent_config is None:
-            cls._logger.debug(f"Parent config for {cls.__name__} not found")
+        if parent_config is None or parent_selected is None:
+            cls._logger.debug(f"Parent config for `{cls.__name__}` not found")
             return
 
         if cls.config is not None:
             merged_config = cls.config.merge(parent_config)
             cls._logger.debug(
-                f"Merging configs for {cls.__name__}: {cls.config} <- {parent_config}"
+                f"Merge config: `{parent_selected.__name__}` -> `{cls.__name__}`"
             )
 
         else:
             merged_config = parent_config
-            cls._logger.debug(
-                f"Using parent config for {cls.__name__}: {parent_config}"
-            )
+            cls._logger.debug(f"Use parent config: `{parent_selected.__name__}`")
 
         cls.config = merged_config
-        cls._logger.debug(f"Final config for {cls.__name__}: {merged_config}")
+        cls._logger.debug(f"Final config for `{cls.__name__}`: {merged_config}")
 
     # ....................... #
 
-    @classmethod
-    def _merge_registry_helper(cls: Type[As], d1: dict, d2: dict) -> dict:
-        """Merge registry for the subclass"""
+    # @classmethod
+    # def _merge_registry_helper(cls: Type[As], d1: dict, d2: dict) -> dict:
+    #     """Merge registry for the subclass"""
 
-        return merge_registry_helper(
-            cls=cls,
-            d1=d1,
-            d2=d2,
-            logger=cls._logger,
-        )
+    #     return merge_registry_helper(
+    #         cls=cls,
+    #         d1=d1,
+    #         d2=d2,
+    #         logger=cls._logger,
+    #     )
 
-    # ....................... #
+    # # ....................... #
 
-    @classmethod
-    def _merge_registry(cls: Type[As]):
-        """
-        Merge registry for the subclass
-        """
+    # @classmethod
+    # def _merge_registry(cls: Type[As]):
+    #     """
+    #     Merge registry for the subclass
+    #     """
 
-        parents = inspect.getmro(cls)[1:]
-        reg = dict()
+    #     parents = inspect.getmro(cls)[1:]
+    #     reg = dict()
 
-        for p in parents:
-            if hasattr(p, "_registry"):
-                reg = p._registry
-                break
+    #     for p in parents:
+    #         if hasattr(p, "_registry"):
+    #             reg = p._registry
+    #             break
 
-        cls._logger.debug(f"Parent registry for {cls.__name__}: {reg}")
-        cls._logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
+    #     cls._logger.debug(f"Parent registry for {cls.__name__}: {reg}")
+    #     cls._logger.debug(f"Self registry for {cls.__name__}: {cls._registry}")
 
-        cls._registry = cls._merge_registry_helper(
-            d1=reg,
-            d2=cls._registry,
-        )
+    #     cls._registry = cls._merge_registry_helper(
+    #         d1=reg,
+    #         d2=cls._registry,
+    #     )
 
     # ....................... #
 
@@ -318,9 +318,9 @@ class AbstractSingleABC(Base, ABC):
             discriminator (str): Discriminator
         """
 
-        register_subclass(
-            cls=cls,
-            config=cls.config,
+        Registry.register(
             discriminator=discriminator,
+            value=cls,
+            config=cls.config,
             logger=cls._logger,
         )

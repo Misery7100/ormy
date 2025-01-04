@@ -33,7 +33,7 @@ class ClickHouseSingleBase(AbstractSingleABC):
     config: ClassVar[ClickHouseConfig] = ClickHouseConfig()
     engine: ClassVar[Optional[engines.Engine]] = None
 
-    _registry = {ClickHouseConfig: {}}
+    # _registry = {ClickHouseConfig: {}}
     _model: ClassVar[Optional[ClickHouseModel]] = None  # type: ignore[assignment]
 
     # ....................... #

@@ -10,9 +10,10 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError, ConnectionFailure, OperationFailure
 
-from ormy.base.abc import DocumentID, DocumentSingleABC
+from ormy.base.abc import DocumentSingleABC
 from ormy.base.error import BadInput, Conflict, Forbidden, InternalError, NotFound
 from ormy.base.generic import TabularData
+from ormy.base.typing import DocumentID
 
 from .config import MongoConfig
 from .typing import MongoRequest
@@ -26,7 +27,7 @@ M = TypeVar("M", bound="MongoSingleBase")
 
 class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
     config: ClassVar[MongoConfig] = MongoConfig()
-    _registry = {MongoConfig: {}}  #! - ?????
+    # _registry = {MongoConfig: {}}  #! - ?????
 
     _static: ClassVar[Optional[MongoClient]] = None
     _astatic: ClassVar[Optional[AsyncIOMotorClient]] = None

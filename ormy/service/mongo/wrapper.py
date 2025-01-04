@@ -10,9 +10,10 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from ormy.base.abc import DocumentABC, DocumentID
+from ormy.base.abc import DocumentABC
 from ormy.base.generic import TabularData
-from ormy.utils.logging import LogManager
+from ormy.base.logging import LogManager
+from ormy.base.typing import DocumentID
 
 from .config import MongoConfig
 from .typing import MongoRequest

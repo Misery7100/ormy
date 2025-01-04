@@ -8,7 +8,7 @@ from meilisearch_python_sdk.models.settings import MeilisearchSettings
 from meilisearch_python_sdk.types import JsonDict
 
 from ormy.base.abc import AbstractABC
-from ormy.utils.logging import LogManager
+from ormy.base.logging import LogManager
 
 from .config import MeilisearchConfig
 from .schema import (  # noqa: F401

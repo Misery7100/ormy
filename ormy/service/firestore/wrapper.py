@@ -38,7 +38,8 @@ from google.cloud.firestore_v1.transforms import (
     Sentinel,
 )
 
-from ormy.base.abc import ConfigABC, DocumentABC, DocumentID
+from ormy.base.abc import ConfigABC, DocumentABC
+from ormy.base.typing import DocumentID
 
 from .config import FirestoreConfig
 
