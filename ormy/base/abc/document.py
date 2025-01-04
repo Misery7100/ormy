@@ -232,8 +232,6 @@ class DocumentSingleABC(AbstractSingleABC):
     def find(
         cls: Type[Ds],
         id_: DocumentID,
-        *args,
-        **kwargs,
     ) -> Optional[Ds | Any]: ...
 
     # ....................... #
@@ -243,8 +241,6 @@ class DocumentSingleABC(AbstractSingleABC):
     async def afind(
         cls: Type[Ds],
         id_: DocumentID,
-        *args,
-        **kwargs,
     ) -> Optional[Ds | Any]: ...
 
     # ....................... #
@@ -252,17 +248,13 @@ class DocumentSingleABC(AbstractSingleABC):
     def update(
         self: Ds,
         data: AbstractData,
-        *args,
-        ignore_none: bool = True,
         autosave: bool = True,
-        **kwargs,
     ) -> Ds:
         """
         Update the document with the given data
 
         Args:
             data (AbstractData): Data to update the document with
-            ignore_none (bool): Ignore None values
             autosave (bool): Save the document after updating
 
         Returns:
@@ -277,10 +269,8 @@ class DocumentSingleABC(AbstractSingleABC):
             data = data.model_dump()
 
         for k in keys:
-            val = data.get(k, None)
-
-            if not (val is None and ignore_none) and hasattr(self, k):
-                setattr(self, k, val)
+            if k in data.keys() and hasattr(self, k):
+                setattr(self, k, data.get(k))
 
         if autosave:
             return self.save()
@@ -292,17 +282,13 @@ class DocumentSingleABC(AbstractSingleABC):
     async def aupdate(
         self: Ds,
         data: AbstractData,
-        *args,
-        ignore_none: bool = True,
         autosave: bool = True,
-        **kwargs,
     ) -> Ds:
         """
         Update the document with the given data
 
         Args:
             data (AbstractData): Data to update the document with
-            ignore_none (bool): Ignore None values
             autosave (bool): Save the document after updating
 
         Returns:
@@ -317,88 +303,10 @@ class DocumentSingleABC(AbstractSingleABC):
             data = data.model_dump()
 
         for k in keys:
-            val = data.get(k, None)
-
-            if not (val is None and ignore_none) and hasattr(self, k):
-                setattr(self, k, val)
+            if k in data.keys() and hasattr(self, k):
+                setattr(self, k, data.get(k))
 
         if autosave:
             return await self.asave()
 
         return self
-
-    # ....................... #
-
-    @classmethod
-    def update_by_id(
-        cls: Type[Ds],
-        id_: DocumentID,
-        data: AbstractData,
-        *args,
-        ignore_none: bool = True,
-        autosave: bool = True,
-        **kwargs,
-    ) -> Optional[Ds]:
-        """
-        Update the document with the given data
-
-        Args:
-            id_ (DocumentID): ID of the document to update
-            data (AbstractData): Data to update the document with
-            ignore_none (bool): Ignore None values
-            autosave (bool): Save the document after updating
-
-        Returns:
-            res (Optional[Ds]): Updated document or None if not found
-        """
-
-        instance = cls.find(id_)
-
-        if instance:
-            return instance.update(
-                data,
-                *args,
-                ignore_none=ignore_none,
-                autosave=autosave,
-                **kwargs,
-            )
-
-        return None
-
-    # ....................... #
-
-    @classmethod
-    async def aupdate_by_id(
-        cls: Type[Ds],
-        id_: DocumentID,
-        data: AbstractData,
-        *args,
-        ignore_none: bool = True,
-        autosave: bool = True,
-        **kwargs,
-    ) -> Optional[Ds]:
-        """
-        Update the document with the given data by ID
-
-        Args:
-            id_ (DocumentID): ID of the document to update
-            data (AbstractData): Data to update the document with
-            ignore_none (bool): Ignore None values
-            autosave (bool): Save the document after updating
-
-        Returns:
-            res (Optional[Ds]): Updated document or None if not found
-        """
-
-        instance = await cls.afind(id_)
-
-        if instance:
-            return await instance.aupdate(
-                data,
-                *args,
-                ignore_none=ignore_none,
-                autosave=autosave,
-                **kwargs,
-            )
-
-        return None
