@@ -68,4 +68,25 @@ class CreateTable(ModelOperation, migrations.CreateTable):
     pass
 
 
-# ....................... #
+class AlterTable(ModelOperation, migrations.AlterTable):
+    pass
+
+
+class AlterTableWithBuffer(ModelOperation, migrations.AlterTableWithBuffer):
+    pass
+
+
+class DropTable(ModelOperation, migrations.DropTable):
+    pass
+
+
+class AlterConstraints(ModelOperation, migrations.AlterConstraints):
+    pass
+
+
+class AlterIndexes(ModelOperation, migrations.AlterIndexes):
+    pass
+
+
+class RunPython(ModelOperation, migrations.RunPython):
+    pass
