@@ -242,11 +242,13 @@ class MongoWithMeilisearchBackgroundV2(MongoSingleBase, MeilisearchExtensionV2):
         data: List[M],
         ordered: bool = False,
     ):
-        super().create_many(data, ordered=ordered)  # type: ignore
+        res = super().create_many(data, ordered=ordered)  # type: ignore
 
         # Run in background
         with ThreadPoolExecutor() as executor:
-            executor.submit(cls.meili_update_documents, data)
+            executor.submit(cls.meili_update_documents, res)
+
+        return res
 
     # ....................... #
 
@@ -256,10 +258,12 @@ class MongoWithMeilisearchBackgroundV2(MongoSingleBase, MeilisearchExtensionV2):
         data: List[M],
         ordered: bool = False,
     ):
-        await super().acreate_many(data, ordered=ordered)  # type: ignore
+        res = await super().acreate_many(data, ordered=ordered)  # type: ignore
 
         # Run in background
-        asyncio.create_task(cls.ameili_update_documents(data))
+        asyncio.create_task(cls.ameili_update_documents(res))
+
+        return res
 
 
 # ----------------------- #
