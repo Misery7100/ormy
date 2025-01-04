@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 from threading import Lock
-from typing import Dict
+from typing import Dict, Optional
 
 # ----------------------- #
 
@@ -22,11 +22,12 @@ class LogManager:
 
     _loggers: Dict[str, logging.Logger] = {}
     _lock = Lock()
+    _global_log_level: LogLevel = LogLevel.INFO
 
     # ....................... #
 
     @classmethod
-    def get_logger(cls, name: str, level: LogLevel = LogLevel.INFO) -> logging.Logger:
+    def get_logger(cls, name: str, level: Optional[LogLevel] = None) -> logging.Logger:
         """
         Create or retrieve a logger with the given name and level.
         Thread-safe implementation to ensure only one logger is created per name.
@@ -38,6 +39,9 @@ class LogManager:
         Returns:
             logger (logging.Logger): The logger.
         """
+
+        if level is None:
+            level = cls._global_log_level
 
         with cls._lock:
             if name not in cls._loggers:
@@ -74,6 +78,8 @@ class LogManager:
         """
 
         with cls._lock:
+            cls._global_log_level = level
+
             for logger in cls._loggers.values():
                 logger.setLevel(level.value)
                 for handler in logger.handlers:

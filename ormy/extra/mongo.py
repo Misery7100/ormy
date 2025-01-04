@@ -430,7 +430,7 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
 
         # Prevent overriding if mongo config is default
         if not cls.config.is_default():
-            cfg_redlock.collection = f"{cls.config.database}_{cls.config.collection}"
+            cfg_redlock.collection = f"{cls.config.database}-{cls.config.collection}"
 
         cls.extension_configs = [cfg_redlock] + other_ext_configs
 
