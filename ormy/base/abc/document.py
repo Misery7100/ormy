@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, List, Optional, Type, TypeVar
 
 from pydantic import Field
 
@@ -248,6 +248,7 @@ class DocumentSingleABC(AbstractSingleABC):
     def update(
         self: Ds,
         data: AbstractData,
+        preserve_none: List[str] = [],
         autosave: bool = True,
     ) -> Ds:
         """
@@ -269,8 +270,10 @@ class DocumentSingleABC(AbstractSingleABC):
             data = data.model_dump()
 
         for k in keys:
-            if k in data.keys() and hasattr(self, k):
-                setattr(self, k, data.get(k))
+            val = data.get(k, None)
+
+            if not (val is None and k not in preserve_none) and hasattr(self, k):
+                setattr(self, k, val)
 
         if autosave:
             return self.save()
@@ -282,6 +285,7 @@ class DocumentSingleABC(AbstractSingleABC):
     async def aupdate(
         self: Ds,
         data: AbstractData,
+        preserve_none: List[str] = [],
         autosave: bool = True,
     ) -> Ds:
         """
@@ -303,8 +307,10 @@ class DocumentSingleABC(AbstractSingleABC):
             data = data.model_dump()
 
         for k in keys:
-            if k in data.keys() and hasattr(self, k):
-                setattr(self, k, data.get(k))
+            val = data.get(k, None)
+
+            if not (val is None and k not in preserve_none) and hasattr(self, k):
+                setattr(self, k, val)
 
         if autosave:
             return await self.asave()
