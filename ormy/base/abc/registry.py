@@ -90,7 +90,7 @@ class Registry:
 
                     current = current[k]
 
-                current[keys[-1]] = cls
+                current[keys[-1]] = value
                 cls._registry[type(config).__name__] = root
 
                 logger.debug(f"Registry after: {cls._registry}")
