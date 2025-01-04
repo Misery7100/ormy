@@ -24,11 +24,62 @@ class Registry:
     # ....................... #
 
     @classmethod
-    def retrieve(cls) -> Dict[str, Any]:
+    def get(cls) -> Dict[str, Any]:
         """Retrieve the registry"""
 
         with cls._lock:
             return cls._registry
+
+    # ....................... #
+
+    @classmethod
+    def exists(
+        cls,
+        discriminator: str | List[str],
+        config: Optional[C] = None,
+        logger: logging.Logger = logger,
+    ) -> bool:
+        """
+        Check if the item exists in the registry
+
+        Args:
+            discriminator (str | List[str]): Discriminator
+            config (ConfigABC): Configuration
+            logger (logging.Logger): Logger
+
+        Returns:
+            exists (bool): True if the item exists, False otherwise
+        """
+
+        exists = False
+
+        with cls._lock:
+            if not isinstance(discriminator, (list, tuple, set)):
+                discriminator = [discriminator]
+
+            else:
+                discriminator = list(discriminator)
+
+            if config is None:
+                raise InternalError("config is None")
+
+            keys = []
+
+            for d in discriminator:
+                if not hasattr(config, d):
+                    raise InternalError(f"Discriminator {d} not found in {config}")
+
+                keys.append(getattr(config, d))
+
+            retrieve = cls._registry.get(type(config).__name__, {})
+
+            for k in keys:
+                retrieve = retrieve.get(k, {})
+
+            if retrieve:
+                exists = True
+
+        return exists
 
     # ....................... #
 
@@ -58,19 +109,13 @@ class Registry:
                 discriminator = list(discriminator)
 
             if config is None:
-                msg = "Config is None"
-                logger.error(msg)
-
-                raise InternalError(msg)
+                raise InternalError("config is None")
 
             keys = []
 
             for d in discriminator:
                 if not hasattr(config, d):
-                    msg = f"Discriminator {d} not found in {config}"
-                    logger.error(msg)
-
-                    raise InternalError(msg)
+                    raise InternalError(f"Discriminator {d} not found in {config}")
 
                 keys.append(getattr(config, d))
 

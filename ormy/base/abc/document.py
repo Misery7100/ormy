@@ -26,7 +26,9 @@ class DocumentABC(AbstractABC):
     Abstract Base Class for Document-Oriented Object-Relational Mapping
     """
 
-    id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
+    id: DocumentID = Field(
+        default_factory=hex_uuid4,
+    )
 
     # ....................... #
 
@@ -197,7 +199,9 @@ class DocumentSingleABC(AbstractSingleABC):
     Abstract Base Class for Document-Oriented Object-Relational Mapping
     """
 
-    id: DocumentID = Field(title="Document ID", default_factory=hex_uuid4)
+    id: DocumentID = Field(
+        default_factory=hex_uuid4,
+    )
 
     # ....................... #
 
