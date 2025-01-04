@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Dict, List, Optional, Self, Type, TypeVar
 
+from ormy.base.error import InternalError
 from ormy.extension.meilisearch import (
     MeilisearchConfig,
     MeilisearchExtension,
@@ -176,7 +177,7 @@ class MongoWithMeilisearchBackgroundV2(MongoSingleBase, MeilisearchExtensionV2):
         try:
             cfg_meili = cls.get_extension_config(type_=MeilisearchConfig)
 
-        except ValueError:
+        except InternalError:
             cfg_meili = MeilisearchConfig()
 
         other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_meili]]
@@ -276,7 +277,7 @@ class MongoMeilisearchS3(MongoWithMeilisearchBackgroundV2, S3Extension):
         try:
             cfg_s3 = cls.get_extension_config(type_=S3Config)
 
-        except ValueError:
+        except InternalError:
             cfg_s3 = S3Config()
 
         other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_s3]]
@@ -423,7 +424,7 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
         try:
             cfg_redlock = cls.get_extension_config(type_=RedlockConfig)
 
-        except ValueError:
+        except InternalError:
             cfg_redlock = RedlockConfig()
 
         other_ext_configs = [x for x in cls.extension_configs if x not in [cfg_redlock]]

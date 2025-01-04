@@ -23,6 +23,7 @@ from ormy.base.pydantic import Base
 # ----------------------- #
 
 
+# TODO: merge settings option ?
 class MeilisearchSettings(MsSettings):
     """
     Meilisearch extension settings

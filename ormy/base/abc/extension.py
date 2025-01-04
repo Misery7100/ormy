@@ -84,8 +84,6 @@ class ExtensionABC(Base, ABC):
 
             raise InternalError(msg)
 
-        cls._logger.debug(f"Configuration for {cls.__name__}: {type(cfg)}")
-
         return cfg
 
     # ....................... #
