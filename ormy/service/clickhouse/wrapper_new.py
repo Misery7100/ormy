@@ -33,7 +33,6 @@ class ClickHouseSingleBase(AbstractSingleABC):
     config: ClassVar[ClickHouseConfig] = ClickHouseConfig()
     engine: ClassVar[Optional[engines.Engine]] = None
 
-    # _registry = {ClickHouseConfig: {}}
     _model: ClassVar[Optional[ClickHouseModel]] = None  # type: ignore[assignment]
 
     # ....................... #
@@ -45,12 +44,6 @@ class ClickHouseSingleBase(AbstractSingleABC):
 
         cls._register_subclass_helper(discriminator=["database", "table"])
         cls.__construct_model()
-        # cls._merge_registry()
-
-        # ClickHouseSingleBase._registry = cls._merge_registry_helper(
-        #     ClickHouseSingleBase._registry,
-        #     cls._registry,
-        # )
 
         cls._model.set_database(cls, cls._get_adatabase())  # type: ignore
 
@@ -107,6 +100,14 @@ class ClickHouseSingleBase(AbstractSingleABC):
         """Get full table name"""
 
         return f"{cls.config.database}.{cls.config.table}"
+
+    # ....................... #
+
+    @classmethod
+    def table_name(cls: Type[Ch]):
+        """Get table name"""
+
+        return cls.config.table
 
     # ....................... #
 
