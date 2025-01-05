@@ -1,4 +1,5 @@
 from typing import Optional
+from urllib.parse import quote_plus
 
 from pydantic import SecretStr
 
@@ -27,6 +28,21 @@ class MongoCredentials(Base):
     password: Optional[SecretStr] = None
     replicaset: Optional[str] = None
     directConnection: bool = True
+
+    # ....................... #
+
+    def url(self) -> str:
+        """
+        Get the MongoDB connection URL
+        """
+
+        username = self.username.get_secret_value() if self.username else None
+        password = self.password.get_secret_value() if self.password else None
+
+        if username and password:
+            return f"mongodb://{quote_plus(username)}:{quote_plus(password)}@{self.host}:{self.port}"
+
+        return f"mongodb://{self.host}:{self.port}"
 
 
 # ....................... #
@@ -63,3 +79,12 @@ class MongoConfig(ConfigABC):
         """
 
         return self._default_helper("collection")
+
+    # ....................... #
+
+    def url(self) -> str:
+        """
+        Get the MongoDB connection URL
+        """
+
+        return self.credentials.url()
