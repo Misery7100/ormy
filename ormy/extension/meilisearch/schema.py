@@ -38,11 +38,12 @@ class SortField(BaseModel):
     """
 
     key: str
-    title: str  # TODO: remove title
+    # title: str  # TODO: remove title
     default: bool = False
 
 
 # ----------------------- #
+# TODO: add filter operators (mb use a separate uniform interface)
 
 F = TypeVar("F", bound="FilterABC")
 
@@ -53,13 +54,12 @@ class FilterABC(ABC, BaseModel):
 
     Attributes:
         key (str): Key of the filter
-        title (str, optional): The filter title
         value (Any, optional): The filter value
         type (str): The filter type
     """
 
     key: str
-    title: Optional[str] = None  # TODO: remove title
+    # title: Optional[str] = None  # TODO: remove title
     value: Optional[Any] = None
     type: str = "abc"
 
@@ -78,7 +78,6 @@ class BooleanFilter(FilterABC):
 
     Attributes:
         key (str): Key of the filter
-        title (str): The filter title
         value (bool): The filter value
     """
 
@@ -103,8 +102,7 @@ class NumberFilter(FilterABC):
 
     Attributes:
         key (str): Key of the filter
-        title (str): The filter title
-        value (Tuple[float, float]): The filter value
+        value (Tuple[float | None, float | None]): The filter value
     """
 
     value: Tuple[Optional[float], Optional[float]] = (None, None)
@@ -136,8 +134,7 @@ class DatetimeFilter(FilterABC):
 
     Attributes:
         key (str): Key of the filter
-        title (str): The filter title
-        value (Tuple[int, int]): The filter value
+        value (Tuple[int | None, int | None]): The filter value
     """
 
     value: Tuple[Optional[int], Optional[int]] = (None, None)
@@ -169,7 +166,6 @@ class ArrayFilter(FilterABC):
 
     Attributes:
         key (str): Key of the filter
-        title (str): The filter title
         value (List[Any]): The filter value
     """
 
@@ -187,7 +183,7 @@ class ArrayFilter(FilterABC):
 
 # ....................... #
 
-SomeFilter = Annotated[
+AnyFilter = Annotated[
     Union[BooleanFilter, NumberFilter, DatetimeFilter, ArrayFilter],
     Field(discriminator="type"),
 ]
@@ -196,22 +192,10 @@ SomeFilter = Annotated[
 
 
 class SearchRequest(BaseModel):
-    query: str = Field(
-        default="",
-        title="Query",
-    )
-    sort: Optional[str] = Field(
-        default=None,
-        title="Sort Field",
-    )
-    order: SortOrder = Field(
-        default=SortOrder.desc,
-        title="Sort Order",
-    )
-    filters: List[SomeFilter] = Field(
-        default_factory=list,
-        title="Filters",
-    )
+    query: str = ""
+    sort: Optional[str] = None
+    order: SortOrder = SortOrder.desc
+    filters: List[AnyFilter] = []
 
 
 # ----------------------- #
@@ -248,11 +232,5 @@ class SearchResponse(TableResponse):
 
 
 class MeilisearchReference(BaseReference):
-    sort: List[SortField] = Field(
-        default_factory=list,
-        title="Sort Fields",
-    )
-    filters: List[SomeFilter] = Field(
-        default_factory=list,
-        title="Filters",
-    )
+    sort: List[SortField] = []
+    filters: List[AnyFilter] = []

@@ -12,6 +12,7 @@ from ormy.base.logging import LogManager
 
 from .config import MeilisearchConfig
 from .schema import (  # noqa: F401
+    AnyFilter,
     ArrayFilter,
     BooleanFilter,
     DatetimeFilter,
@@ -19,7 +20,6 @@ from .schema import (  # noqa: F401
     NumberFilter,
     SearchRequest,
     SearchResponse,
-    SomeFilter,
     SortField,
 )
 
@@ -107,7 +107,7 @@ class MeilisearchExtension(AbstractABC):
         if filterable := cfg.settings.filterable_attributes:
             for f in filterable:
                 if field := next((x for x in full_schema if x["key"] == f), None):
-                    filter_model: Optional[Type[SomeFilter]] = None
+                    filter_model: Optional[Type[AnyFilter]] = None
 
                     match field["type"]:
                         case "boolean":

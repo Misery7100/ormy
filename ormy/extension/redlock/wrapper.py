@@ -25,10 +25,9 @@ class RedlockExtension(ExtensionABC):
     """Redlock extension"""
 
     extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
-    # _registry = {RedlockConfig: {}}
 
-    _redlock_static: ClassVar[Optional[Redis]] = None
-    _aredlock_static: ClassVar[Optional[aioredis.Redis]] = None
+    __redlock_static: ClassVar[Optional[Redis]] = None
+    __aredlock_static: ClassVar[Optional[aioredis.Redis]] = None
 
     # ....................... #
 
@@ -41,12 +40,6 @@ class RedlockExtension(ExtensionABC):
             config=RedlockConfig,
             discriminator=["database", "collection"],
         )
-        # cls._merge_registry()
-
-        # RedlockExtension._registry = cls._merge_registry_helper(
-        #     RedlockExtension._registry,
-        #     cls._registry,
-        # )
 
     # ....................... #
 
@@ -73,7 +66,7 @@ class RedlockExtension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _redlock_static_client(cls):
+    def __redlock_static_client(cls):
         """
         Get static Redis client for lock purposes
 
@@ -83,24 +76,27 @@ class RedlockExtension(ExtensionABC):
 
         health = False
 
-        if cls._redlock_static is not None:
+        if cls.__redlock_static is not None:
             try:
-                health = cls._redlock_static.ping()
+                health = cls.__redlock_static.ping()
 
             except Exception:
                 pass
 
-        if not health or cls._redlock_static is None:
+        if not health or cls.__redlock_static is None:
             cfg = cls.get_extension_config(type_=RedlockConfig)
             url = cfg.url()
-            cls._redlock_static = Redis.from_url(url, decode_responses=True)
+            cls.__redlock_static = Redis.from_url(
+                url,
+                decode_responses=True,
+            )
 
-        return cls._redlock_static
+        return cls.__redlock_static
 
     # ....................... #
 
     @classmethod
-    async def _aredlock_static_client(cls):
+    async def __aredlock_static_client(cls):
         """
         Get static async Redis client for lock purposes
 
@@ -110,25 +106,28 @@ class RedlockExtension(ExtensionABC):
 
         health = False
 
-        if cls._aredlock_static is not None:
+        if cls.__aredlock_static is not None:
             try:
-                health = await cls._aredlock_static.ping()
+                health = await cls.__aredlock_static.ping()
 
             except Exception:
                 pass
 
-        if not health or cls._aredlock_static is None:
+        if not health or cls.__aredlock_static is None:
             cfg = cls.get_extension_config(type_=RedlockConfig)
             url = cfg.url()
-            cls._aredlock_static = aioredis.from_url(url, decode_responses=True)
+            cls.__aredlock_static = aioredis.from_url(
+                url,
+                decode_responses=True,
+            )
 
-        return cls._aredlock_static
+        return cls.__aredlock_static
 
     # ....................... #
 
     @classmethod
     @contextmanager
-    def _redlock_client(cls):
+    def __redlock_client(cls):
         """Get syncronous Redis client for lock purposes"""
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
@@ -145,7 +144,7 @@ class RedlockExtension(ExtensionABC):
 
     @classmethod
     @asynccontextmanager
-    async def _aredlock_client(cls):
+    async def __aredlock_client(cls):
         """Get asyncronous Redis client for lock purposes"""
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
@@ -168,11 +167,11 @@ class RedlockExtension(ExtensionABC):
         """Execute task"""
 
         if cls.__is_static_redlock():
-            c = cls._redlock_static_client()
+            c = cls.__redlock_static_client()
             return task(c)
 
         else:
-            with cls._redlock_client() as c:
+            with cls.__redlock_client() as c:
                 return task(c)
 
     # ....................... #
@@ -185,11 +184,11 @@ class RedlockExtension(ExtensionABC):
         """Execute async task"""
 
         if cls.__is_static_redlock():
-            c = await cls._aredlock_static_client()
+            c = await cls.__aredlock_static_client()
             return await task(c)
 
         else:
-            async with cls._aredlock_client() as c:
+            async with cls.__aredlock_client() as c:
                 return await task(c)
 
     # ....................... #

@@ -24,7 +24,6 @@ class S3Extension(ExtensionABC):
     """S3 extension"""
 
     extension_configs: ClassVar[List[Any]] = [S3Config()]
-    # _registry = {S3Config: {}}
 
     # ....................... #
 
@@ -37,14 +36,7 @@ class S3Extension(ExtensionABC):
             config=S3Config,
             discriminator="bucket",
         )
-        # cls._merge_registry()
-
-        # S3Extension._registry = cls._merge_registry_helper(
-        #     S3Extension._registry,
-        #     cls._registry,
-        # )
-
-        cls._s3_create_bucket()
+        cls.__s3_create_bucket()
 
     # ....................... #
 
@@ -58,13 +50,13 @@ class S3Extension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _s3_create_bucket(cls):
+    def __s3_create_bucket(cls):
         """Create a bucket"""
 
         cfg = cls.get_extension_config(type_=S3Config)
 
         if not cfg.is_default() and not cls._s3_bucket_exists():
-            with cls._s3_client() as client:  # type: ignore
+            with cls.__s3_client() as client:  # type: ignore
                 client.create_bucket(Bucket=cls._s3_get_bucket())
 
     # ....................... #
@@ -81,7 +73,7 @@ class S3Extension(ExtensionABC):
             result (bool): Whether the bucket exists
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             try:
                 client.head_bucket(Bucket=cls._s3_get_bucket())
                 return True
@@ -97,7 +89,7 @@ class S3Extension(ExtensionABC):
 
     @classmethod
     @contextmanager
-    def _s3_client(cls):
+    def __s3_client(cls):
         """Get syncronous S3 client"""
 
         cfg = cls.get_extension_config(type_=S3Config)
@@ -126,7 +118,7 @@ class S3Extension(ExtensionABC):
     def s3_list_buckets(cls):
         """List all buckets"""
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             return client.list_buckets()
 
     # ....................... #
@@ -143,7 +135,7 @@ class S3Extension(ExtensionABC):
             result (bool): Whether the file exists
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             try:
                 client.head_object(
                     Bucket=cls._s3_get_bucket(),
@@ -172,7 +164,7 @@ class S3Extension(ExtensionABC):
             tags (dict): File tags
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             tagging = client.get_object_tagging(
                 Bucket=cls._s3_get_bucket(),
                 Key=key,
@@ -192,7 +184,7 @@ class S3Extension(ExtensionABC):
             tags (dict): File tags
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             existing_tags = cls.s3_get_file_tags(key)
             merged_tags = {**existing_tags, **tags}
             new_tags = [{"Key": k, "Value": v} for k, v in merged_tags.items()]
@@ -215,7 +207,7 @@ class S3Extension(ExtensionABC):
             tags (list): File tags
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             existing_tags = cls.s3_get_file_tags(key)
             merged_tags = {k: v for k, v in existing_tags.items() if k not in tags}
             new_tags = [{"Key": k, "Value": v} for k, v in merged_tags.items()]
@@ -242,7 +234,7 @@ class S3Extension(ExtensionABC):
             response (TableResponse): Response
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             paginator = client.get_paginator("list_objects_v2")
             iterator = paginator.paginate(
                 Bucket=cls._s3_get_bucket(),
@@ -291,7 +283,7 @@ class S3Extension(ExtensionABC):
             key (str): File key
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             if cls.s3_file_exists(key):
                 if avoid_duplicates:
                     key_ = key.split(".")
@@ -341,7 +333,7 @@ class S3Extension(ExtensionABC):
             file (bytes): File content
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             return client.get_object(
                 Bucket=cls._s3_get_bucket(),
                 Key=key,
@@ -358,7 +350,7 @@ class S3Extension(ExtensionABC):
             key (str): File key
         """
 
-        with cls._s3_client() as client:  # type: ignore
+        with cls.__s3_client() as client:  # type: ignore
             return client.delete_object(
                 Bucket=cls._s3_get_bucket(),
                 Key=key,

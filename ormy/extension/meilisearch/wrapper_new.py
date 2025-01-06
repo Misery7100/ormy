@@ -21,6 +21,7 @@ from ormy.base.typing import AsyncCallable
 
 from .config import MeilisearchConfig
 from .schema import (
+    AnyFilter,
     ArrayFilter,
     BooleanFilter,
     DatetimeFilter,
@@ -28,7 +29,6 @@ from .schema import (
     NumberFilter,
     SearchRequest,
     SearchResponse,
-    SomeFilter,
     SortField,
 )
 
@@ -43,10 +43,9 @@ class MeilisearchExtensionV2(ExtensionABC):
     """Meilisearch extension"""
 
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
-    # _registry = {MeilisearchConfig: {}}
 
-    _meili_static: ClassVar[Optional[Client]] = None
-    _ameili_static: ClassVar[Optional[AsyncClient]] = None
+    __meili_static: ClassVar[Optional[Client]] = None
+    __ameili_static: ClassVar[Optional[AsyncClient]] = None
 
     # ....................... #
 
@@ -59,13 +58,7 @@ class MeilisearchExtensionV2(ExtensionABC):
             config=MeilisearchConfig,
             discriminator="index",
         )
-        # cls._merge_registry()
-        cls._meili_safe_create_or_update()
-
-        # MeilisearchExtensionV2._registry = cls._merge_registry_helper(
-        #     MeilisearchExtensionV2._registry,
-        #     cls._registry,
-        # )
+        cls.__meili_safe_create_or_update()
 
     # ....................... #
 
@@ -106,7 +99,7 @@ class MeilisearchExtensionV2(ExtensionABC):
         if filterable := cfg.settings.filterable_attributes:
             for f in filterable:
                 if field := next((x for x in full_schema if x["key"] == f), None):
-                    filter_model: Optional[Type[SomeFilter]] = None
+                    filter_model: Optional[Type[AnyFilter]] = None
 
                     match field["type"]:
                         case "boolean":
@@ -172,7 +165,7 @@ class MeilisearchExtensionV2(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def _meili_static_client(cls):
+    def __meili_static_client(cls):
         """
         Get static Meilisearch client
 
@@ -182,15 +175,15 @@ class MeilisearchExtensionV2(ExtensionABC):
 
         health = False
 
-        if cls._meili_static is not None:
+        if cls.__meili_static is not None:
             try:
-                check = cls._meili_static.health()
+                check = cls.__meili_static.health()
                 health = check.status == "available"
 
             except Exception:
                 pass
 
-        if not health or cls._meili_static is None:
+        if not health or cls.__meili_static is None:
             cfg = cls.get_extension_config(type_=MeilisearchConfig)
             url = cfg.url()
             key = cfg.credentials.master_key
@@ -201,18 +194,18 @@ class MeilisearchExtensionV2(ExtensionABC):
             else:
                 api_key = None
 
-            cls._meili_static = Client(
+            cls.__meili_static = Client(
                 url=url,
                 api_key=api_key,
                 custom_headers={"Content-Type": "application/json"},
             )
 
-        return cls._meili_static
+        return cls.__meili_static
 
     # ....................... #
 
     @classmethod
-    async def _ameili_static_client(cls):
+    async def __ameili_static_client(cls):
         """
         Get static async Meilisearch client
 
@@ -222,15 +215,15 @@ class MeilisearchExtensionV2(ExtensionABC):
 
         health = False
 
-        if cls._ameili_static is not None:
+        if cls.__ameili_static is not None:
             try:
-                check = await cls._ameili_static.health()
+                check = await cls.__ameili_static.health()
                 health = check.status == "available"
 
             except Exception:
                 pass
 
-        if not health or cls._ameili_static is None:
+        if not health or cls.__ameili_static is None:
             cfg = cls.get_extension_config(type_=MeilisearchConfig)
             url = cfg.url()
             key = cfg.credentials.master_key
@@ -241,13 +234,13 @@ class MeilisearchExtensionV2(ExtensionABC):
             else:
                 api_key = None
 
-            cls._ameili_static = AsyncClient(
+            cls.__ameili_static = AsyncClient(
                 url=url,
                 api_key=api_key,
                 custom_headers={"Content-Type": "application/json"},
             )
 
-        return cls._ameili_static
+        return cls.__ameili_static
 
     # ....................... #
 
@@ -259,11 +252,11 @@ class MeilisearchExtensionV2(ExtensionABC):
         """Execute task"""
 
         if cls.__is_static_meili():
-            c = cls._meili_static_client()
+            c = cls.__meili_static_client()
             return task(c)
 
         else:
-            with cls._meili_client() as c:
+            with cls.__meili_client() as c:
                 return task(c)
 
     # ....................... #
@@ -276,17 +269,17 @@ class MeilisearchExtensionV2(ExtensionABC):
         """Execute async task"""
 
         if cls.__is_static_meili():
-            c = await cls._ameili_static_client()
+            c = await cls.__ameili_static_client()
             return await task(c)
 
         else:
-            async with cls._ameili_client() as c:
+            async with cls.__ameili_client() as c:
                 return await task(c)
 
     # ....................... #
 
     @classmethod
-    def _meili_safe_create_or_update(cls: Type[M]):
+    def __meili_safe_create_or_update(cls: Type[M]):
         """
         Safely create or update the Meilisearch index.
         If the index does not exist, it will be created.
@@ -321,7 +314,7 @@ class MeilisearchExtensionV2(ExtensionABC):
 
     @classmethod  # TODO: move above
     @contextmanager
-    def _meili_client(cls):
+    def __meili_client(cls):
         """Get syncronous Meilisearch client"""
 
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
@@ -350,7 +343,7 @@ class MeilisearchExtensionV2(ExtensionABC):
 
     @classmethod  # TODO: move above
     @asynccontextmanager
-    async def _ameili_client(cls):
+    async def __ameili_client(cls):
         """Get asyncronous Meilisearch client"""
 
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
@@ -378,7 +371,7 @@ class MeilisearchExtensionV2(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def meili_health(cls: Type[M]) -> bool:
+    def _meili_health(cls: Type[M]) -> bool:
         """Check Meilisearch health"""
 
         def _task(c: Client):
@@ -392,6 +385,24 @@ class MeilisearchExtensionV2(ExtensionABC):
             return status
 
         return cls.__meili_execute_task(_task)
+
+    # ....................... #
+
+    @classmethod
+    async def _ameili_health(cls: Type[M]) -> bool:
+        """Check Meilisearch health"""
+
+        async def _task(c: AsyncClient):
+            try:
+                h = await c.health()
+                status = h.status == "available"
+
+            except Exception:
+                status = False
+
+            return status
+
+        return await cls.__ameili_execute_task(_task)
 
     # ....................... #
 

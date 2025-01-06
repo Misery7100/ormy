@@ -22,7 +22,7 @@ from .schema import (
     NumberFilter,
     SearchRequest,
     SearchResponse,
-    SomeFilter,
+    AnyFilter,
     SortOrder,
 )
 from .wrapper import MeilisearchExtension
@@ -39,7 +39,7 @@ __all__ = [
     "SortOrder",
     "SearchRequest",
     "SearchResponse",
-    "SomeFilter",
+    "AnyFilter",
     "MeilisearchReference",
     "ArrayFilter",
     "BooleanFilter",

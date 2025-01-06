@@ -25,12 +25,13 @@ M = TypeVar("M", bound="MongoSingleBase")
 # ----------------------- #
 
 
-class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
-    config: ClassVar[MongoConfig] = MongoConfig()
-    # _registry = {MongoConfig: {}}  #! - ?????
+class MongoSingleBase(DocumentSingleABC):
+    """MongoDB base class"""
 
-    _static: ClassVar[Optional[MongoClient]] = None
-    _astatic: ClassVar[Optional[AsyncIOMotorClient]] = None
+    config: ClassVar[MongoConfig] = MongoConfig()
+
+    __static: ClassVar[Optional[MongoClient]] = None
+    __astatic: ClassVar[Optional[AsyncIOMotorClient]] = None
 
     # ....................... #
 
@@ -40,17 +41,11 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
         super().__init_subclass__(**kwargs)
 
         cls._register_subclass_helper(discriminator=["database", "collection"])
-        # cls._merge_registry()
-
-        # MongoSingleBase._registry = cls._merge_registry_helper(
-        #     MongoSingleBase._registry,
-        #     cls._registry,
-        # )
 
     # ....................... #
 
     @classmethod
-    def _client(cls: Type[M]) -> MongoClient:
+    def __client(cls: Type[M]) -> MongoClient:
         """
         Get syncronous MongoDB client
 
@@ -60,9 +55,9 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
 
         health = False
 
-        if cls._static is not None:
+        if cls.__static is not None:
             try:
-                check = cls._static[cls.config.ping_database].command("ping")
+                check = cls.__static[cls.config.ping_database].command("ping")
                 health = check.get("ok", 0) == 1
 
             except ConnectionFailure as e:
@@ -76,16 +71,16 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             except Exception:
                 pass
 
-        if not health or cls._static is None:
+        if not health or cls.__static is None:
             creds = cls.config.credentials.model_dump_with_secrets()
-            cls._static = MongoClient(**creds)
+            cls.__static = MongoClient(**creds)
 
-        return cls._static
+        return cls.__static
 
     # ....................... #
 
     @classmethod
-    async def _aclient(cls: Type[M]) -> AsyncIOMotorClient:
+    async def __aclient(cls: Type[M]) -> AsyncIOMotorClient:
         """
         Get asyncronous MongoDB client
 
@@ -95,9 +90,9 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
 
         health = False
 
-        if cls._astatic is not None:
+        if cls.__astatic is not None:
             try:
-                check = await cls._astatic[cls.config.ping_database].command("ping")
+                check = await cls.__astatic[cls.config.ping_database].command("ping")
                 health = check.get("ok", 0) == 1
 
             except ConnectionFailure as e:
@@ -111,11 +106,11 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             except Exception:
                 pass
 
-        if not health or cls._astatic is None:
+        if not health or cls.__astatic is None:
             creds = cls.config.credentials.model_dump_with_secrets()
-            cls._astatic = AsyncIOMotorClient(**creds)
+            cls.__astatic = AsyncIOMotorClient(**creds)
 
-        return cls._astatic
+        return cls.__astatic
 
     # ....................... #
 
@@ -128,7 +123,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             database (pymongo.database.Database): Syncronous MongoDB database
         """
 
-        client = cls._client()
+        client = cls.__client()
 
         return client.get_database(cls.config.database)
 
@@ -143,7 +138,7 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             database (motor.motor_asyncio.AsyncIOMotorDatabase): Asyncronous MongoDB database
         """
 
-        client = await cls._aclient()
+        client = await cls.__aclient()
 
         return client.get_database(cls.config.database)
 
@@ -303,7 +298,6 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             inserted_ids = list(map(str, result.upserted_ids.values()))  # type: ignore
             successful_docs = [x for x in data if x.id in inserted_ids]
 
-        # Bypass errors ????
         except BulkWriteError as e:
             errors = e.details.get("writeErrors", [])
             error_idx = {err["index"]: err for err in errors}
@@ -331,7 +325,6 @@ class MongoSingleBase(DocumentSingleABC):  # TODO: add docstrings
             inserted_ids = list(map(str, result.upserted_ids.values()))  # type: ignore
             successful_docs = [x for x in data if x.id in inserted_ids]
 
-        # Bypass errors ????
         except BulkWriteError as e:
             errors = e.details.get("writeErrors", [])
             error_idx = {err["index"]: err for err in errors}
