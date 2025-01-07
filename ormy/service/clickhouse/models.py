@@ -91,12 +91,14 @@ class ClickHousePage:
 
 # ....................... #
 
-
+# TODO: async methods
 class ClickHouseQuerySet(query.QuerySet):
     def tabular(self) -> TabularData:
         qs = [r.to_dict(field_names=self._fields) for r in self]
 
         return TabularData(qs)
+
+    # ....................... #
 
     # ....................... #
 
@@ -117,7 +119,7 @@ class ClickHouseQuerySet(query.QuerySet):
 
 # ....................... #
 
-
+# TODO: async methods
 class ClickHouseAggregateQuerySet(query.AggregateQuerySet):
     def tabular(self) -> TabularData:
         all_fields = list(self._fields) + list(self._calculated_fields.keys())
@@ -140,7 +142,7 @@ class ClickHouseAggregateQuerySet(query.AggregateQuerySet):
 
 # ....................... #
 
-
+# TODO: async methods
 class ClickHouseModel(models.Model):
     @classmethod
     def objects_in(cls, database):

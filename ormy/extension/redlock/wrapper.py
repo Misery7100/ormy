@@ -74,16 +74,7 @@ class RedlockExtension(ExtensionABC):
             client (redis.Redis): Static Redis client
         """
 
-        health = False
-
-        if cls.__redlock_static is not None:
-            try:
-                health = cls.__redlock_static.ping()
-
-            except Exception:
-                pass
-
-        if not health or cls.__redlock_static is None:
+        if cls.__redlock_static is None:
             cfg = cls.get_extension_config(type_=RedlockConfig)
             url = cfg.url()
             cls.__redlock_static = Redis.from_url(
@@ -104,16 +95,7 @@ class RedlockExtension(ExtensionABC):
             client (redis.Redis): Static async Redis client
         """
 
-        health = False
-
-        if cls.__aredlock_static is not None:
-            try:
-                health = await cls.__aredlock_static.ping()
-
-            except Exception:
-                pass
-
-        if not health or cls.__aredlock_static is None:
+        if cls.__aredlock_static is None:
             cfg = cls.get_extension_config(type_=RedlockConfig)
             url = cfg.url()
             cls.__aredlock_static = aioredis.from_url(

@@ -8,10 +8,10 @@ from motor.motor_asyncio import (
 from pymongo import InsertOne, MongoClient, UpdateMany, UpdateOne  # noqa: F401
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo.errors import BulkWriteError, ConnectionFailure, OperationFailure
+from pymongo.errors import BulkWriteError
 
 from ormy.base.abc import DocumentSingleABC
-from ormy.base.error import BadInput, Conflict, Forbidden, InternalError, NotFound
+from ormy.base.error import BadInput, Conflict, NotFound
 from ormy.base.generic import TabularData
 from ormy.base.typing import DocumentID
 
@@ -53,25 +53,7 @@ class MongoSingleBase(DocumentSingleABC):
             client (pymongo.MongoClient): Syncronous MongoDB client
         """
 
-        health = False
-
-        if cls.__static is not None:
-            try:
-                check = cls.__static[cls.config.ping_database].command("ping")
-                health = check.get("ok", 0) == 1
-
-            except ConnectionFailure as e:
-                cls._logger.error(f"Connection failure: {e}")
-                raise InternalError(e._message)
-
-            except OperationFailure as e:
-                cls._logger.error(f"Operation failure: {e}")
-                raise Forbidden(e._message)
-
-            except Exception:
-                pass
-
-        if not health or cls.__static is None:
+        if cls.__static is None:
             creds = cls.config.credentials.model_dump_with_secrets()
             cls.__static = MongoClient(**creds)
 
@@ -88,25 +70,7 @@ class MongoSingleBase(DocumentSingleABC):
             client (motor.motor_asyncio.AsyncIOMotorClient): Asyncronous MongoDB client
         """
 
-        health = False
-
-        if cls.__astatic is not None:
-            try:
-                check = await cls.__astatic[cls.config.ping_database].command("ping")
-                health = check.get("ok", 0) == 1
-
-            except ConnectionFailure as e:
-                cls._logger.error(f"Connection failure: {e}")
-                raise InternalError(e._message)
-
-            except OperationFailure as e:
-                cls._logger.error(f"Operation failure: {e}")
-                raise Forbidden(e._message)
-
-            except Exception:
-                pass
-
-        if not health or cls.__astatic is None:
+        if cls.__astatic is None:
             creds = cls.config.credentials.model_dump_with_secrets()
             cls.__astatic = AsyncIOMotorClient(**creds)
 

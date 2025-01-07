@@ -173,17 +173,7 @@ class MeilisearchExtensionV2(ExtensionABC):
             client (meilisearch_python_sdk.Client): Static Meilisearch client
         """
 
-        health = False
-
-        if cls.__meili_static is not None:
-            try:
-                check = cls.__meili_static.health()
-                health = check.status == "available"
-
-            except Exception:
-                pass
-
-        if not health or cls.__meili_static is None:
+        if cls.__meili_static is None:
             cfg = cls.get_extension_config(type_=MeilisearchConfig)
             url = cfg.url()
             key = cfg.credentials.master_key
@@ -213,17 +203,7 @@ class MeilisearchExtensionV2(ExtensionABC):
             client (meilisearch_python_sdk.AsyncClient): Static async Meilisearch client
         """
 
-        health = False
-
-        if cls.__ameili_static is not None:
-            try:
-                check = await cls.__ameili_static.health()
-                health = check.status == "available"
-
-            except Exception:
-                pass
-
-        if not health or cls.__ameili_static is None:
+        if cls.__ameili_static is None:
             cfg = cls.get_extension_config(type_=MeilisearchConfig)
             url = cfg.url()
             key = cfg.credentials.master_key
