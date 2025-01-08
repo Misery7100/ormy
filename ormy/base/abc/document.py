@@ -272,8 +272,9 @@ class DocumentSingleABC(AbstractSingleABC):
         for k in keys:
             val = data.get(k, IGNORE)
 
-            if val != IGNORE and hasattr(self, k):
-                setattr(self, k, val)
+            if val != IGNORE and k in self.model_fields:
+                if not self.model_fields[k].frozen:
+                    setattr(self, k, val)
 
         if autosave:
             return self.save()
@@ -308,8 +309,9 @@ class DocumentSingleABC(AbstractSingleABC):
         for k in keys:
             val = data.get(k, IGNORE)
 
-            if val != IGNORE and hasattr(self, k):
-                setattr(self, k, val)
+            if val != IGNORE and k in self.model_fields:
+                if not self.model_fields[k].frozen:
+                    setattr(self, k, val)
 
         if autosave:
             return await self.asave()
