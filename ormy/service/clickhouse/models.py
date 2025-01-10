@@ -1,3 +1,4 @@
+from copy import copy
 from math import ceil
 from typing import Any, List
 
@@ -105,6 +106,47 @@ class ClickHouseQuerySet(query.QuerySet):
         qs = [r.to_dict(field_names=self._fields) for r in self]
 
         return TabularData(qs)
+
+    # ....................... #
+
+    async def atabular(self) -> TabularData:
+        qs = [r.to_dict(field_names=self._fields) async for r in self]
+
+        return TabularData(qs)
+
+    # ....................... #
+
+    async def __aiter__(self):
+        """
+        Iterates over the model instances matching this queryset
+        """
+        async for r in self._database.aselect(
+            self.as_sql(),
+            self._model_cls,
+        ):
+            yield r
+
+    # ....................... #
+
+    async def agetitem(self, s):
+        if isinstance(s, int):
+            # Single index
+            assert s >= 0, "negative indexes are not supported"
+            qs = copy(self)
+            qs._limits = (s, 1)
+            return await anext(qs.__aiter__())  # noqa: F821
+
+        else:
+            # Slice
+            assert s.step in (None, 1), "step is not supported in slices"
+            start = s.start or 0
+            stop = s.stop or 2**63 - 1
+            assert start >= 0 and stop >= 0, "negative indexes are not supported"
+            assert start <= stop, "start of slice cannot be smaller than its end"
+            qs = copy(self)
+            qs._limits = (start, stop - start)
+
+            return qs
 
     # ....................... #
 
@@ -243,6 +285,14 @@ class ClickHouseAggregateQuerySet(ClickHouseQuerySet, query.AggregateQuerySet):
     def tabular(self) -> TabularData:
         all_fields = list(self._fields) + list(self._calculated_fields.keys())
         qs = [r.to_dict(field_names=all_fields) for r in self]
+
+        return TabularData(qs)
+
+    # ....................... #
+
+    async def atabular(self) -> TabularData:
+        all_fields = list(self._fields) + list(self._calculated_fields.keys())
+        qs = [r.to_dict(field_names=all_fields) async for r in self]
 
         return TabularData(qs)
 
