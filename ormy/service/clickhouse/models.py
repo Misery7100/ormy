@@ -117,9 +117,8 @@ class ClickHouseQuerySet(query.QuerySet):
     # ....................... #
 
     async def __aiter__(self):
-        """
-        Iterates over the model instances matching this queryset
-        """
+        """Iterates over the model instances matching this queryset"""
+
         async for r in self._database.aselect(
             self.as_sql(),
             self._model_cls,
@@ -151,9 +150,7 @@ class ClickHouseQuerySet(query.QuerySet):
     # ....................... #
 
     async def acount(self):
-        """
-        Returns the number of matching model instances.
-        """
+        """Returns the number of matching model instances."""
 
         if self._distinct or self._limits:
             # Use a subquery, since a simple count won't be accurate
@@ -282,6 +279,14 @@ class ClickHouseQuerySet(query.QuerySet):
 
 
 class ClickHouseAggregateQuerySet(ClickHouseQuerySet, query.AggregateQuerySet):
+    async def __aiter__(self):
+        """Iterates using ad-hoc model"""
+
+        async for r in self._database.aselect(self.as_sql()):
+            yield r
+
+    # ....................... #
+
     def tabular(self) -> TabularData:
         all_fields = list(self._fields) + list(self._calculated_fields.keys())
         qs = [r.to_dict(field_names=all_fields) for r in self]
