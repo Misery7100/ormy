@@ -219,6 +219,8 @@ class DocumentSingleABC(AbstractSingleABC):
 
     @classmethod
     def __parse_semi_frozen_fields(cls: Type[Ds]):
+        """Parse semi-frozen fields"""
+        
         new = {}
 
         for field, value in cls.semi_frozen_fields.items():
