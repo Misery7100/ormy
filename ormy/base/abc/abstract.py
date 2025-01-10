@@ -1,11 +1,24 @@
 import inspect
 import logging
 from abc import ABC, abstractmethod  # noqa: F401
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    get_args,
+)
+
+from pydantic import BaseModel, model_validator
 
 from ormy.base.error import InternalError
 from ormy.base.logging import LogLevel, LogManager
-from ormy.base.pydantic import Base
+from ormy.base.pydantic import IGNORE, Base
 
 from .config import ConfigABC
 from .registry import Registry
@@ -67,6 +80,8 @@ class AbstractABC(Base, ABC):
     # ....................... #
 
     def __init_subclass__(cls: Type[A], **kwargs):
+        """Initialize subclass"""
+
         cls._logger = LogManager.get_logger(cls.__name__)
 
         super().__init_subclass__(**kwargs)
@@ -97,7 +112,7 @@ class AbstractABC(Base, ABC):
     @classmethod
     def _merge_configs(cls: Type[A]):
         """
-        ...
+        Merge configurations for the subclass
         """
 
         parents = inspect.getmro(cls)[1:]
@@ -179,8 +194,6 @@ class AbstractABC(Base, ABC):
 
 
 # ----------------------- #
-# ----------------------- #
-# ----------------------- #
 
 
 class AbstractSingleABC(Base, ABC):
@@ -199,8 +212,8 @@ class AbstractSingleABC(Base, ABC):
 
         super().__init_subclass__(**kwargs)
 
-        cls._update_ignored_types()
-        cls._merge_configs()
+        cls.__update_ignored_types()
+        cls.__merge_configs()
 
         if cls.config is not None:
             cls.set_log_level(cls.config.log_level)
@@ -221,7 +234,7 @@ class AbstractSingleABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def _update_ignored_types(cls: Type[As]):
+    def __update_ignored_types(cls: Type[As]):
         """Update ignored types for the model configuration"""
 
         ignored_types = cls.model_config.get("ignored_types", tuple())
@@ -235,7 +248,7 @@ class AbstractSingleABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def _merge_configs(cls: Type[As]):
+    def __merge_configs(cls: Type[As]):
         """Merge configurations for the subclass"""
 
         parents = inspect.getmro(cls)[1:]
@@ -285,3 +298,160 @@ class AbstractSingleABC(Base, ABC):
             config=cls.config,
             logger=cls._logger,
         )
+
+
+# ----------------------- #
+
+ValueOperator = Literal["==", "!=", "<", "<=", ">", ">=", "array_contains"]
+ArrayOperator = Literal["in", "not_in", "array_contains_any"]
+ValueType = Optional[str | bool | int | float]
+AbstractContext = Tuple[str, ValueOperator | ArrayOperator, ValueType | List[ValueType]]
+
+# ....................... #
+
+
+class ContextItem(BaseModel):
+    """Context item"""
+
+    operator: ValueOperator | ArrayOperator
+    field: str
+    value: ValueType | List[ValueType]
+
+    # ....................... #
+
+    @model_validator(mode="after")
+    def validate_operator(self):
+        """Validate operator"""
+
+        if self.operator in get_args(ValueOperator):
+            if isinstance(self.value, list):
+                raise InternalError("Value operator cannot be used with list")
+
+        elif self.operator in get_args(ArrayOperator):
+            if not isinstance(self.value, list):
+                raise InternalError("Array operator must be used with list")
+
+        else:
+            raise InternalError(f"Invalid operator: {self.operator}")
+
+        return self
+
+    # ....................... #
+
+    def evaluate(self, model: BaseModel) -> bool:
+        """
+        Evaluate context item
+
+        Args:
+            model (BaseModel): Model to evaluate
+
+        Returns:
+            res (bool): Evaluation result
+        """
+
+        model_value = getattr(model, self.field, IGNORE)
+
+        if model_value == IGNORE:
+            return False
+
+        if self.operator in get_args(ValueOperator):
+            return self.__evaluate_value_operator(model_value)
+
+        elif self.operator in get_args(ArrayOperator):
+            return self.__evaluate_array_operator(model_value)
+
+        return False
+
+    # ....................... #
+
+    def __evaluate_value_operator(self, model_value: Any) -> bool:
+        """
+        Evaluate value operator
+
+        Args:
+            model_value (Any): Model value
+
+        Returns:
+            res (bool): Evaluation result
+        """
+
+        if self.operator == "array_contains":
+            if not isinstance(model_value, list):
+                raise InternalError(
+                    f"Operator `{self.operator}` must be used with list"
+                )
+
+            return self.value in model_value
+
+        return eval(f"{model_value} {self.operator} {self.value}")
+
+    # ....................... #
+
+    def __evaluate_array_operator(self, model_value: Any) -> bool:
+        """
+        Evaluate array operator
+
+        Args:
+            model_value (Any): Model value
+
+        Returns:
+            res (bool): Evaluation result
+        """
+
+        if self.operator == "in":
+            return self.value in model_value
+
+        elif self.operator == "not_in":
+            return self.value not in model_value
+
+        elif self.operator == "array_contains_any":
+            return any(self.value in item for item in model_value)
+
+        return False
+
+
+# ....................... #
+
+
+class SemiFrozenField(BaseModel):
+    """Semi frozen field"""
+
+    context: Optional[List[AbstractContext] | AbstractContext] = None
+    mode: Literal["and", "or"] = "and"
+
+    # ....................... #
+
+    def evaluate(self, model: BaseModel) -> bool:
+        """
+        Evaluate semi frozen field
+
+        Args:
+            model (BaseModel): Model to evaluate
+
+        Returns:
+            res (bool): Evaluation result
+        """
+
+        if self.context:
+            if not isinstance(self.context, list):
+                context = [self.context]
+
+            else:
+                context = self.context
+
+            res = [
+                ContextItem(
+                    field=field,
+                    operator=operator,
+                    value=value,
+                ).evaluate(model)
+                for field, operator, value in context
+            ]
+
+            if self.mode == "and":
+                return all(res)
+
+            elif self.mode == "or":
+                return any(res)
+
+        return True

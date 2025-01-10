@@ -1,13 +1,14 @@
 from abc import abstractmethod
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, ClassVar, Dict, Mapping, Optional, Type, TypeVar, cast
 
 from pydantic import Field
 
+from ormy.base.error import Conflict
 from ormy.base.func import hex_uuid4
 from ormy.base.logging import LogManager
 from ormy.base.pydantic import IGNORE
 
-from .abstract import AbstractABC, AbstractSingleABC
+from .abstract import AbstractABC, AbstractSingleABC, SemiFrozenField
 from .config import ConfigABC
 from .typing import AbstractData, DocumentID
 
@@ -204,6 +205,31 @@ class DocumentSingleABC(AbstractSingleABC):
         default_factory=hex_uuid4,
     )
 
+    semi_frozen_fields: ClassVar[Mapping[str, SemiFrozenField | Dict[str, Any]]] = {}
+
+    # ....................... #
+
+    def __init_subclass__(cls: Type[Ds], **kwargs):
+        """Initialize subclass"""
+
+        super().__init_subclass__(**kwargs)
+        cls.__parse_semi_frozen_fields()
+
+    # ....................... #
+
+    @classmethod
+    def __parse_semi_frozen_fields(cls: Type[Ds]):
+        new = {}
+
+        for field, value in cls.semi_frozen_fields.items():
+            if isinstance(value, dict):
+                new[field] = SemiFrozenField(**value)
+
+            else:
+                new[field] = value
+
+        cls.semi_frozen_fields = new
+
     # ....................... #
 
     @classmethod
@@ -250,6 +276,7 @@ class DocumentSingleABC(AbstractSingleABC):
         self: Ds,
         data: AbstractData,
         autosave: bool = True,
+        soft_frozen: bool = True,
     ) -> Ds:
         """
         Update the document with the given data
@@ -273,8 +300,27 @@ class DocumentSingleABC(AbstractSingleABC):
             val = data.get(k, IGNORE)
 
             if val != IGNORE and k in self.model_fields:
-                if not self.model_fields[k].frozen:
-                    setattr(self, k, val)
+                if k in self.semi_frozen_fields.keys():
+                    _semi = self.semi_frozen_fields[k]
+                    semi = cast(SemiFrozenField, _semi)
+
+                    if semi.evaluate(self):
+                        if not soft_frozen:
+                            raise Conflict(
+                                f"Field {k} is semi-frozen within context {semi.context}"
+                            )
+
+                        else:
+                            continue
+
+                elif self.model_fields[k].frozen:
+                    if not soft_frozen:
+                        raise Conflict(f"Field {k} is frozen")
+
+                    else:
+                        continue
+
+                setattr(self, k, val)
 
         if autosave:
             return self.save()
@@ -287,6 +333,7 @@ class DocumentSingleABC(AbstractSingleABC):
         self: Ds,
         data: AbstractData,
         autosave: bool = True,
+        soft_frozen: bool = True,
     ) -> Ds:
         """
         Update the document with the given data
@@ -310,8 +357,27 @@ class DocumentSingleABC(AbstractSingleABC):
             val = data.get(k, IGNORE)
 
             if val != IGNORE and k in self.model_fields:
-                if not self.model_fields[k].frozen:
-                    setattr(self, k, val)
+                if k in self.semi_frozen_fields.keys():
+                    _semi = self.semi_frozen_fields[k]
+                    semi = cast(SemiFrozenField, _semi)
+
+                    if semi.evaluate(self):
+                        if not soft_frozen:
+                            raise Conflict(
+                                f"Field {k} is semi-frozen within context {semi.context}"
+                            )
+
+                        else:
+                            continue
+
+                elif self.model_fields[k].frozen:
+                    if not soft_frozen:
+                        raise Conflict(f"Field {k} is frozen")
+
+                    else:
+                        continue
+
+                setattr(self, k, val)
 
         if autosave:
             return await self.asave()
