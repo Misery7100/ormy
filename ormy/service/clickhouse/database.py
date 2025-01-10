@@ -22,7 +22,7 @@ class AsyncDatabase(database.Database):
 
     # ....................... #
 
-    async def _asend(self, data, settings: Any = None, stream: bool = False):
+    async def _asend_stream(self, data, settings: Any = None):
         if isinstance(data, str):
             data = data.encode("utf-8")
 
@@ -31,29 +31,42 @@ class AsyncDatabase(database.Database):
 
         params = self._build_params(settings)
 
-        if stream:
-            async with httpx.AsyncClient(
-                auth=(self.__username, self.__password)
-            ) as session:
-                async with session.stream(
-                    method="POST",
-                    url=self.db_url,
-                    params=params,
-                    content=data,
-                    timeout=self.timeout,
-                ) as r:
-                    return r
+        async with httpx.AsyncClient(
+            auth=(self.__username, self.__password)
+        ) as session:
+            async with session.stream(
+                method="POST",
+                url=self.db_url,
+                params=params,
+                content=data,
+                timeout=self.timeout,
+            ) as r:
+                if r.status_code != 200:
+                    raise database.ServerError(r.text)
 
-        else:
-            async with httpx.AsyncClient(
-                auth=(self.__username, self.__password)
-            ) as session:
-                r = await session.post(
-                    url=self.db_url,
-                    params=params,
-                    content=data,
-                    timeout=self.timeout,
-                )
+                async for line in r.aiter_lines():
+                    yield line
+
+    # ....................... #
+
+    async def _asend(self, data, settings: Any = None):
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+
+            if self.log_statements:
+                logger.info(data)
+
+        params = self._build_params(settings)
+
+        async with httpx.AsyncClient(
+            auth=(self.__username, self.__password)
+        ) as session:
+            r = await session.post(
+                url=self.db_url,
+                params=params,
+                content=data,
+                timeout=self.timeout,
+            )
 
         if r.status_code != 200:
             raise database.ServerError(r.text)
@@ -73,15 +86,14 @@ class AsyncDatabase(database.Database):
         """
         query += " FORMAT TabSeparatedWithNamesAndTypes"
         query = self._substitute(query, model_class)
-        r = await self._asend(query, settings, True)
+        lines = self._asend_stream(query, settings)
 
-        lines = r.iter_lines()
-        field_names = utils.parse_tsv(next(lines))
-        field_types = utils.parse_tsv(next(lines))
+        field_names = utils.parse_tsv(await anext(lines))  # noqa: F821
+        field_types = utils.parse_tsv(await anext(lines))  # noqa: F821
         model_class = model_class or models.ModelBase.create_ad_hoc_model(
             zip(field_names, field_types)
         )
-        for line in lines:
+        async for line in lines:
             # skip blank line left by WITH TOTALS modifier
             if line:
                 yield model_class.from_tsv(  # type: ignore
@@ -168,7 +180,7 @@ class AsyncDatabase(database.Database):
 
     # ....................... #
 
-    async def araw(self, query, settings=None, stream=False):
+    async def araw(self, query, settings=None):
         """
         Performs a query and returns its output as text.
 
@@ -178,7 +190,7 @@ class AsyncDatabase(database.Database):
         """
         query = self._substitute(query, None)
 
-        return (await self._asend(query, settings=settings, stream=stream)).text
+        return (await self._asend(query, settings=settings)).text
 
     # ....................... #
 
