@@ -168,7 +168,7 @@ class ClickHouseQuerySet(query.QuerySet):
 
     # ....................... #
 
-    async def __apaginate(self, page_num=1, page_size=100):
+    async def _apaginate(self, page_num=1, page_size=100):
         """
         Returns a single page of model instances that match the queryset.
         Note that `order_by` should be used first, to ensure a correct
@@ -200,7 +200,7 @@ class ClickHouseQuerySet(query.QuerySet):
     # ....................... #
 
     async def apaginate(self, page_num: int = 1, page_size: int = 100):
-        p = await self.__apaginate(
+        p = await self._apaginate(
             page_num=page_num,
             page_size=page_size,
         )
@@ -318,7 +318,7 @@ class ClickHouseAggregateQuerySet(ClickHouseQuerySet, query.AggregateQuerySet):
     # ....................... #
 
     async def apaginate(self, page_num: int = 1, page_size: int = 100):
-        p = await self.__apaginate(
+        p = await self._apaginate(
             page_num=page_num,
             page_size=page_size,
         )
