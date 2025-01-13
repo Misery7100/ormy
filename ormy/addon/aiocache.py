@@ -84,14 +84,25 @@ class RedisCache(AiocacheRedisCache, BaseCache):
             print("!!!!!!", [k.decode() for k in keys])
 
             if except_keys:
-                keys = [k for k in keys if k.decode() not in except_keys]
+                keys = [
+                    k
+                    for k in keys
+                    if ":".join(k.decode().split(":")[1:]) not in except_keys
+                ]
+
+                print("!!!!!! Except keys", [k.decode() for k in keys])
 
             if except_patterns:
                 keys = [
                     k
                     for k in keys
-                    if not any(re.search(p, k.decode()) for p in except_patterns)
+                    if not any(
+                        re.search(p, ":".join(k.decode().split(":")[1:]))
+                        for p in except_patterns
+                    )
                 ]
+
+                print("!!!!!! Except patterns", [k.decode() for k in keys])
 
             if keys:
                 await self.client.delete(*keys)
@@ -190,16 +201,38 @@ class _cached(aiocache_cached):
 # ....................... #
 
 
+def generate_pattern(criteria: Dict[str, Any]):
+    """
+    Generate a regex pattern to match all key-value pairs in the given dictionary.
+
+    Args:
+        criteria (dict): A dictionary where keys are parameters and values are expected values.
+
+    Returns:
+        pattern (str): A regex pattern string.
+    """
+
+    patterns = [
+        rf"(?=.*(?:^|;){re.escape(k)}={re.escape(str(v))}(?:;|$))"
+        for k, v in criteria.items()
+    ]
+    # Combine all patterns into one
+    return "".join(patterns)
+
+
+# ....................... #
+
+
 def _key_factory(
-    plain: Optional[str] = None,
-    from_keys: Optional[List[str]] = None,
+    name: str,
+    include_params: Optional[List[str]] = None,
 ):
     """
     Create a cache key for a function.
 
     Args:
-        plain (Optional[str]): A plain string to use as the cache key.
-        from_keys (Optional[List[str]]): A list of keys to use as the cache key.
+        name (str): A name to use.
+        include_params (List[str], optional): A list of keys to use as the cache key.
 
     Returns:
         key_builder (Callable): A function that creates a cache key for a function.
@@ -221,17 +254,11 @@ def _key_factory(
         arg_names: List[str] = f.__code__.co_varnames[: f.__code__.co_argcount]
         defaults = f.__defaults__ or ()
         pos_defaults = dict(zip(arg_names[-len(defaults) :], defaults))
-        key_dict: Dict[str, Any] = {}
+        key_dict: Dict[str, Any] = {"name": name}
         self_or_cls = args[0]
 
-        if from_keys is None:
-            if plain is None:
-                raise InternalError("Either `plain` or `from_keys` must be provided")
-
-            return plain
-
-        else:
-            for u in from_keys:
+        if include_params:
+            for u in include_params:
                 if u.startswith("self."):
                     attr = u.split(".")[1]
                     key_dict[attr] = _safe_dump(getattr(self_or_cls, attr))
@@ -295,8 +322,8 @@ def _extract_namespace(target_entity, target_id, func, self_or_cls, *args, **kwa
 
 
 def cache(
-    plain: Optional[str] = None,
-    from_keys: Optional[List[str]] = None,
+    name: str,
+    include_params: Optional[List[str]] = None,
     **cache_kwargs,
 ):
     """
@@ -323,7 +350,7 @@ def cache(
                 **kwargs,
             )
 
-            cache_kwargs["key_builder"] = _key_factory(plain, from_keys)
+            cache_kwargs["key_builder"] = _key_factory(name, include_params)
             cache_kwargs["namespace"] = f"{namespace}:{_id}"
 
             return _cached(**cache_kwargs)(func)(self_or_cls, *args, **kwargs)
