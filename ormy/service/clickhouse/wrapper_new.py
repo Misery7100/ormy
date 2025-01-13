@@ -15,6 +15,7 @@ from infi.clickhouse_orm import (  # type: ignore[import-untyped]
 )
 
 from ormy.base.abc import AbstractSingleABC
+from ormy.base.error import InternalError
 
 from .config import ClickHouseConfig
 from .func import get_clickhouse_db
@@ -92,6 +93,30 @@ class ClickHouseSingleBase(AbstractSingleABC):
             "table_name",
             lambda: cls.config.table,  # type: ignore
         )
+
+    # ....................... #
+
+    @classmethod
+    def ch(cls: Type[Ch], field: str):
+        """
+        Get ClickHouse field from infi.clickhouse_orm model
+
+        Args:
+            field (str): Field name
+
+        Returns:
+            res (Any): infi.clickhouse_orm field
+        """
+
+        if cls._model:
+            f = cls._model.get_field(field)
+
+            if f:
+                return f
+
+            raise InternalError(f"Field `{field}` not found in `{cls.__name__}`")
+
+        raise InternalError(f"Model `{cls.__name__}_infi` not found")
 
     # ....................... #
 
