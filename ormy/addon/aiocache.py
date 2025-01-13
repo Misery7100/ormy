@@ -1,17 +1,120 @@
 import asyncio
 import functools
 import json
+import re
+import time
+from abc import abstractmethod
 from typing import Any, Dict, List, Optional
 
 import anyio
 from aiocache import Cache as AioCache  # type: ignore[import-untyped]
 from aiocache import cached as aiocache_cached  # type: ignore[import-untyped]
-from aiocache.decorators import _get_cache, logger  # type: ignore[import-untyped]
+from aiocache.backends.redis import (  # type: ignore[import-untyped]
+    RedisCache as AiocacheRedisCache,
+)
+from aiocache.base import API  # type: ignore[import-untyped]
+from aiocache.base import BaseCache as AioBaseCache  # type: ignore[import-untyped]
+from aiocache.decorators import logger  # type: ignore[import-untyped]
 from aiocache.factory import caches  # type: ignore[import-untyped]
 
 from ormy.base.error import InternalError
 
 # ----------------------- #
+
+
+class BaseCache(AioBaseCache):
+    @API.register
+    @API.aiocache_enabled(fake_return=True)
+    @API.timeout
+    @API.plugins
+    async def clear(
+        self,
+        namespace: Optional[str] = None,
+        _conn: Optional[Any] = None,
+        except_keys: Optional[List[str]] = None,
+        except_patterns: Optional[List[str]] = None,
+    ):
+        """
+        Clears the cache in the cache namespace. If an alternative namespace is given, it will
+        clear those ones instead.
+
+        :param namespace: str alternative namespace to use
+        :param timeout: int or float in seconds specifying maximum timeout
+            for the operations to last
+        :returns: True
+        :raises: :class:`asyncio.TimeoutError` if it lasts more than self.timeout
+        """
+        start = time.monotonic()
+        ret = await self._clear(
+            namespace,
+            _conn=_conn,
+            except_keys=except_keys,
+            except_patterns=except_patterns,
+        )
+        logger.debug("CLEAR %s %d (%.4f)s", namespace, ret, time.monotonic() - start)
+        return ret
+
+    # ....................... #
+
+    @abstractmethod
+    async def _clear(
+        self,
+        namespace: Optional[str] = None,
+        _conn: Optional[Any] = None,
+        except_keys: Optional[List[str]] = None,
+        except_patterns: Optional[List[str]] = None,
+    ):
+        raise NotImplementedError()
+
+
+# ....................... #
+
+
+class RedisCache(AiocacheRedisCache, BaseCache):
+    async def _clear(
+        self,
+        namespace: Optional[str] = None,
+        _conn: Optional[Any] = None,
+        except_keys: Optional[List[str]] = None,
+        except_patterns: Optional[List[str]] = None,
+    ):
+        if namespace:
+            keys = await self.client.keys("{}:*".format(namespace))
+
+            print("!!!!!!", [k.decode() for k in keys])
+
+            if except_keys:
+                keys = [k for k in keys if k.decode() not in except_keys]
+
+            if except_patterns:
+                keys = [
+                    k
+                    for k in keys
+                    if not any(re.match(p, k.decode()) for p in except_patterns)
+                ]
+
+            if keys:
+                await self.client.delete(*keys)
+
+        else:
+            await self.client.flushdb()
+
+        return True
+
+
+# ....................... #
+
+
+class CustomCache(AioCache):
+    REDIS = RedisCache
+
+    # ....................... #
+
+    def __new__(cls, cache_class, **kwargs) -> AioBaseCache | BaseCache:
+        return super().__new__(cache_class, **kwargs)
+
+
+# ....................... #
 
 
 class _cached(aiocache_cached):
@@ -21,12 +124,12 @@ class _cached(aiocache_cached):
 
     def __call__(self, f):
         if self.alias:
-            self.cache = caches.get(self.alias)
+            self.cache = caches.get(self.alias)  #! ???
             for arg in ("serializer", "namespace", "plugins"):
                 if getattr(self, f"_{arg}", None) is not None:
                     logger.warning(f"Using cache alias; ignoring '{arg}' argument.")
         else:
-            self.cache = _get_cache(
+            self.cache = CustomCache(
                 cache=self._cache,
                 serializer=self._serializer,
                 namespace=self._namespace,
@@ -245,6 +348,8 @@ def inline_cache_clear(
     target_entity: Optional[str] = None,
     target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
+    except_keys: Optional[List[str]] = None,
+    except_patterns: Optional[List[str]] = None,
     cache_kwargs: Dict[str, Any] = {},
     **kwargs,
 ):
@@ -257,6 +362,8 @@ def inline_cache_clear(
         target_entity (Optional[str]): The entity to clear the cache for.
         target_id (Optional[str]): The id to clear the cache for.
         keys (Optional[List[str]]): The keys to clear the cache for.
+        except_keys (Optional[List[str]]): The keys to exclude from the cache clear.
+        except_patterns (Optional[List[str]]): The patterns to exclude from the cache clear.
     """
 
     namespace, _id = _extract_namespace(
@@ -269,14 +376,31 @@ def inline_cache_clear(
     )
 
     cache_kwargs["namespace"] = f"{namespace}:{_id}"
-    cache = AioCache(**cache_kwargs)
+    cache = CustomCache(**cache_kwargs)
 
     if keys:
         for k in keys:
-            anyio.run(cache.delete, k)  # type: ignore
+            anyio.run(
+                cache.delete,
+                k,
+                cache.namespace,
+            )  # type: ignore
 
     else:
-        anyio.run(cache.clear)  # type: ignore
+        if cache_kwargs["cache_class"] is CustomCache.REDIS:
+            anyio.run(
+                cache.clear,
+                cache.namespace,
+                None,
+                except_keys,
+                except_patterns,
+            )  # type: ignore
+
+        else:
+            anyio.run(
+                cache.clear,
+                cache.namespace,
+            )  # type: ignore
 
 
 # ....................... #
@@ -289,6 +413,8 @@ async def ainline_cache_clear(
     target_entity: Optional[str] = None,
     target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
+    except_keys: Optional[List[str]] = None,
+    except_patterns: Optional[List[str]] = None,
     cache_kwargs: Dict[str, Any] = {},
     **kwargs,
 ):
@@ -301,6 +427,8 @@ async def ainline_cache_clear(
         target_entity (Optional[str]): The entity to clear the cache for.
         target_id (Optional[str]): The id to clear the cache for.
         keys (Optional[List[str]]): The keys to clear the cache for.
+        except_keys (Optional[List[str]]): The keys to exclude from the cache clear.
+        except_patterns (Optional[List[str]]): The patterns to exclude from the cache clear.
     """
 
     namespace, _id = _extract_namespace(
@@ -313,14 +441,22 @@ async def ainline_cache_clear(
     )
 
     cache_kwargs["namespace"] = f"{namespace}:{_id}"
-    cache = AioCache(**cache_kwargs)
+    cache = CustomCache(**cache_kwargs)
 
     if keys:
         for k in keys:
-            await cache.delete(k)  # type: ignore
+            await cache.delete(k, cache.namespace)  # type: ignore
 
     else:
-        await cache.clear()  # type: ignore
+        if cache_kwargs["cache_class"] is CustomCache.REDIS:
+            await cache.clear(
+                namespace=cache.namespace,
+                except_keys=except_keys,  # type: ignore
+                except_patterns=except_patterns,  # type: ignore
+            )
+
+        else:
+            await cache.clear(namespace=cache.namespace)  # type: ignore
 
 
 # ....................... #
@@ -330,6 +466,8 @@ def cache_clear(
     target_entity: Optional[str] = None,
     target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
+    except_keys: Optional[List[str]] = None,
+    except_patterns: Optional[List[str]] = None,
     **cache_kwargs,
 ):
     """
@@ -339,6 +477,7 @@ def cache_clear(
         target_entity (Optional[str]): The entity to clear the cache for.
         target_id (Optional[str]): The id to clear the cache for.
         keys (Optional[List[str]]): The keys to clear the cache for.
+        except_keys (Optional[List[str]]): The keys to exclude from the cache clear.
 
     Returns:
         decorator (Callable): The decorator to clear the cache.
@@ -358,6 +497,8 @@ def cache_clear(
                     target_entity=target_entity,
                     target_id=target_id,
                     keys=keys,
+                    except_keys=except_keys,
+                    except_patterns=except_patterns,
                     cache_kwargs=cache_kwargs,
                     **kwargs,
                 )
@@ -379,6 +520,8 @@ def cache_clear(
                     target_entity=target_entity,
                     target_id=target_id,
                     keys=keys,
+                    except_keys=except_keys,
+                    except_patterns=except_patterns,
                     cache_kwargs=cache_kwargs,
                     **kwargs,
                 )
