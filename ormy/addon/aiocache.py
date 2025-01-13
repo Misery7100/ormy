@@ -386,6 +386,7 @@ def inline_cache_clear(
     target_entity: Optional[str] = None,
     target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
+    patterns: Optional[List[str]] = None,
     except_keys: Optional[List[str]] = None,
     except_patterns: Optional[List[str]] = None,
     cache_kwargs: Dict[str, Any] = {},
@@ -397,10 +398,11 @@ def inline_cache_clear(
     Args:
         func (Callable): The function to clear the cache for.
         self_or_cls (Any): The self or cls to clear the cache for.
-        target_entity (Optional[str]): The entity to clear the cache for.
-        target_id (Optional[str]): The id to clear the cache for.
-        keys (Optional[List[str]]): The keys to clear the cache for.
-        except_keys (Optional[List[str]]): The keys to exclude from the cache clear.
+        target_entity (str, optional): The entity to clear the cache for.
+        target_id (str, optional): The id to clear the cache for.
+        keys (List[str], optional): The keys to clear the cache for.
+        patterns (List[str], optional): The patterns to clear the cache for.
+        except_keys (List[str], optional): The keys to exclude from the cache clear.
         except_patterns (Optional[List[str]]): The patterns to exclude from the cache clear.
     """
 
@@ -430,6 +432,7 @@ def inline_cache_clear(
                 cache.clear,
                 cache.namespace,
                 None,
+                patterns,
                 except_keys,
                 except_patterns,
             )  # type: ignore
@@ -451,6 +454,7 @@ async def ainline_cache_clear(
     target_entity: Optional[str] = None,
     target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
+    patterns: Optional[List[str]] = None,
     except_keys: Optional[List[str]] = None,
     except_patterns: Optional[List[str]] = None,
     cache_kwargs: Dict[str, Any] = {},
@@ -462,11 +466,12 @@ async def ainline_cache_clear(
     Args:
         func (Callable): The function to clear the cache for.
         self_or_cls (Any): The self or cls to clear the cache for.
-        target_entity (Optional[str]): The entity to clear the cache for.
-        target_id (Optional[str]): The id to clear the cache for.
-        keys (Optional[List[str]]): The keys to clear the cache for.
-        except_keys (Optional[List[str]]): The keys to exclude from the cache clear.
-        except_patterns (Optional[List[str]]): The patterns to exclude from the cache clear.
+        target_entity (str, optional): The entity to clear the cache for.
+        target_id (str, optional): The id to clear the cache for.
+        keys (List[str], optional): The keys to clear the cache for.
+        patterns (List[str], optional): The patterns to clear the cache for.
+        except_keys (List[str], optional): The keys to exclude from the cache clear.
+        except_patterns (List[str], optional): The patterns to exclude from the cache clear.
     """
 
     namespace, _id = _extract_namespace(
@@ -489,6 +494,7 @@ async def ainline_cache_clear(
         if cache_kwargs["cache_class"] is CustomCache.REDIS:
             await cache.clear(
                 namespace=cache.namespace,
+                patterns=patterns,  # type: ignore
                 except_keys=except_keys,  # type: ignore
                 except_patterns=except_patterns,  # type: ignore
             )
@@ -504,6 +510,7 @@ def cache_clear(
     target_entity: Optional[str] = None,
     target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
+    patterns: Optional[List[str]] = None,
     except_keys: Optional[List[str]] = None,
     except_patterns: Optional[List[str]] = None,
     **cache_kwargs,
@@ -512,10 +519,12 @@ def cache_clear(
     Decorator to clear the cache
 
     Args:
-        target_entity (Optional[str]): The entity to clear the cache for.
-        target_id (Optional[str]): The id to clear the cache for.
-        keys (Optional[List[str]]): The keys to clear the cache for.
-        except_keys (Optional[List[str]]): The keys to exclude from the cache clear.
+        target_entity (str, optional): The entity to clear the cache for.
+        target_id (str, optional): The id to clear the cache for.
+        keys (List[str], optional): The keys to clear the cache for.
+        patterns (List[str], optional): The patterns to clear the cache for.
+        except_keys (List[str], optional): The keys to exclude from the cache clear.
+        except_patterns (List[str], optional): The patterns to exclude from the cache clear.
 
     Returns:
         decorator (Callable): The decorator to clear the cache.
@@ -535,6 +544,7 @@ def cache_clear(
                     target_entity=target_entity,
                     target_id=target_id,
                     keys=keys,
+                    patterns=patterns,
                     except_keys=except_keys,
                     except_patterns=except_patterns,
                     cache_kwargs=cache_kwargs,
@@ -558,6 +568,7 @@ def cache_clear(
                     target_entity=target_entity,
                     target_id=target_id,
                     keys=keys,
+                    patterns=patterns,
                     except_keys=except_keys,
                     except_patterns=except_patterns,
                     cache_kwargs=cache_kwargs,
