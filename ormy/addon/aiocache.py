@@ -238,6 +238,8 @@ def generate_pattern(criteria: Dict[str, Any]):
 
 # ....................... #
 
+_ID_ALIASES = ["_id", "id_"]
+
 
 def _key_factory(
     name: str,
@@ -270,8 +272,24 @@ def _key_factory(
         arg_names: List[str] = f.__code__.co_varnames[: f.__code__.co_argcount]
         defaults = f.__defaults__ or ()
         pos_defaults = dict(zip(arg_names[-len(defaults) :], defaults))
-        key_dict: Dict[str, Any] = {"name": name}
         self_or_cls = args[0]
+
+        id_arg_name = next((n for n in arg_names if n in _ID_ALIASES), None)
+
+        if id_arg_name is None:
+            if not hasattr(self_or_cls, "id"):
+                raise InternalError(f"`{f.__name__}` does not have an id argument")
+
+            _id = getattr(self_or_cls, "id")
+
+        else:
+            if id_arg_name in kwargs.keys():
+                _id = kwargs[id_arg_name]
+
+            else:
+                _id = args[arg_names.index(id_arg_name)]
+
+        key_dict: Dict[str, Any] = {"name": name, "id": _id}
 
         if include_params:
             for u in include_params:
@@ -295,32 +313,8 @@ def _key_factory(
 
 # ....................... #
 
-_ID_ALIASES = ["_id", "id_"]
 
-
-def _extract_namespace(target_entity, target_id, func, self_or_cls, *args, **kwargs):
-    if target_id is None:
-        arg_names: List[str] = func.__code__.co_varnames[: func.__code__.co_argcount][
-            1:
-        ]
-        id_arg_name = next((n for n in arg_names if n in _ID_ALIASES), None)
-
-        if id_arg_name is None:
-            if not hasattr(self_or_cls, "id"):
-                raise InternalError(f"`{func.__name__}` does not have an id argument")
-
-            _id = getattr(self_or_cls, "id")
-
-        else:
-            if id_arg_name in kwargs.keys():
-                _id = kwargs[id_arg_name]
-
-            else:
-                _id = args[arg_names.index(id_arg_name)]
-
-    else:
-        _id = target_id
-
+def _extract_namespace(self_or_cls, target_entity: Optional[str] = None):
     if target_entity is None:
         if hasattr(self_or_cls, "_get_entity") and callable(self_or_cls._get_entity):
             namespace = self_or_cls._get_entity()
@@ -331,7 +325,7 @@ def _extract_namespace(target_entity, target_id, func, self_or_cls, *args, **kwa
     else:
         namespace = target_entity
 
-    return namespace, _id
+    return namespace
 
 
 # ....................... #
@@ -357,17 +351,9 @@ def cache(
     def decorator(func):
         @functools.wraps(func)
         def wrapper(self_or_cls, *args, **kwargs):
-            namespace, _id = _extract_namespace(
-                None,
-                None,
-                func,
-                self_or_cls,
-                *args,
-                **kwargs,
-            )
-
+            namespace = _extract_namespace(self_or_cls)
             cache_kwargs["key_builder"] = _key_factory(name, include_params)
-            cache_kwargs["namespace"] = f"{namespace}:{_id}"
+            cache_kwargs["namespace"] = namespace
 
             return _cached(**cache_kwargs)(func)(self_or_cls, *args, **kwargs)
 
@@ -380,17 +366,13 @@ def cache(
 
 
 def inline_cache_clear(
-    func,
     self_or_cls,
-    *args,
     target_entity: Optional[str] = None,
-    target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
     patterns: Optional[List[str]] = None,
     except_keys: Optional[List[str]] = None,
     except_patterns: Optional[List[str]] = None,
-    cache_kwargs: Dict[str, Any] = {},
-    **kwargs,
+    **cache_kwargs,
 ):
     """
     Function to clear the cache
@@ -406,16 +388,8 @@ def inline_cache_clear(
         except_patterns (Optional[List[str]]): The patterns to exclude from the cache clear.
     """
 
-    namespace, _id = _extract_namespace(
-        target_entity,
-        target_id,
-        func,
-        self_or_cls,
-        *args,
-        **kwargs,
-    )
-
-    cache_kwargs["namespace"] = f"{namespace}:{_id}"
+    namespace = _extract_namespace(self_or_cls, target_entity)
+    cache_kwargs["namespace"] = namespace
     cache = CustomCache(**cache_kwargs)
 
     if keys:
@@ -448,17 +422,13 @@ def inline_cache_clear(
 
 
 async def ainline_cache_clear(
-    func,
     self_or_cls,
-    *args,
     target_entity: Optional[str] = None,
-    target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
     patterns: Optional[List[str]] = None,
     except_keys: Optional[List[str]] = None,
     except_patterns: Optional[List[str]] = None,
-    cache_kwargs: Dict[str, Any] = {},
-    **kwargs,
+    **cache_kwargs,
 ):
     """
     Function to clear the cache
@@ -474,16 +444,8 @@ async def ainline_cache_clear(
         except_patterns (List[str], optional): The patterns to exclude from the cache clear.
     """
 
-    namespace, _id = _extract_namespace(
-        target_entity,
-        target_id,
-        func,
-        self_or_cls,
-        *args,
-        **kwargs,
-    )
-
-    cache_kwargs["namespace"] = f"{namespace}:{_id}"
+    namespace = _extract_namespace(self_or_cls, target_entity)
+    cache_kwargs["namespace"] = namespace
     cache = CustomCache(**cache_kwargs)
 
     if keys:
@@ -508,7 +470,6 @@ async def ainline_cache_clear(
 
 def cache_clear(
     target_entity: Optional[str] = None,
-    target_id: Optional[str] = None,
     keys: Optional[List[str]] = None,
     patterns: Optional[List[str]] = None,
     except_keys: Optional[List[str]] = None,
@@ -538,17 +499,13 @@ def cache_clear(
                 res = await func(self_or_cls, *args, **kwargs)
 
                 await ainline_cache_clear(
-                    func,
-                    self_or_cls,
-                    *args,
+                    self_or_cls=self_or_cls,
                     target_entity=target_entity,
-                    target_id=target_id,
                     keys=keys,
                     patterns=patterns,
                     except_keys=except_keys,
                     except_patterns=except_patterns,
-                    cache_kwargs=cache_kwargs,
-                    **kwargs,
+                    **cache_kwargs,
                 )
 
                 return res
@@ -562,17 +519,13 @@ def cache_clear(
                 res = func(self_or_cls, *args, **kwargs)
 
                 inline_cache_clear(
-                    func,
-                    self_or_cls,
-                    *args,
+                    self_or_cls=self_or_cls,
                     target_entity=target_entity,
-                    target_id=target_id,
                     keys=keys,
                     patterns=patterns,
                     except_keys=except_keys,
                     except_patterns=except_patterns,
-                    cache_kwargs=cache_kwargs,
-                    **kwargs,
+                    **cache_kwargs,
                 )
 
                 return res
