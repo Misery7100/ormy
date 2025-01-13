@@ -372,8 +372,7 @@ class ClickHouseAggregateQuerySet(ClickHouseQuerySet, query.AggregateQuerySet):
 # ....................... #
 
 
-# TODO: async methods
-class ClickHouseModel(models.Model):
+class ClickHouseModel(models.Model):  # type: ignore
     @classmethod
     def objects_in(cls, database):
         return ClickHouseQuerySet(cls, database)
