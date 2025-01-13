@@ -31,6 +31,7 @@ class BaseCache(AioBaseCache):
         self,
         namespace: Optional[str] = None,
         _conn: Optional[Any] = None,
+        patterns: Optional[List[str]] = None,
         except_keys: Optional[List[str]] = None,
         except_patterns: Optional[List[str]] = None,
     ):
@@ -48,6 +49,7 @@ class BaseCache(AioBaseCache):
         ret = await self._clear(
             namespace,
             _conn=_conn,
+            patterns=patterns,
             except_keys=except_keys,
             except_patterns=except_patterns,
         )
@@ -61,6 +63,7 @@ class BaseCache(AioBaseCache):
         self,
         namespace: Optional[str] = None,
         _conn: Optional[Any] = None,
+        patterns: Optional[List[str]] = None,
         except_keys: Optional[List[str]] = None,
         except_patterns: Optional[List[str]] = None,
     ):
@@ -75,6 +78,7 @@ class RedisCache(AiocacheRedisCache, BaseCache):
         self,
         namespace: Optional[str] = None,
         _conn: Optional[Any] = None,
+        patterns: Optional[List[str]] = None,
         except_keys: Optional[List[str]] = None,
         except_patterns: Optional[List[str]] = None,
     ):
@@ -82,6 +86,18 @@ class RedisCache(AiocacheRedisCache, BaseCache):
             keys = await self.client.keys("{}:*".format(namespace))
 
             print("!!!!!!", [k.decode() for k in keys])
+
+            if patterns:
+                keys = [
+                    k
+                    for k in keys
+                    if any(
+                        re.search(p, ":".join(k.decode().split(":")[1:]))
+                        for p in patterns
+                    )
+                ]
+
+                print("!!!!!! Patterns", [k.decode() for k in keys])
 
             if except_keys:
                 keys = [
