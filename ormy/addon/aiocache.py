@@ -125,7 +125,7 @@ class _cached(aiocache_cached):
                     logger.warning(f"Using cache alias; ignoring '{arg}' argument.")
         else:
             self.cache = CustomCache(
-                cache=self._cache,
+                cache_class=self._cache,
                 serializer=self._serializer,
                 namespace=self._namespace,
                 plugins=self._plugins,
