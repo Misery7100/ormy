@@ -238,6 +238,94 @@ def cache(
 # ....................... #
 
 
+def inline_cache_clear(
+    func,
+    self_or_cls,
+    *args,
+    target_entity: Optional[str] = None,
+    target_id: Optional[str] = None,
+    keys: Optional[List[str]] = None,
+    cache_kwargs: Dict[str, Any] = {},
+    **kwargs,
+):
+    """
+    Function to clear the cache
+
+    Args:
+        func (Callable): The function to clear the cache for.
+        self_or_cls (Any): The self or cls to clear the cache for.
+        target_entity (Optional[str]): The entity to clear the cache for.
+        target_id (Optional[str]): The id to clear the cache for.
+        keys (Optional[List[str]]): The keys to clear the cache for.
+    """
+
+    namespace, _id = _extract_namespace(
+        target_entity,
+        target_id,
+        func,
+        self_or_cls,
+        *args,
+        **kwargs,
+    )
+
+    cache_kwargs["namespace"] = f"{namespace}:{_id}"
+    cache = AioCache(**cache_kwargs)
+
+    if keys:
+        for k in keys:
+            anyio.run(cache.delete, k)  # type: ignore
+
+    else:
+        anyio.run(cache.clear)  # type: ignore
+
+
+# ....................... #
+
+
+async def ainline_cache_clear(
+    func,
+    self_or_cls,
+    *args,
+    target_entity: Optional[str] = None,
+    target_id: Optional[str] = None,
+    keys: Optional[List[str]] = None,
+    cache_kwargs: Dict[str, Any] = {},
+    **kwargs,
+):
+    """
+    Function to clear the cache
+
+    Args:
+        func (Callable): The function to clear the cache for.
+        self_or_cls (Any): The self or cls to clear the cache for.
+        target_entity (Optional[str]): The entity to clear the cache for.
+        target_id (Optional[str]): The id to clear the cache for.
+        keys (Optional[List[str]]): The keys to clear the cache for.
+    """
+
+    namespace, _id = _extract_namespace(
+        target_entity,
+        target_id,
+        func,
+        self_or_cls,
+        *args,
+        **kwargs,
+    )
+
+    cache_kwargs["namespace"] = f"{namespace}:{_id}"
+    cache = AioCache(**cache_kwargs)
+
+    if keys:
+        for k in keys:
+            await cache.delete(k)  # type: ignore
+
+    else:
+        await cache.clear()  # type: ignore
+
+
+# ....................... #
+
+
 def cache_clear(
     target_entity: Optional[str] = None,
     target_id: Optional[str] = None,
@@ -261,26 +349,18 @@ def cache_clear(
 
             @functools.wraps(func)
             async def async_wrapper(self_or_cls, *args, **kwargs):
-                namespace, _id = _extract_namespace(
-                    target_entity,
-                    target_id,
+                res = await func(self_or_cls, *args, **kwargs)
+
+                await ainline_cache_clear(
                     func,
                     self_or_cls,
                     *args,
+                    target_entity=target_entity,
+                    target_id=target_id,
+                    keys=keys,
+                    cache_kwargs=cache_kwargs,
                     **kwargs,
                 )
-
-                res = await func(self_or_cls, *args, **kwargs)
-
-                cache_kwargs["namespace"] = f"{namespace}:{_id}"
-                cache = AioCache(**cache_kwargs)
-
-                if keys:
-                    for k in keys:
-                        await cache.delete(k)  # type: ignore
-
-                else:
-                    await cache.clear()  # type: ignore
 
                 return res
 
@@ -290,29 +370,31 @@ def cache_clear(
 
             @functools.wraps(func)
             def sync_wrapper(self_or_cls, *args, **kwargs):
-                namespace, _id = _extract_namespace(
-                    target_entity,
-                    target_id,
+                res = func(self_or_cls, *args, **kwargs)
+
+                inline_cache_clear(
                     func,
                     self_or_cls,
                     *args,
+                    target_entity=target_entity,
+                    target_id=target_id,
+                    keys=keys,
+                    cache_kwargs=cache_kwargs,
                     **kwargs,
                 )
-
-                res = func(self_or_cls, *args, **kwargs)
-
-                cache_kwargs["namespace"] = f"{namespace}:{_id}"
-                cache = AioCache(**cache_kwargs)
-
-                if keys:
-                    for k in keys:
-                        anyio.run(cache.delete, k)  # type: ignore
-
-                else:
-                    anyio.run(cache.clear)  # type: ignore
 
                 return res
 
             return sync_wrapper
 
     return decorator
+
+
+# ----------------------- #
+
+__all__ = [
+    "cache",
+    "cache_clear",
+    "ainline_cache_clear",
+    "inline_cache_clear",
+]
