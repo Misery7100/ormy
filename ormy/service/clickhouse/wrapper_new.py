@@ -108,15 +108,10 @@ class ClickHouseSingleBase(AbstractSingleABC):
             res (Any): infi.clickhouse_orm field
         """
 
-        if cls._model:
-            f = cls._model.get_field(field)
+        if cls._model is not None and field in cls._model._fields:
+            return getattr(cls._model, field)
 
-            if f:
-                return f
-
-            raise InternalError(f"Field `{field}` not found in `{cls.__name__}`")
-
-        raise InternalError(f"Model `{cls.__name__}_infi` not found")
+        raise InternalError(f"Field `{field}` not found in `{cls.__name__}`")
 
     # ....................... #
 
