@@ -90,7 +90,7 @@ class RedisCache(AiocacheRedisCache, BaseCache):
                 keys = [
                     k
                     for k in keys
-                    if not any(re.match(p, k.decode()) for p in except_patterns)
+                    if not any(re.search(p, k.decode()) for p in except_patterns)
                 ]
 
             if keys:
