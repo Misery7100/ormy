@@ -108,11 +108,6 @@ class RedisCache(AiocacheRedisCache, BaseCache):
 class CustomCache(AioCache):
     REDIS = RedisCache
 
-    # ....................... #
-
-    def __new__(cls, cache_class, **kwargs) -> AioBaseCache | BaseCache:
-        return super().__new__(cache_class, **kwargs)
-
 
 # ....................... #
 
