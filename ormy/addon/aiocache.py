@@ -4,7 +4,7 @@ import json
 import re
 import time
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import anyio
 from aiocache import Cache as AioCache  # type: ignore[import-untyped]
@@ -18,6 +18,7 @@ from aiocache.decorators import logger  # type: ignore[import-untyped]
 from aiocache.factory import caches  # type: ignore[import-untyped]
 
 from ormy.base.error import InternalError
+from ormy.base.typing import AsyncCallable
 
 # ----------------------- #
 
@@ -241,6 +242,33 @@ def generate_pattern(criteria: Dict[str, Any]):
 _ID_ALIASES = ["_id", "id_"]
 
 
+def _parse_f_signature(f: Callable | AsyncCallable, *args, **kwargs):
+    arg_names = f.__code__.co_varnames[: f.__code__.co_argcount]
+    defaults = f.__defaults__ or ()
+    pos_defaults = dict(zip(arg_names[-len(defaults) :], defaults))
+    self_or_cls = args[0]
+
+    id_arg_name = next((n for n in arg_names if n in _ID_ALIASES), None)
+
+    if id_arg_name is None:
+        if not hasattr(self_or_cls, "id"):
+            raise InternalError(f"`{f.__name__}` does not have an id argument")
+
+        _id = getattr(self_or_cls, "id")
+
+    else:
+        if id_arg_name in kwargs.keys():
+            _id = kwargs[id_arg_name]
+
+        else:
+            _id = args[arg_names.index(id_arg_name)]
+
+    return _id, pos_defaults, arg_names, self_or_cls
+
+
+# ....................... #
+
+
 def _key_factory(
     name: str,
     include_params: Optional[List[str]] = None,
@@ -268,27 +296,10 @@ def _key_factory(
 
         return v
 
-    def key_builder(f, *args, **kwargs):
-        arg_names: List[str] = f.__code__.co_varnames[: f.__code__.co_argcount]
-        defaults = f.__defaults__ or ()
-        pos_defaults = dict(zip(arg_names[-len(defaults) :], defaults))
-        self_or_cls = args[0]
-
-        id_arg_name = next((n for n in arg_names if n in _ID_ALIASES), None)
-
-        if id_arg_name is None:
-            if not hasattr(self_or_cls, "id"):
-                raise InternalError(f"`{f.__name__}` does not have an id argument")
-
-            _id = getattr(self_or_cls, "id")
-
-        else:
-            if id_arg_name in kwargs.keys():
-                _id = kwargs[id_arg_name]
-
-            else:
-                _id = args[arg_names.index(id_arg_name)]
-
+    def key_builder(f: Callable | AsyncCallable, *args, **kwargs):
+        _id, pos_defaults, arg_names, self_or_cls = _parse_f_signature(
+            f, *args, **kwargs
+        )
         key_dict: Dict[str, Any] = {"name": name, "id": _id}
 
         if include_params:
@@ -340,15 +351,15 @@ def cache(
     Decorator to cache a function result.
 
     Args:
-        plain (Optional[str]): The plain string to use as the cache key.
-        from_keys (Optional[List[str]]): The keys to use as the cache key.
+        name (str): The name to use in the cache key.
+        include_params (List[str], optional): The parameters to use in the cache key.
         **cache_kwargs: The cache kwargs.
 
     Returns:
         decorator (Callable): The decorator to cache a function.
     """
 
-    def decorator(func):
+    def decorator(func: Callable | AsyncCallable):
         @functools.wraps(func)
         def wrapper(self_or_cls, *args, **kwargs):
             namespace = _extract_namespace(self_or_cls)
@@ -369,9 +380,9 @@ def inline_cache_clear(
     self_or_cls,
     target_entity: Optional[str] = None,
     keys: Optional[List[str]] = None,
-    patterns: Optional[List[str]] = None,
+    patterns: Optional[List[Dict[str, Any]]] = None,
     except_keys: Optional[List[str]] = None,
-    except_patterns: Optional[List[str]] = None,
+    except_patterns: Optional[List[Dict[str, Any]]] = None,
     **cache_kwargs,
 ):
     """
@@ -383,10 +394,22 @@ def inline_cache_clear(
         target_entity (str, optional): The entity to clear the cache for.
         target_id (str, optional): The id to clear the cache for.
         keys (List[str], optional): The keys to clear the cache for.
-        patterns (List[str], optional): The patterns to clear the cache for.
+        patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
         except_keys (List[str], optional): The keys to exclude from the cache clear.
-        except_patterns (Optional[List[str]]): The patterns to exclude from the cache clear.
+        except_patterns (List[Dict[str, Any]], optional): The patterns to exclude from the cache clear.
     """
+
+    if patterns is not None:
+        plain_patterns = [generate_pattern(p) for p in patterns]
+
+    else:
+        plain_patterns = None
+
+    if except_patterns is not None:
+        plain_except_patterns = [generate_pattern(p) for p in except_patterns]
+
+    else:
+        plain_except_patterns = None
 
     namespace = _extract_namespace(self_or_cls, target_entity)
     cache_kwargs["namespace"] = namespace
@@ -406,9 +429,9 @@ def inline_cache_clear(
                 cache.clear,
                 cache.namespace,
                 None,
-                patterns,
+                plain_patterns,
                 except_keys,
-                except_patterns,
+                plain_except_patterns,
             )  # type: ignore
 
         else:
@@ -425,9 +448,9 @@ async def ainline_cache_clear(
     self_or_cls,
     target_entity: Optional[str] = None,
     keys: Optional[List[str]] = None,
-    patterns: Optional[List[str]] = None,
+    patterns: Optional[List[Dict[str, Any]]] = None,
     except_keys: Optional[List[str]] = None,
-    except_patterns: Optional[List[str]] = None,
+    except_patterns: Optional[List[Dict[str, Any]]] = None,
     **cache_kwargs,
 ):
     """
@@ -439,10 +462,22 @@ async def ainline_cache_clear(
         target_entity (str, optional): The entity to clear the cache for.
         target_id (str, optional): The id to clear the cache for.
         keys (List[str], optional): The keys to clear the cache for.
-        patterns (List[str], optional): The patterns to clear the cache for.
+        patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
         except_keys (List[str], optional): The keys to exclude from the cache clear.
-        except_patterns (List[str], optional): The patterns to exclude from the cache clear.
+        except_patterns (List[Dict[str, Any]], optional): The patterns to exclude from the cache clear.
     """
+
+    if patterns is not None:
+        plain_patterns = [generate_pattern(p) for p in patterns]
+
+    else:
+        plain_patterns = None
+
+    if except_patterns is not None:
+        plain_except_patterns = [generate_pattern(p) for p in except_patterns]
+
+    else:
+        plain_except_patterns = None
 
     namespace = _extract_namespace(self_or_cls, target_entity)
     cache_kwargs["namespace"] = namespace
@@ -456,9 +491,9 @@ async def ainline_cache_clear(
         if cache_kwargs["cache_class"] is CustomCache.REDIS:
             await cache.clear(
                 namespace=cache.namespace,
-                patterns=patterns,  # type: ignore
+                patterns=plain_patterns,  # type: ignore
                 except_keys=except_keys,  # type: ignore
-                except_patterns=except_patterns,  # type: ignore
+                except_patterns=plain_except_patterns,  # type: ignore
             )
 
         else:
@@ -469,11 +504,10 @@ async def ainline_cache_clear(
 
 
 def cache_clear(
-    target_entity: Optional[str] = None,
     keys: Optional[List[str]] = None,
-    patterns: Optional[List[str]] = None,
+    patterns: Optional[List[Dict[str, Any]]] = None,
     except_keys: Optional[List[str]] = None,
-    except_patterns: Optional[List[str]] = None,
+    except_patterns: Optional[List[Dict[str, Any]]] = None,
     **cache_kwargs,
 ):
     """
@@ -483,9 +517,9 @@ def cache_clear(
         target_entity (str, optional): The entity to clear the cache for.
         target_id (str, optional): The id to clear the cache for.
         keys (List[str], optional): The keys to clear the cache for.
-        patterns (List[str], optional): The patterns to clear the cache for.
+        patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
         except_keys (List[str], optional): The keys to exclude from the cache clear.
-        except_patterns (List[str], optional): The patterns to exclude from the cache clear.
+        except_patterns (List[Dict[str, Any]], optional): The patterns to exclude from the cache clear.
 
     Returns:
         decorator (Callable): The decorator to clear the cache.
@@ -496,13 +530,30 @@ def cache_clear(
 
             @functools.wraps(func)
             async def async_wrapper(self_or_cls, *args, **kwargs):
+                try:
+                    _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
+
+                # TODO: replace with native error
+                except Exception as e:
+                    print(f"Failed to extract id from function signature: {e}")
+                    _id = None
+
                 res = await func(self_or_cls, *args, **kwargs)
+
+                if _id is not None:
+                    if patterns:
+                        upd_patterns = [{**x, "id": _id} for x in patterns]
+
+                    else:
+                        upd_patterns = [{"id": _id}]
+
+                else:
+                    upd_patterns = patterns  # type: ignore[assignment]
 
                 await ainline_cache_clear(
                     self_or_cls=self_or_cls,
-                    target_entity=target_entity,
                     keys=keys,
-                    patterns=patterns,
+                    patterns=upd_patterns,
                     except_keys=except_keys,
                     except_patterns=except_patterns,
                     **cache_kwargs,
@@ -516,13 +567,30 @@ def cache_clear(
 
             @functools.wraps(func)
             def sync_wrapper(self_or_cls, *args, **kwargs):
+                try:
+                    _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
+
+                # TODO: replace with native error
+                except Exception as e:
+                    print(f"Failed to extract id from function signature: {e}")
+                    _id = None
+
                 res = func(self_or_cls, *args, **kwargs)
+
+                if _id is not None:
+                    if patterns:
+                        upd_patterns = [{**x, "id": _id} for x in patterns]
+
+                    else:
+                        upd_patterns = [{"id": _id}]
+
+                else:
+                    upd_patterns = patterns  # type: ignore[assignment]
 
                 inline_cache_clear(
                     self_or_cls=self_or_cls,
-                    target_entity=target_entity,
                     keys=keys,
-                    patterns=patterns,
+                    patterns=upd_patterns,
                     except_keys=except_keys,
                     except_patterns=except_patterns,
                     **cache_kwargs,
