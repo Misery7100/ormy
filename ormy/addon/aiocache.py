@@ -325,18 +325,12 @@ def _key_factory(
 # ....................... #
 
 
-def _extract_namespace(self_or_cls, target_entity: Optional[str] = None):
-    if target_entity is None:
-        if hasattr(self_or_cls, "_get_entity") and callable(self_or_cls._get_entity):
-            namespace = self_or_cls._get_entity()
+def _extract_namespace(self_or_cls):
+    if hasattr(self_or_cls, "_get_entity") and callable(self_or_cls._get_entity):
+        namespace = self_or_cls._get_entity()
+        return namespace
 
-        else:
-            raise InternalError(f"{self_or_cls} does not have a '_get_entity' method")
-
-    else:
-        namespace = target_entity
-
-    return namespace
+    raise InternalError(f"{self_or_cls} does not have a '_get_entity' method")
 
 
 # ....................... #
@@ -377,8 +371,7 @@ def cache(
 
 
 def inline_cache_clear(
-    self_or_cls,
-    target_entity: Optional[str] = None,
+    namespace: str,
     keys: Optional[List[str]] = None,
     patterns: Optional[List[Dict[str, Any]]] = None,
     except_keys: Optional[List[str]] = None,
@@ -389,10 +382,7 @@ def inline_cache_clear(
     Function to clear the cache
 
     Args:
-        func (Callable): The function to clear the cache for.
-        self_or_cls (Any): The self or cls to clear the cache for.
-        target_entity (str, optional): The entity to clear the cache for.
-        target_id (str, optional): The id to clear the cache for.
+        namespace (str): The namespace to clear the cache for.
         keys (List[str], optional): The keys to clear the cache for.
         patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
         except_keys (List[str], optional): The keys to exclude from the cache clear.
@@ -411,7 +401,6 @@ def inline_cache_clear(
     else:
         plain_except_patterns = None
 
-    namespace = _extract_namespace(self_or_cls, target_entity)
     cache_kwargs["namespace"] = namespace
     cache = CustomCache(**cache_kwargs)
 
@@ -445,8 +434,7 @@ def inline_cache_clear(
 
 
 async def ainline_cache_clear(
-    self_or_cls,
-    target_entity: Optional[str] = None,
+    namespace: str,
     keys: Optional[List[str]] = None,
     patterns: Optional[List[Dict[str, Any]]] = None,
     except_keys: Optional[List[str]] = None,
@@ -457,10 +445,7 @@ async def ainline_cache_clear(
     Function to clear the cache
 
     Args:
-        func (Callable): The function to clear the cache for.
-        self_or_cls (Any): The self or cls to clear the cache for.
-        target_entity (str, optional): The entity to clear the cache for.
-        target_id (str, optional): The id to clear the cache for.
+        namespace (str): The namespace to clear the cache for.
         keys (List[str], optional): The keys to clear the cache for.
         patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
         except_keys (List[str], optional): The keys to exclude from the cache clear.
@@ -479,7 +464,6 @@ async def ainline_cache_clear(
     else:
         plain_except_patterns = None
 
-    namespace = _extract_namespace(self_or_cls, target_entity)
     cache_kwargs["namespace"] = namespace
     cache = CustomCache(**cache_kwargs)
 
@@ -514,8 +498,6 @@ def cache_clear(
     Decorator to clear the cache
 
     Args:
-        target_entity (str, optional): The entity to clear the cache for.
-        target_id (str, optional): The id to clear the cache for.
         keys (List[str], optional): The keys to clear the cache for.
         patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
         except_keys (List[str], optional): The keys to exclude from the cache clear.
@@ -551,7 +533,7 @@ def cache_clear(
                     upd_patterns = patterns  # type: ignore[assignment]
 
                 await ainline_cache_clear(
-                    self_or_cls=self_or_cls,
+                    namespace=_extract_namespace(self_or_cls),
                     keys=keys,
                     patterns=upd_patterns,
                     except_keys=except_keys,
@@ -588,7 +570,7 @@ def cache_clear(
                     upd_patterns = patterns  # type: ignore[assignment]
 
                 inline_cache_clear(
-                    self_or_cls=self_or_cls,
+                    namespace=_extract_namespace(self_or_cls),
                     keys=keys,
                     patterns=upd_patterns,
                     except_keys=except_keys,
