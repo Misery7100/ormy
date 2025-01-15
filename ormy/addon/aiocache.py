@@ -355,12 +355,12 @@ def cache(
 
     def decorator(func: Callable | AsyncCallable):
         @functools.wraps(func)
-        def wrapper(self_or_cls, *args, **kwargs):
-            namespace = _extract_namespace(self_or_cls)
+        def wrapper(*args, **kwargs):
+            namespace = _extract_namespace(args[0])
             cache_kwargs["key_builder"] = _key_factory(name, include_params)
             cache_kwargs["namespace"] = namespace
 
-            return _cached(**cache_kwargs)(func)(self_or_cls, *args, **kwargs)
+            return _cached(**cache_kwargs)(func)(*args, **kwargs)
 
         return wrapper
 
@@ -511,7 +511,7 @@ def cache_clear(
         if asyncio.iscoroutinefunction(func):
 
             @functools.wraps(func)
-            async def async_wrapper(self_or_cls, *args, **kwargs):
+            async def async_wrapper(*args, **kwargs):
                 try:
                     _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
 
@@ -520,7 +520,7 @@ def cache_clear(
                     print(f"Failed to extract id from function signature: {e}")
                     _id = None
 
-                res = await func(self_or_cls, *args, **kwargs)
+                res = await func(*args, **kwargs)
 
                 if _id is not None:
                     if patterns:
@@ -533,7 +533,7 @@ def cache_clear(
                     upd_patterns = patterns  # type: ignore[assignment]
 
                 await ainline_cache_clear(
-                    namespace=_extract_namespace(self_or_cls),
+                    namespace=_extract_namespace(args[0]),
                     keys=keys,
                     patterns=upd_patterns,
                     except_keys=except_keys,
@@ -548,7 +548,7 @@ def cache_clear(
         else:
 
             @functools.wraps(func)
-            def sync_wrapper(self_or_cls, *args, **kwargs):
+            def sync_wrapper(*args, **kwargs):
                 try:
                     _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
 
@@ -557,7 +557,7 @@ def cache_clear(
                     print(f"Failed to extract id from function signature: {e}")
                     _id = None
 
-                res = func(self_or_cls, *args, **kwargs)
+                res = func(*args, **kwargs)
 
                 if _id is not None:
                     if patterns:
@@ -570,7 +570,7 @@ def cache_clear(
                     upd_patterns = patterns  # type: ignore[assignment]
 
                 inline_cache_clear(
-                    namespace=_extract_namespace(self_or_cls),
+                    namespace=_extract_namespace(args[0]),
                     keys=keys,
                     patterns=upd_patterns,
                     except_keys=except_keys,
