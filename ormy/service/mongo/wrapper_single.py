@@ -1,4 +1,4 @@
-from typing import ClassVar, List, Optional, Sequence, Type, TypeVar
+from typing import Any, ClassVar, List, Literal, Optional, Sequence, Type, TypeVar
 
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
@@ -574,6 +574,8 @@ class MongoSingleBase(DocumentSingleABC):
         left_on: Optional[str] = None,
         right_on: Optional[str] = None,
         prefix: Optional[str] = None,
+        kind: Literal["inner", "left"] = "inner",
+        fill_none: Any = None,
     ) -> TabularData:
         """
         Extend data with documents from the collection
@@ -586,6 +588,8 @@ class MongoSingleBase(DocumentSingleABC):
             left_on (str, optional): Field to join on the left
             right_on (str, optional): Field to join on the right
             prefix (str, optional): Prefix for the fields
+            kind (Literal["inner", "left"], optional): Kind of join
+            fill_none (Any, optional): Value to fill None
 
         Returns:
             res (TabularData): Extended data
@@ -623,6 +627,8 @@ class MongoSingleBase(DocumentSingleABC):
             left_on=left_on,
             right_on=right_on,
             prefix=prefix,
+            kind=kind,
+            fill_none=fill_none,
         )
 
     # ....................... #
@@ -637,6 +643,8 @@ class MongoSingleBase(DocumentSingleABC):
         left_on: Optional[str] = None,
         right_on: Optional[str] = None,
         prefix: Optional[str] = None,
+        kind: Literal["inner", "left"] = "inner",
+        fill_none: Any = None,
     ) -> TabularData:
         """
         Extend data with documents from the collection
@@ -649,6 +657,8 @@ class MongoSingleBase(DocumentSingleABC):
             left_on (str, optional): Field to join on the left
             right_on (str, optional): Field to join on the right
             prefix (str, optional): Prefix for the fields
+            kind (Literal["inner", "left"], optional): Kind of join
+            fill_none (Any, optional): Value to fill None
 
         Returns:
             res (TabularData): Extended data
@@ -688,4 +698,6 @@ class MongoSingleBase(DocumentSingleABC):
             left_on=left_on,
             right_on=right_on,
             prefix=prefix,
+            kind=kind,
+            fill_none=fill_none,
         )
