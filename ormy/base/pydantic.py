@@ -462,19 +462,28 @@ class BaseReference(BaseModel):
 
 
 class TableResponse(BaseModel):
-    hits: TabularData = Field(
-        default_factory=TabularData,
-        title="Data",
-    )
-    size: int = Field(
-        default=...,
-        title="Rows per page",
-    )
-    page: int = Field(
-        default=...,
-        title="Current page",
-    )
-    count: int = Field(
-        default=...,
-        title="Total number of rows",
-    )
+    """
+    Response for a table query
+
+    Attributes:
+        hits (TabularData): The hits of the query
+        size (int): The page size of the query
+        page (int): The page number of the query
+        count (int): The total count of the query result
+    """
+
+    hits: TabularData = Field(default_factory=TabularData)
+    size: int
+    page: int
+    count: int
+
+    # ....................... #
+
+    @classmethod
+    def example(cls, hit: Dict[str, Any]):
+        return {
+            "hits": [hit] * 2,
+            "size": 2,
+            "page": 1,
+            "count": 100,
+        }
