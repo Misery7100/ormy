@@ -607,7 +607,7 @@ class MongoSingleBase(DocumentSingleABC):
         if left_on is None or right_on is None:
             raise BadInput("Fields `left_on` and `right_on` are required")
 
-        if kind == "left" and include is None or not include:  # type safe
+        if kind == "left" and not include:  # type safe
             raise BadInput("Fields to include are required for left join")
 
         docs = cls.find_all(request={right_on: {"$in": list(data.unique(left_on))}})
@@ -619,7 +619,7 @@ class MongoSingleBase(DocumentSingleABC):
             include = list(set(include))
 
         if not len(tab_docs) and kind == "left":
-            tab_docs = TabularData([{k: fill_none for k in include}])
+            tab_docs = TabularData([{k: fill_none for k in include}])  # type: ignore
 
         # if exclude is not None:
         #     exclude = [x for x in exclude if x != right_on]
@@ -680,7 +680,7 @@ class MongoSingleBase(DocumentSingleABC):
         if left_on is None or right_on is None:
             raise BadInput("Fields `left_on` and `right_on` are required")
 
-        if kind == "left" and include is None or not include:  # type safe
+        if kind == "left" and not include:
             raise BadInput("Fields to include are required for left join")
 
         docs = await cls.afind_all(
@@ -694,7 +694,7 @@ class MongoSingleBase(DocumentSingleABC):
             include = list(set(include))
 
         if not len(tab_docs) and kind == "left":
-            tab_docs = TabularData([{k: fill_none for k in include}])
+            tab_docs = TabularData([{k: fill_none for k in include}])  # type: ignore
 
         # if exclude is not None:
         #     exclude = [x for x in exclude if x != right_on]
