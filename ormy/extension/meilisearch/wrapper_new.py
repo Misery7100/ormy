@@ -99,6 +99,7 @@ class MeilisearchExtensionV2(ExtensionABC):
                             filter_model = ArrayFilter
 
                         case _:
+                            field["type"] = "array"
                             filter_model = ArrayFilter
 
                     if filter_model:

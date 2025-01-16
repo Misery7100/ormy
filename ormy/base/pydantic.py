@@ -222,7 +222,7 @@ class Base(BaseModel):
         defs = cls._parse_json_schema_defs(schema)
         keys: List[str] = [k for k, _ in schema["properties"].items()]
         flat_schema: List[Dict[str, Any]] = []
-        schema_keys = ["key", "title", "type", "value"]
+        schema_keys = ["key", "type", "value"]
 
         if include is not None:
             keys = include
@@ -241,6 +241,18 @@ class Base(BaseModel):
                 if items := v.get("items", {}):
                     if "$ref" in items.keys():
                         continue
+
+            if ref := v.get("$ref", None):
+                ref_name = ref.split("/")[-1]
+
+                if r := defs.get(ref_name, {}):
+                    data = {"key": k, **r}
+                    data = {
+                        k: v
+                        for k, v in data.items()
+                        if k in schema_keys and v is not None
+                    }
+                    flat_schema.append(data)
 
             # check for reference
             if refs := v.get("allOf", []):
