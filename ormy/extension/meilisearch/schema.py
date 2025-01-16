@@ -234,3 +234,19 @@ class SearchResponse(TableResponse):
 class MeilisearchReference(BaseReference):
     sort: List[SortField] = []
     filters: List[AnyFilter] = []
+
+
+# ....................... #
+
+
+class MeilisearchReferenceV2(BaseModel):
+    """
+    Meilisearch Reference V2 model
+
+    Attributes:
+        sort (List[ormy.extension.meilisearch.schema.SortField]): The sort fields
+        filters (List[ormy.extension.meilisearch.schema.AnyFilter]): The filters
+    """
+
+    sort: List[SortField] = []
+    filters: List[AnyFilter] = []

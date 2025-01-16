@@ -25,7 +25,7 @@ from .schema import (
     ArrayFilter,
     BooleanFilter,
     DatetimeFilter,
-    MeilisearchReference,
+    MeilisearchReferenceV2,
     NumberFilter,
     SearchRequest,
     SearchResponse,
@@ -63,32 +63,13 @@ class MeilisearchExtensionV2(ExtensionABC):
     # ....................... #
 
     @classmethod  # TODO: remove ? or simplify somehow
-    def meili_model_reference(
-        cls: Type[M],
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
-        extra: Optional[List[str]] = None,
-        extra_definitions: List[Dict[str, str]] = [],
-    ) -> MeilisearchReference:
+    def meili_model_reference(cls: Type[M]) -> MeilisearchReferenceV2:
         """
         Generate a Meilisearch reference for the model schema with filters and sort fields
 
-        Args:
-            include (List[str], optional): The fields to include in the schema.
-            exclude (List[str], optional): The fields to exclude from the schema.
-            extra (List[str], optional): Extra fields to include in the schema.
-            extra_definitions (List[Dict[str, str]], optional): Extra definitions for the schema.
-
         Returns:
-            schema (MeilisearchReference): The Meilisearch reference for the model schema
+            schema (MeilisearchReferenceV2): The Meilisearch reference for the model schema
         """
-
-        table_schema = cls.model_flat_schema(
-            include=include,
-            exclude=exclude,
-            extra=extra,
-            extra_definitions=extra_definitions,
-        )
 
         full_schema = cls.model_flat_schema()
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
@@ -131,8 +112,7 @@ class MeilisearchExtensionV2(ExtensionABC):
                     sort_key = SortField(**field, default=s == default_sort)
                     sort.append(sort_key)
 
-        return MeilisearchReference(
-            table_schema=table_schema,
+        return MeilisearchReferenceV2(
             filters=filters,
             sort=sort,
         )
