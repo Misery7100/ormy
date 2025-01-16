@@ -99,7 +99,7 @@ class MeilisearchExtensionV2(ExtensionABC):
                             filter_model = ArrayFilter
 
                         case _:
-                            pass
+                            filter_model = ArrayFilter
 
                     if filter_model:
                         filters.append(filter_model.model_validate(field))
