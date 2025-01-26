@@ -14,7 +14,7 @@ Services:
 - MongoDB;
 - Firestore;
 - Redis;
-- Clickhouse (with partial async support);
+- Clickhouse;
 - BigQuery (partial implementation).
 
 Extensions:
@@ -28,8 +28,7 @@ Extensions:
 - [ ] Add indexing support for mongodb service;
 - [ ] Add indexing support for firestore service;
 - [ ] Add indexing support for clickhouse service;
-- [ ] New filtering support (class attributes *-> model_cls) for clickhouse service;
-- [ ] Join support for clickhouse service (dep on above);
+- [ ] Join support for clickhouse service;
 - [ ] Non-context clients for redis service;
 - [ ] Check `pytest-benchmark` for performance testing;
 - [ ] Check `pytest-meilisearch` for MeiliSearch testing;

@@ -38,6 +38,7 @@ class RedisConfig(ConfigABC):
         log_level (ormy.utils.logging.LogLevel): Log level
         include_to_registry (bool): Whether to include to registry
         credentials (RedisCredentials): Connection credentials
+        context_client (bool): Whether to use context manager for Redis client
     """
 
     # Local configuration
@@ -46,6 +47,7 @@ class RedisConfig(ConfigABC):
 
     # Global configuration
     credentials: RedisCredentials = RedisCredentials()
+    context_client: bool = True
 
     # ....................... #
 

@@ -92,7 +92,7 @@ class RedlockExtension(ExtensionABC):
         Get static async Redis client for lock purposes
 
         Returns:
-            client (redis.Redis): Static async Redis client
+            client (redis.asyncio.Redis): Static async Redis client
         """
 
         if cls.__aredlock_static is None:
