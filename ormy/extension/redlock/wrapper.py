@@ -17,6 +17,7 @@ from .config import RedlockConfig
 # ----------------------- #
 
 R = TypeVar("R", bound="RedlockExtension")
+T = TypeVar("T")
 
 # ----------------------- #
 
@@ -144,8 +145,8 @@ class RedlockExtension(ExtensionABC):
     @classmethod
     def __redlock_execute_task(
         cls: Type[R],
-        task: Callable[[Redis], Any],
-    ):
+        task: Callable[[Redis], T],
+    ) -> T:
         """Execute task"""
 
         if cls.__is_static_redlock():
@@ -161,8 +162,8 @@ class RedlockExtension(ExtensionABC):
     @classmethod
     async def __aredlock_execute_task(
         cls: Type[R],
-        task: AsyncCallable[aioredis.Redis, Any],
-    ):
+        task: AsyncCallable[aioredis.Redis, T],
+    ) -> T:
         """Execute async task"""
 
         if cls.__is_static_redlock():

@@ -35,6 +35,7 @@ from .schema import (
 # ----------------------- #
 
 M = TypeVar("M", bound="MeilisearchExtensionV2")
+T = TypeVar("T")
 
 # ----------------------- #
 
@@ -208,8 +209,8 @@ class MeilisearchExtensionV2(ExtensionABC):
     @classmethod
     def __meili_execute_task(
         cls: Type[M],
-        task: Callable[[Client], Any],
-    ):
+        task: Callable[[Client], T],
+    ) -> T:
         """Execute task"""
 
         if cls.__is_static_meili():
@@ -225,8 +226,8 @@ class MeilisearchExtensionV2(ExtensionABC):
     @classmethod
     async def __ameili_execute_task(
         cls: Type[M],
-        task: AsyncCallable[AsyncClient, Any],
-    ):
+        task: AsyncCallable[AsyncClient, T],
+    ) -> T:
         """Execute async task"""
 
         if cls.__is_static_meili():

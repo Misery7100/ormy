@@ -16,6 +16,7 @@ from .config import RedisConfig
 # ----------------------- #
 
 R = TypeVar("R", bound="RedisSingleBase")
+T = TypeVar("T")
 
 # ----------------------- #
 
@@ -122,8 +123,8 @@ class RedisSingleBase(DocumentSingleABC):
     @classmethod
     def __execute_task(
         cls: Type[R],
-        task: Callable[[Redis], Any],
-    ):
+        task: Callable[[Redis], T],
+    ) -> T:
         """Execute task"""
 
         if cls.__is_static_redis():
@@ -139,8 +140,8 @@ class RedisSingleBase(DocumentSingleABC):
     @classmethod
     async def __aexecute_task(
         cls: Type[R],
-        task: AsyncCallable[aioredis.Redis, Any],
-    ):
+        task: AsyncCallable[aioredis.Redis, T],
+    ) -> T:
         """Execute async task"""
 
         if cls.__is_static_redis():
