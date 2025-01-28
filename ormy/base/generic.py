@@ -1,5 +1,6 @@
 from copy import deepcopy
 from enum import Enum
+from functools import reduce
 from typing import (
     Any,
     Dict,
@@ -197,8 +198,10 @@ class TabularData(list):
 
         assert isinstance(item, dict), "Item must be a dictionary"
 
-        if set(item.keys()) != self._valid_keys:
-            raise BadInput("Item must have the same keys as the other items")
+        missing_keys = self._valid_keys - set(item.keys())
+
+        for x in missing_keys:
+            item[x] = None
 
         return True
 
@@ -219,7 +222,9 @@ class TabularData(list):
             return []
 
         _data = [x.model_dump() if not isinstance(x, dict) else x for x in data]
-        self._valid_keys = set(_data[0].keys())
+        self._valid_keys = reduce(
+            lambda x, y: x | y, map(lambda x: set(x.keys()), _data)
+        )
 
         return [item for item in _data if self._validate_item(item)]
 
