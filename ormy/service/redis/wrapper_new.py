@@ -121,10 +121,7 @@ class RedisSingleBase(DocumentSingleABC):
     # ....................... #
 
     @classmethod
-    def __execute_task(
-        cls: Type[R],
-        task: Callable[[Redis], T],
-    ) -> T:
+    def __execute_task(cls, task: Callable[[Redis], T]) -> T:
         """Execute task"""
 
         if cls.__is_static_redis():
@@ -138,10 +135,7 @@ class RedisSingleBase(DocumentSingleABC):
     # ....................... #
 
     @classmethod
-    async def __aexecute_task(
-        cls: Type[R],
-        task: AsyncCallable[aioredis.Redis, T],
-    ) -> T:
+    async def __aexecute_task(cls, task: AsyncCallable[aioredis.Redis, T]) -> T:
         """Execute async task"""
 
         if cls.__is_static_redis():
@@ -155,7 +149,7 @@ class RedisSingleBase(DocumentSingleABC):
     # ....................... #
 
     @classmethod
-    def _build_key(cls: Type[R], key: DocumentID) -> str:
+    def _build_key(cls, key: DocumentID) -> str:
         """Build key for Redis storage"""
 
         return f"{cls.config.collection}:{key}"
@@ -236,7 +230,7 @@ class RedisSingleBase(DocumentSingleABC):
 
     @classmethod
     @contextmanager
-    def pipe(cls: Type[R], **kwargs):
+    def pipe(cls, **kwargs):
         """Get syncronous Redis pipeline"""
 
         def _task(c: Redis):
@@ -253,7 +247,7 @@ class RedisSingleBase(DocumentSingleABC):
 
     @classmethod
     @asynccontextmanager
-    async def apipe(cls: Type[R], **kwargs):
+    async def apipe(cls, **kwargs):
         """Get asyncronous Redis pipeline"""
 
         async def _atask(c: aioredis.Redis):
