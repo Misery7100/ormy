@@ -24,6 +24,29 @@ class RabbitMQCredentials(Base):
     username: Optional[SecretStr] = None
     password: Optional[SecretStr] = None
 
+    # ....................... #
+
+    def url(self) -> str:
+        """
+        Returns the RabbitMQ URL
+        """
+
+        creds = self.model_dump_with_secrets()
+        password = creds.get("password", None)
+        user = creds.get("username", None)
+        host = creds.get("host", None)
+        port = creds.get("port", None)
+        auth = ""
+        conn = host
+
+        if password:
+            auth = f"{user or ''}:{password}@"
+
+        if port:
+            conn = f"{host}:{port}"
+
+        return f"amqp://{auth}{conn}"
+
 
 # ....................... #
 
@@ -48,21 +71,7 @@ class RabbitMQConfig(ConfigABC):
         Returns the RabbitMQ URL
         """
 
-        creds = self.credentials.model_dump_with_secrets()
-        password = creds.get("password", None)
-        user = creds.get("username", None)
-        host = creds.get("host", None)
-        port = creds.get("port", None)
-        auth = ""
-        conn = host
-
-        if password:
-            auth = f"{user or ''}:{password}@"
-
-        if port:
-            conn = f"{host}:{port}"
-
-        return f"amqp://{auth}{conn}"
+        return self.credentials.url()
 
     # ....................... #
 
