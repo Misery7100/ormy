@@ -63,6 +63,7 @@ class RabbitMQConfig(ConfigABC):
 
     queue: str = "default"
     credentials: RabbitMQCredentials = RabbitMQCredentials()
+    context_client: bool = True
 
     # ....................... #
 
