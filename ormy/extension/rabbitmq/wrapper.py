@@ -1,5 +1,6 @@
+import json
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, ClassVar, List, Optional, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 import aio_pika
 import pika  # type: ignore[import-untyped]
@@ -128,7 +129,12 @@ class RabbitMQExtension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def rmq_publish(cls, message: str):
+    def rmq_publish(
+        cls,
+        message: Any,
+        headers: Optional[Dict[str, Any]] = None,
+        delivery_mode: int = 2,
+    ):
         """
         Publish message to RabbitMQ
 
@@ -142,13 +148,23 @@ class RabbitMQExtension(ExtensionABC):
             channel.basic_publish(
                 exchange="",
                 routing_key=queue,
-                body=message.encode(),
+                body=json.dumps(message),
+                properties=pika.BasicProperties(
+                    headers=headers,
+                    content_type="application/json",
+                    delivery_mode=delivery_mode,
+                ),
             )
 
     # ....................... #
 
     @classmethod
-    async def armq_publish(cls, message: str):
+    async def armq_publish(
+        cls,
+        message: Any,
+        headers: Optional[Dict[str, Any]] = None,
+        delivery_mode: int = 2,
+    ):
         """
         Publish message to RabbitMQ
 
@@ -160,6 +176,11 @@ class RabbitMQExtension(ExtensionABC):
 
         async with cls.__armq_channel() as channel:
             await channel.default_exchange.publish(
-                message=aio_pika.Message(body=message.encode()),
+                message=aio_pika.Message(
+                    body=json.dumps(message).encode(),
+                    headers=headers,
+                    content_type="application/json",
+                    delivery_mode=delivery_mode,
+                ),
                 routing_key=queue,
             )
