@@ -61,18 +61,14 @@ class RedlockConfig(ConfigABC):
         user = creds.get("username", None)
         host = creds.get("host", None)
         port = creds.get("port", None)
+        auth = ""
+        conn = host
 
         if password:
             auth = f"{user or ''}:{password}@"
 
-        else:
-            auth = ""
-
         if port:
             conn = f"{host}:{port}"
-
-        else:
-            conn = host
 
         return f"redis://{auth}{conn}/{self.database}"
 
