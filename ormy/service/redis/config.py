@@ -24,6 +24,29 @@ class RedisCredentials(Base):
     username: Optional[SecretStr] = None
     password: Optional[SecretStr] = None
 
+    # ....................... #
+
+    def url(self) -> str:
+        """
+        Returns the Redis URL
+        """
+
+        creds = self.model_dump_with_secrets()
+        password = creds.get("password", None)
+        user = creds.get("username", None)
+        host = creds.get("host", None)
+        port = creds.get("port", None)
+        auth = ""
+        conn = host
+
+        if password:
+            auth = f"{user or ''}:{password}@"
+
+        if port:
+            conn = f"{host}:{port}"
+
+        return f"redis://{auth}{conn}"
+
 
 # ....................... #
 
@@ -56,25 +79,9 @@ class RedisConfig(ConfigABC):
         Returns the Redis URL
         """
 
-        creds = self.credentials.model_dump_with_secrets()
-        password = creds.get("password", None)
-        user = creds.get("username", None)
-        host = creds.get("host", None)
-        port = creds.get("port", None)
+        url = self.credentials.url()
 
-        if password:
-            auth = f"{user or ''}:{password}@"
-
-        else:
-            auth = ""
-
-        if port:
-            conn = f"{host}:{port}"
-
-        else:
-            conn = host
-
-        return f"redis://{auth}{conn}/{self.database}"
+        return f"{url}/{self.database}"
 
     # ....................... #
 
