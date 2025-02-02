@@ -372,7 +372,7 @@ def cache(
 
     def decorator(func: Callable[P, T] | AsyncCallable[P, T]):
         @functools.wraps(func)
-        def wrapper(*args: P.args, **kwargs: P.kwargs):
+        def wrapper(*args, **kwargs):
             namespace = _extract_namespace(args[0])
             cache_kwargs["key_builder"] = _key_factory(name, include_params)
             cache_kwargs["namespace"] = namespace
@@ -529,7 +529,7 @@ def cache_clear(
             async_func = cast(AsyncCallable[P, T], func)
 
             @functools.wraps(async_func)
-            async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            async def async_wrapper(*args, **kwargs) -> T:
                 try:
                     _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
 
@@ -567,7 +567,7 @@ def cache_clear(
             sync_func = cast(Callable[P, T], func)
 
             @functools.wraps(sync_func)
-            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            def sync_wrapper(*args, **kwargs) -> T:
                 try:
                     _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
 
