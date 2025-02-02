@@ -135,7 +135,7 @@ class RedisSingleBase(DocumentSingleABC):
     # ....................... #
 
     @classmethod
-    async def __aexecute_task(cls, task: AsyncCallable[aioredis.Redis, T]) -> T:
+    async def __aexecute_task(cls, task: AsyncCallable[[aioredis.Redis], T]) -> T:
         """Execute async task"""
 
         if cls.__is_static_redis():

@@ -314,8 +314,7 @@ class MongoRedlockBoilerplate(MongoSingleBase, RedlockExtension):
 
         Raises:
             Conflict: If the lock already exists.
-            BadRequest: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
-            InternalError: If the lock aquisition or extension fails.
+            InternalError: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout or the lock aquisition or extension fails.
         """
 
         with self.redlock_cls(
@@ -348,8 +347,7 @@ class MongoRedlockBoilerplate(MongoSingleBase, RedlockExtension):
 
         Raises:
             Conflict: If the lock already exists.
-            BadRequest: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
-            InternalError: If the lock aquisition or extension fails.
+            InternalError: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout or the lock aquisition or extension fails.
         """
 
         async with self.aredlock_cls(

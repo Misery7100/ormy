@@ -4,7 +4,7 @@ import json
 import re
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 import anyio
 from aiocache import Cache as AioCache  # type: ignore[import-untyped]
@@ -19,6 +19,10 @@ from aiocache.factory import caches  # type: ignore[import-untyped]
 
 from ormy.base.error import InternalError
 from ormy.base.typing import AsyncCallable
+
+# ----------------------- #
+
+T = TypeVar("T")
 
 # ----------------------- #
 
@@ -145,7 +149,7 @@ class _cached(aiocache_cached):
     Subclass of `.aiocache_cached` decorator that supports synchronous functions.
     """
 
-    def __call__(self, f):
+    def __call__(self, f: Callable[..., T] | AsyncCallable[..., T]):
         if self.alias:
             self.cache = caches.get(self.alias)  #! ???
             for arg in ("serializer", "namespace", "plugins"):
@@ -182,7 +186,7 @@ class _cached(aiocache_cached):
 
     async def decorator(
         self,
-        f,
+        f: Callable[..., T] | AsyncCallable[..., T],
         *args,
         cache_read=True,
         cache_write=True,

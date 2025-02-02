@@ -242,7 +242,7 @@ class MeilisearchExtensionV2(ExtensionABC):
     @classmethod
     async def __ameili_execute_task(
         cls: Type[M],
-        task: AsyncCallable[AsyncClient, T],
+        task: AsyncCallable[[AsyncClient], T],
     ) -> T:
         """Execute async task"""
 

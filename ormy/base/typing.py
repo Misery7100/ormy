@@ -1,4 +1,13 @@
-from typing import Annotated, Awaitable, Callable, Dict, Literal, TypeAlias, TypeVar
+from typing import (
+    Annotated,
+    Awaitable,
+    Callable,
+    Dict,
+    Literal,
+    TypeAlias,
+    TypeVar,
+    ParamSpec,
+)
 
 from .abc.typing import AbstractData, DocumentID
 
@@ -16,10 +25,10 @@ FieldSchema = Annotated[
 # Aliases
 Wildcard: TypeAlias = Literal["*", "all"]
 
-T = TypeVar("T")
+P = ParamSpec("P")
 R = TypeVar("R")
 
-AsyncCallable = Callable[[T], Awaitable[R]]
+AsyncCallable = Callable[P, Awaitable[R]]
 
 # ----------------------- #
 
