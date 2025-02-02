@@ -4,7 +4,16 @@ import json
 import re
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, TypeVar, ParamSpec
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    ParamSpec,
+    TypeVar,
+    cast,
+)
 
 import anyio
 from aiocache import Cache as AioCache  # type: ignore[import-untyped]
@@ -178,7 +187,7 @@ class _cached(aiocache_cached):
 
             @functools.wraps(f)
             def wrapper(*args, **kwargs) -> T:
-                return anyio.run(self.decorator, f, *args, **kwargs)
+                return anyio.run(self.decorator, f, *args, **kwargs)  # type: ignore
 
             wrapper.cache = self.cache  # type: ignore
             return wrapper
@@ -188,11 +197,11 @@ class _cached(aiocache_cached):
     async def decorator(
         self,
         f: Callable[P, T] | AsyncCallable[P, T],
-        *args,
-        cache_read=True,
-        cache_write=True,
-        aiocache_wait_for_write=True,
-        **kwargs,
+        cache_read: bool = True,
+        cache_write: bool = True,
+        aiocache_wait_for_write: bool = True,
+        *args: P.args,
+        **kwargs: P.kwargs,
     ) -> T:
         key = self.get_cache_key(f, args, kwargs)
 
@@ -203,10 +212,12 @@ class _cached(aiocache_cached):
                 return value
 
         if asyncio.iscoroutinefunction(f):
-            result: T = await f(*args, **kwargs)
+            async_f = cast(AsyncCallable[P, T], f)
+            result: T = await async_f(*args, **kwargs)
 
         else:
-            result: T = f(*args, **kwargs)  # type: ignore
+            sync_f = cast(Callable[P, T], f)
+            result: T = sync_f(*args, **kwargs)  # type: ignore[no-redef]
 
         if self.skip_cache_func(result):
             return result
@@ -361,7 +372,7 @@ def cache(
 
     def decorator(func: Callable[P, T] | AsyncCallable[P, T]):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: P.args, **kwargs: P.kwargs):
             namespace = _extract_namespace(args[0])
             cache_kwargs["key_builder"] = _key_factory(name, include_params)
             cache_kwargs["namespace"] = namespace
@@ -515,9 +526,10 @@ def cache_clear(
 
     def decorator(func: Callable[P, T] | AsyncCallable[P, T]):
         if asyncio.iscoroutinefunction(func):
+            async_func = cast(AsyncCallable[P, T], func)
 
-            @functools.wraps(func)
-            async def async_wrapper(*args, **kwargs) -> T:
+            @functools.wraps(async_func)
+            async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
                 try:
                     _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
 
@@ -526,7 +538,7 @@ def cache_clear(
                     print(f"Failed to extract id from function signature: {e}")
                     _id = None
 
-                res: T = await func(*args, **kwargs)
+                res: T = await async_func(*args, **kwargs)
 
                 if _id is not None:
                     if patterns:
@@ -552,9 +564,10 @@ def cache_clear(
             return async_wrapper
 
         else:
+            sync_func = cast(Callable[P, T], func)
 
-            @functools.wraps(func)
-            def sync_wrapper(*args, **kwargs) -> T:
+            @functools.wraps(sync_func)
+            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
                 try:
                     _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
 
