@@ -4,7 +4,7 @@ import json
 import re
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar, ParamSpec
 
 import anyio
 from aiocache import Cache as AioCache  # type: ignore[import-untyped]
@@ -22,6 +22,7 @@ from ormy.base.typing import AsyncCallable
 
 # ----------------------- #
 
+P = ParamSpec("P")
 T = TypeVar("T")
 
 # ----------------------- #
@@ -149,7 +150,7 @@ class _cached(aiocache_cached):
     Subclass of `.aiocache_cached` decorator that supports synchronous functions.
     """
 
-    def __call__(self, f: Callable[..., T] | AsyncCallable[..., T]):
+    def __call__(self, f: Callable[P, T] | AsyncCallable[P, T]):
         if self.alias:
             self.cache = caches.get(self.alias)  #! ???
             for arg in ("serializer", "namespace", "plugins"):
@@ -167,7 +168,7 @@ class _cached(aiocache_cached):
         if asyncio.iscoroutinefunction(f):
 
             @functools.wraps(f)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args, **kwargs) -> T:
                 return await self.decorator(f, *args, **kwargs)
 
             async_wrapper.cache = self.cache  # type: ignore
@@ -176,7 +177,7 @@ class _cached(aiocache_cached):
         else:
 
             @functools.wraps(f)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs) -> T:
                 return anyio.run(self.decorator, f, *args, **kwargs)
 
             wrapper.cache = self.cache  # type: ignore
@@ -186,25 +187,26 @@ class _cached(aiocache_cached):
 
     async def decorator(
         self,
-        f: Callable[..., T] | AsyncCallable[..., T],
+        f: Callable[P, T] | AsyncCallable[P, T],
         *args,
         cache_read=True,
         cache_write=True,
         aiocache_wait_for_write=True,
         **kwargs,
-    ):
+    ) -> T:
         key = self.get_cache_key(f, args, kwargs)
 
         if cache_read:
-            value = await self.get_from_cache(key)
+            value: T | None = await self.get_from_cache(key)
+
             if value is not None:
                 return value
 
         if asyncio.iscoroutinefunction(f):
-            result = await f(*args, **kwargs)
+            result: T = await f(*args, **kwargs)
 
         else:
-            result = f(*args, **kwargs)
+            result: T = f(*args, **kwargs)  # type: ignore
 
         if self.skip_cache_func(result):
             return result
@@ -357,7 +359,7 @@ def cache(
         decorator (Callable): The decorator to cache a function.
     """
 
-    def decorator(func: Callable | AsyncCallable):
+    def decorator(func: Callable[P, T] | AsyncCallable[P, T]):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             namespace = _extract_namespace(args[0])
@@ -511,11 +513,11 @@ def cache_clear(
         decorator (Callable): The decorator to clear the cache.
     """
 
-    def decorator(func):
+    def decorator(func: Callable[P, T] | AsyncCallable[P, T]):
         if asyncio.iscoroutinefunction(func):
 
             @functools.wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args, **kwargs) -> T:
                 try:
                     _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
 
@@ -524,7 +526,7 @@ def cache_clear(
                     print(f"Failed to extract id from function signature: {e}")
                     _id = None
 
-                res = await func(*args, **kwargs)
+                res: T = await func(*args, **kwargs)
 
                 if _id is not None:
                     if patterns:
@@ -552,7 +554,7 @@ def cache_clear(
         else:
 
             @functools.wraps(func)
-            def sync_wrapper(*args, **kwargs):
+            def sync_wrapper(*args, **kwargs) -> T:
                 try:
                     _id, _, _, _ = _parse_f_signature(func, *args, **kwargs)
 
@@ -561,7 +563,7 @@ def cache_clear(
                     print(f"Failed to extract id from function signature: {e}")
                     _id = None
 
-                res = func(*args, **kwargs)
+                res: T = func(*args, **kwargs)  # type: ignore
 
                 if _id is not None:
                     if patterns:
