@@ -9,7 +9,7 @@ from ormy.service.redis import RedisConfig, RedisSingleBase
 # ----------------------- #
 
 
-class MeilisearchBoilerplate(RedisSingleBase, MeilisearchExtensionV2):
+class RedisMeilisearchBoilerplate(RedisSingleBase, MeilisearchExtensionV2):
     config: ClassVar[RedisConfig] = RedisConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
 
@@ -38,7 +38,7 @@ class MeilisearchBoilerplate(RedisSingleBase, MeilisearchExtensionV2):
 # ....................... #
 
 
-class RedlockBoilerplate(RedisSingleBase, RedlockExtension):
+class RedisRedlockBoilerplate(RedisSingleBase, RedlockExtension):
     config: ClassVar[RedisConfig] = RedisConfig()
     extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
 

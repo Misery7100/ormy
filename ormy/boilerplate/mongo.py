@@ -12,12 +12,12 @@ from ormy.service.mongo import MongoConfig, MongoSingleBase
 
 # ----------------------- #
 
-M = TypeVar("M", bound="MeilisearchBackgroundBoilerplate")
+M = TypeVar("M", bound="MongoMeilisearchBackgroundBoilerplate")
 
 # ----------------------- #
 
 
-class MeilisearchBoilerplate(MongoSingleBase, MeilisearchExtensionV2):
+class MongoMeilisearchBoilerplate(MongoSingleBase, MeilisearchExtensionV2):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
 
@@ -46,7 +46,7 @@ class MeilisearchBoilerplate(MongoSingleBase, MeilisearchExtensionV2):
 # ....................... #
 
 
-class MeilisearchBackgroundBoilerplate(MeilisearchBoilerplate):
+class MongoMeilisearchBackgroundBoilerplate(MongoMeilisearchBoilerplate):
     def save(self: M) -> M:
         res = super().save()
 
@@ -124,7 +124,7 @@ class MeilisearchBackgroundBoilerplate(MeilisearchBoilerplate):
 # ....................... #
 
 
-class S3Boilerplate(MongoSingleBase, S3Extension):
+class MongoS3Boilerplate(MongoSingleBase, S3Extension):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [S3Config()]
 
@@ -267,7 +267,7 @@ class S3Boilerplate(MongoSingleBase, S3Extension):
 # ....................... #
 
 
-class RedlockBoilerplate(MongoSingleBase, RedlockExtension):
+class MongoRedlockBoilerplate(MongoSingleBase, RedlockExtension):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
 
@@ -364,7 +364,7 @@ class RedlockBoilerplate(MongoSingleBase, RedlockExtension):
 # ....................... #
 
 
-class RabbitMQBoilerplate(MongoSingleBase, RabbitMQExtension):
+class MongoRabbitMQBoilerplate(MongoSingleBase, RabbitMQExtension):
     config = MongoConfig()
     extension_configs = [RabbitMQConfig()]
 
