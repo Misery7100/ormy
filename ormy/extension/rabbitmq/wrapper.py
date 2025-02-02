@@ -129,8 +129,9 @@ class RabbitMQExtension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    def rmq_publish(
+    def _rmq_publish(
         cls,
+        queue: str,
         message: Any,
         headers: Optional[Dict[str, Any]] = None,
         delivery_mode: int = 2,
@@ -139,10 +140,11 @@ class RabbitMQExtension(ExtensionABC):
         Publish message to RabbitMQ
 
         Args:
-            message (str): Message to publish
+            queue (str): Queue to publish to
+            message (Any): Message to publish (JSON serializable)
+            headers (Dict[str, Any]): Headers to publish
+            delivery_mode (int): Delivery mode (2 for persistent)
         """
-
-        queue = cls._get_rmq_queue()
 
         with cls.__rmq_channel() as channel:
             channel.basic_publish(
@@ -159,8 +161,9 @@ class RabbitMQExtension(ExtensionABC):
     # ....................... #
 
     @classmethod
-    async def armq_publish(
+    async def _armq_publish(
         cls,
+        queue: str,
         message: Any,
         headers: Optional[Dict[str, Any]] = None,
         delivery_mode: int = 2,
@@ -169,10 +172,11 @@ class RabbitMQExtension(ExtensionABC):
         Publish message to RabbitMQ
 
         Args:
-            message (str): Message to publish
+            queue (str): Queue to publish to
+            message (Any): Message to publish (JSON serializable)
+            headers (Dict[str, Any]): Headers to publish
+            delivery_mode (int): Delivery mode (2 for persistent)
         """
-
-        queue = cls._get_rmq_queue()
 
         async with cls.__armq_channel() as channel:
             await channel.default_exchange.publish(
@@ -184,3 +188,55 @@ class RabbitMQExtension(ExtensionABC):
                 ),
                 routing_key=queue,
             )
+
+    # ....................... #
+
+    @classmethod
+    def rmq_publish(
+        cls,
+        message: Any,
+        headers: Optional[Dict[str, Any]] = None,
+        delivery_mode: int = 2,
+    ):
+        """
+        Publish message to RabbitMQ
+
+        Args:
+            message (Any): Message to publish (JSON serializable)
+            headers (Dict[str, Any]): Headers to publish
+            delivery_mode (int): Delivery mode (2 for persistent)
+        """
+
+        queue = cls._get_rmq_queue()
+        return cls._rmq_publish(
+            queue=queue,
+            message=message,
+            headers=headers,
+            delivery_mode=delivery_mode,
+        )
+
+    # ....................... #
+
+    @classmethod
+    async def armq_publish(
+        cls,
+        message: Any,
+        headers: Optional[Dict[str, Any]] = None,
+        delivery_mode: int = 2,
+    ):
+        """
+        Publish message to RabbitMQ
+
+        Args:
+            message (Any): Message to publish (JSON serializable)
+            headers (Dict[str, Any]): Headers to publish
+            delivery_mode (int): Delivery mode (2 for persistent)
+        """
+
+        queue = cls._get_rmq_queue()
+        return await cls._armq_publish(
+            queue=queue,
+            message=message,
+            headers=headers,
+            delivery_mode=delivery_mode,
+        )
