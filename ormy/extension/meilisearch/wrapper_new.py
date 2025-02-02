@@ -147,6 +147,50 @@ class MeilisearchExtensionV2(ExtensionABC):
     # ....................... #
 
     @classmethod
+    def __meili_abstract_client(cls):
+        """Abstract client"""
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        url = cfg.url()
+        key = cfg.credentials.master_key
+
+        if key:
+            api_key = key.get_secret_value()
+
+        else:
+            api_key = None
+
+        return Client(
+            url=url,
+            api_key=api_key,
+            custom_headers={"Content-Type": "application/json"},
+        )
+
+    # ....................... #
+
+    @classmethod
+    def __ameili_abstract_client(cls):
+        """Abstract async client"""
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        url = cfg.url()
+        key = cfg.credentials.master_key
+
+        if key:
+            api_key = key.get_secret_value()
+
+        else:
+            api_key = None
+
+        return AsyncClient(
+            url=url,
+            api_key=api_key,
+            custom_headers={"Content-Type": "application/json"},
+        )
+
+    # ....................... #
+
+    @classmethod
     def __meili_static_client(cls):
         """
         Get static Meilisearch client
@@ -156,28 +200,14 @@ class MeilisearchExtensionV2(ExtensionABC):
         """
 
         if cls.__meili_static is None:
-            cfg = cls.get_extension_config(type_=MeilisearchConfig)
-            url = cfg.url()
-            key = cfg.credentials.master_key
-
-            if key:
-                api_key = key.get_secret_value()
-
-            else:
-                api_key = None
-
-            cls.__meili_static = Client(
-                url=url,
-                api_key=api_key,
-                custom_headers={"Content-Type": "application/json"},
-            )
+            cls.__meili_static = cls.__meili_abstract_client()
 
         return cls.__meili_static
 
     # ....................... #
 
     @classmethod
-    async def __ameili_static_client(cls):
+    def __ameili_static_client(cls):
         """
         Get static async Meilisearch client
 
@@ -186,21 +216,7 @@ class MeilisearchExtensionV2(ExtensionABC):
         """
 
         if cls.__ameili_static is None:
-            cfg = cls.get_extension_config(type_=MeilisearchConfig)
-            url = cfg.url()
-            key = cfg.credentials.master_key
-
-            if key:
-                api_key = key.get_secret_value()
-
-            else:
-                api_key = None
-
-            cls.__ameili_static = AsyncClient(
-                url=url,
-                api_key=api_key,
-                custom_headers={"Content-Type": "application/json"},
-            )
+            cls.__ameili_static = cls.__ameili_abstract_client()
 
         return cls.__ameili_static
 
@@ -231,7 +247,7 @@ class MeilisearchExtensionV2(ExtensionABC):
         """Execute async task"""
 
         if cls.__is_static_meili():
-            c = await cls.__ameili_static_client()
+            c = cls.__ameili_static_client()
             return await task(c)
 
         else:
@@ -279,24 +295,8 @@ class MeilisearchExtensionV2(ExtensionABC):
     def __meili_client(cls):
         """Get syncronous Meilisearch client"""
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
-        url = cfg.url()
-        key = cfg.credentials.master_key
-
-        if key:
-            api_key = key.get_secret_value()
-
-        else:
-            api_key = None
-
-        c = Client(
-            url=url,
-            api_key=api_key,
-            custom_headers={"Content-Type": "application/json"},
-        )
-
         try:
-            yield c
+            yield cls.__meili_abstract_client()
 
         finally:
             pass
@@ -308,24 +308,8 @@ class MeilisearchExtensionV2(ExtensionABC):
     async def __ameili_client(cls):
         """Get asyncronous Meilisearch client"""
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
-        url = cfg.url()
-        key = cfg.credentials.master_key
-
-        if key:
-            api_key = key.get_secret_value()
-
-        else:
-            api_key = None
-
-        c = AsyncClient(
-            url=url,
-            api_key=api_key,
-            custom_headers={"Content-Type": "application/json"},
-        )
-
         try:
-            yield c
+            yield cls.__ameili_abstract_client()
 
         finally:
             pass
