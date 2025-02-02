@@ -185,11 +185,11 @@ class _acached(aiocache_cached):
     async def decorator(
         self,
         f: AsyncCallable[P, T],
+        *args,
         cache_read: bool = True,
         cache_write: bool = True,
         aiocache_wait_for_write: bool = True,
-        *args: P.args,
-        **kwargs: P.kwargs,
+        **kwargs,
     ) -> T:
         key = self.get_cache_key(f, args, kwargs)
 
@@ -249,11 +249,11 @@ class _cached(aiocache_cached):
     async def decorator(
         self,
         f: Callable[P, T],
+        *args,
         cache_read: bool = True,
         cache_write: bool = True,
         aiocache_wait_for_write: bool = True,
-        *args: P.args,
-        **kwargs: P.kwargs,
+        **kwargs,
     ) -> T:
         key = self.get_cache_key(f, args, kwargs)
 
