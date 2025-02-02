@@ -9,7 +9,7 @@ from redis import Redis
 from redis import asyncio as aioredis
 
 from ormy.base.abc import ExtensionABC
-from ormy.base.error import BadInput, Conflict, InternalError
+from ormy.base.error import BadRequest, Conflict, InternalError
 from ormy.base.typing import AsyncCallable
 
 from .config import RedlockConfig
@@ -425,18 +425,18 @@ class RedlockExtension(ExtensionABC):
 
         Raises:
             Conflict: If the lock already exists.
-            BadInput: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
+            BadRequest: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
             InternalError: If the lock aquisition or extension fails.
         """
 
         if timeout <= 0:
-            raise BadInput("timeout must be greater than 0")
+            raise BadRequest("timeout must be greater than 0")
 
         if extend_interval <= 0:
-            raise BadInput("extend_interval must be greater than 0")
+            raise BadRequest("extend_interval must be greater than 0")
 
         if extend_interval >= timeout:
-            raise BadInput("extend_interval must be less than timeout")
+            raise BadRequest("extend_interval must be less than timeout")
 
         col = cls._get_redlock_collection()
         resource = f"{col}.{id_}"
@@ -519,18 +519,18 @@ class RedlockExtension(ExtensionABC):
 
         Raises:
             Conflict: If the lock already exists.
-            BadInput: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
+            BadRequest: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
             InternalError: If the lock aquisition or extension fails.
         """
 
         if timeout <= 0:
-            raise BadInput("timeout must be greater than 0")
+            raise BadRequest("timeout must be greater than 0")
 
         if extend_interval <= 0:
-            raise BadInput("extend_interval must be greater than 0")
+            raise BadRequest("extend_interval must be greater than 0")
 
         if extend_interval >= timeout:
-            raise BadInput("extend_interval must be less than timeout")
+            raise BadRequest("extend_interval must be less than timeout")
 
         col = cls._get_redlock_collection()
         resource = f"{col}.{id_}"

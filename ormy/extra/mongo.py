@@ -463,7 +463,7 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
 
         Raises:
             Conflict: If the lock already exists.
-            BadInput: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
+            BadRequest: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
             InternalError: If the lock aquisition or extension fails.
         """
 
@@ -497,7 +497,7 @@ class MongoMeilisearchS3Redlock(MongoMeilisearchS3, RedlockExtension):
 
         Raises:
             Conflict: If the lock already exists.
-            BadInput: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
+            BadRequest: If the timeout or extend_interval is not greater than 0 or extend_interval is not less than timeout.
             InternalError: If the lock aquisition or extension fails.
         """
 

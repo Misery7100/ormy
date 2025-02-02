@@ -6,7 +6,7 @@ import boto3  # type: ignore[import-untyped]
 from botocore.client import Config  # type: ignore[import-untyped]
 
 from ormy.base.abc import ExtensionABC
-from ormy.base.error import BadInput, Conflict
+from ormy.base.error import BadRequest, Conflict
 from ormy.base.generic import TabularData
 from ormy.base.pydantic import TableResponse
 
@@ -96,7 +96,7 @@ class S3Extension(ExtensionABC):
         credentials = cfg.credentials
 
         if credentials.username is None or credentials.password is None:
-            raise BadInput("S3 credentials are not set")
+            raise BadRequest("S3 credentials are not set")
 
         c = boto3.client(
             "s3",

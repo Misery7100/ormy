@@ -39,7 +39,7 @@ class InternalError(OrmyError):
 # ....................... #
 
 
-class BadInput(OrmyError):
+class BadRequest(OrmyError):
     """Exception raised for invalid input."""
 
     def __init__(self, detail: str = "Invalid input"):

@@ -18,7 +18,7 @@ from typing import (
 from pydantic import BaseModel, GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
-from .error import BadInput
+from .error import BadRequest
 
 # ----------------------- #
 
@@ -118,14 +118,14 @@ class TabularData(list):
 
         if isinstance(index, str):
             if index not in self._valid_keys:
-                raise BadInput(f"Column '{index}' not found")
+                raise BadRequest(f"Column '{index}' not found")
 
             return self.__class__([{index: row[index]} for row in self])
 
         elif isinstance(index, list):
             for k in index:
                 if k not in self._valid_keys:
-                    raise BadInput(f"Column '{k}' not found")
+                    raise BadRequest(f"Column '{k}' not found")
 
             records = [{k: v for k, v in x.items() if k in index} for x in self]
             return self.__class__(records)
@@ -173,7 +173,7 @@ class TabularData(list):
 
             else:
                 if len(value) != len(self):
-                    raise BadInput("Length of values must match the number of rows")
+                    raise BadRequest("Length of values must match the number of rows")
 
                 for i, row in enumerate(self):
                     row[index] = value[i]

@@ -11,7 +11,7 @@ from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from ormy.base.abc import DocumentSingleABC
-from ormy.base.error import BadInput, Conflict, NotFound
+from ormy.base.error import BadRequest, Conflict, NotFound
 from ormy.base.generic import TabularData
 from ormy.base.typing import DocumentID
 
@@ -351,14 +351,14 @@ class MongoSingleBase(DocumentSingleABC):
             res (MongoBase): Found data model
 
         Raises:
-            BadInput: Request or value is required
+            BadRequest: Request or value is required
             NotFound: Document not found
         """
 
         collection = cls._get_collection()
 
         if not (request or id_):
-            raise BadInput("Request or value is required")
+            raise BadRequest("Request or value is required")
 
         elif not request:
             request = {"_id": id_}
@@ -389,14 +389,14 @@ class MongoSingleBase(DocumentSingleABC):
             res (MongoBase): Found data model
 
         Raises:
-            BadInput: Request or value is required
+            BadRequest: Request or value is required
             NotFound: Document not found
         """
 
         collection = await cls._aget_collection()
 
         if not (request or id_):
-            raise BadInput("Request or value is required")
+            raise BadRequest("Request or value is required")
 
         elif not request:
             request = {"_id": id_}
@@ -593,22 +593,22 @@ class MongoSingleBase(DocumentSingleABC):
             res (TabularData): Extended data
 
         Raises:
-            BadInput: `data` is required
-            BadInput: Fields `left_on` and `right_on` are required
+            BadRequest: `data` is required
+            BadRequest: Fields `left_on` and `right_on` are required
         """
 
         if not data:
-            raise BadInput("`data` is required")
+            raise BadRequest("`data` is required")
 
         if on is not None:
             left_on = on
             right_on = on
 
         if left_on is None or right_on is None:
-            raise BadInput("Fields `left_on` and `right_on` are required")
+            raise BadRequest("Fields `left_on` and `right_on` are required")
 
         if kind == "left" and not include:  # type safe
-            raise BadInput("Fields to include are required for left join")
+            raise BadRequest("Fields to include are required for left join")
 
         docs = cls.find_all(request={right_on: {"$in": list(data.unique(left_on))}})
         tab_docs = TabularData(docs)
@@ -666,22 +666,22 @@ class MongoSingleBase(DocumentSingleABC):
             res (TabularData): Extended data
 
         Raises:
-            BadInput: `data` is required
-            BadInput: Fields `left_on` and `right_on` are required
+            BadRequest: `data` is required
+            BadRequest: Fields `left_on` and `right_on` are required
         """
 
         if not data:
-            raise BadInput("`data` is required")
+            raise BadRequest("`data` is required")
 
         if on is not None:
             left_on = on
             right_on = on
 
         if left_on is None or right_on is None:
-            raise BadInput("Fields `left_on` and `right_on` are required")
+            raise BadRequest("Fields `left_on` and `right_on` are required")
 
         if kind == "left" and not include:
-            raise BadInput("Fields to include are required for left join")
+            raise BadRequest("Fields to include are required for left join")
 
         docs = await cls.afind_all(
             request={right_on: {"$in": list(data.unique(left_on))}}
