@@ -1,24 +1,18 @@
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, ClassVar, Dict, List, Optional, Self, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Self
 
 from ormy.base.error import InternalError
 from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtensionV2
 from ormy.extension.rabbitmq import RabbitMQConfig, RabbitMQExtension
 from ormy.extension.redlock import RedlockConfig, RedlockExtension
 from ormy.extension.s3 import S3Config, S3Extension
-from ormy.service.mongo import MongoConfig, MongoSingleBase
-
-# ----------------------- #
-
-M = TypeVar("M", bound="MongoMeilisearchBackgroundBoilerplate")
+from ormy.service.arango import ArangoBase, ArangoConfig
 
 # ----------------------- #
 
 
-class MongoMeilisearchBoilerplate(MongoSingleBase, MeilisearchExtensionV2):
-    config: ClassVar[MongoConfig] = MongoConfig()
+class ArangoMeilisearchBoilerplate(ArangoBase, MeilisearchExtensionV2):
+    config: ClassVar[ArangoConfig] = ArangoConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
 
     # ....................... #
@@ -46,86 +40,8 @@ class MongoMeilisearchBoilerplate(MongoSingleBase, MeilisearchExtensionV2):
 # ....................... #
 
 
-class MongoMeilisearchBackgroundBoilerplate(MongoMeilisearchBoilerplate):
-    def save(self: M) -> M:
-        res = super().save()
-
-        # Run in background
-        with ThreadPoolExecutor() as executor:
-            executor.submit(self.meili_update_documents, res)
-
-        return res
-
-    # ....................... #
-
-    async def asave(self: M) -> M:
-        res = await super().asave()
-
-        # Run in background
-        asyncio.create_task(self.ameili_update_documents(res))
-
-        return res
-
-    # ....................... #
-
-    @classmethod
-    def create(cls: Type[M], data: M) -> M:
-        res = super().create(data)  # type: ignore
-
-        # Run in background
-        with ThreadPoolExecutor() as executor:
-            executor.submit(cls.meili_update_documents, res)
-
-        return res
-
-    # ....................... #
-
-    @classmethod
-    async def acreate(cls: Type[M], data: M) -> M:
-        res = await super().acreate(data)  # type: ignore
-
-        # Run in background
-        asyncio.create_task(cls.ameili_update_documents(res))
-
-        return res
-
-    # ....................... #
-
-    @classmethod
-    def create_many(
-        cls: Type[M],
-        data: List[M],
-        ordered: bool = False,
-    ):
-        res = super().create_many(data, ordered=ordered)  # type: ignore
-
-        # Run in background
-        with ThreadPoolExecutor() as executor:
-            executor.submit(cls.meili_update_documents, res)
-
-        return res
-
-    # ....................... #
-
-    @classmethod
-    async def acreate_many(
-        cls: Type[M],
-        data: List[M],
-        ordered: bool = False,
-    ):
-        res = await super().acreate_many(data, ordered=ordered)  # type: ignore
-
-        # Run in background
-        asyncio.create_task(cls.ameili_update_documents(res))
-
-        return res
-
-
-# ....................... #
-
-
-class MongoS3Boilerplate(MongoSingleBase, S3Extension):
-    config: ClassVar[MongoConfig] = MongoConfig()
+class ArangoS3Boilerplate(ArangoBase, S3Extension):
+    config: ClassVar[ArangoConfig] = ArangoConfig()
     extension_configs: ClassVar[List[Any]] = [S3Config()]
 
     # ....................... #
@@ -267,8 +183,8 @@ class MongoS3Boilerplate(MongoSingleBase, S3Extension):
 # ....................... #
 
 
-class MongoRedlockBoilerplate(MongoSingleBase, RedlockExtension):
-    config: ClassVar[MongoConfig] = MongoConfig()
+class ArangoRedlockBoilerplate(ArangoBase, RedlockExtension):
+    config: ClassVar[ArangoConfig] = ArangoConfig()
     extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
 
     # ....................... #
@@ -362,8 +278,8 @@ class MongoRedlockBoilerplate(MongoSingleBase, RedlockExtension):
 # ....................... #
 
 
-class MongoRabbitMQBoilerplate(MongoSingleBase, RabbitMQExtension):
-    config: ClassVar[MongoConfig] = MongoConfig()
+class ArangoRabbitMQBoilerplate(ArangoBase, RabbitMQExtension):
+    config: ClassVar[ArangoConfig] = ArangoConfig()
     extension_configs: ClassVar[List[Any]] = [RabbitMQConfig()]
 
     # ....................... #
