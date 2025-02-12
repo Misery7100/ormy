@@ -79,7 +79,7 @@ class S3Extension(ExtensionABC):
                 return True
 
             except client.exceptions.ClientError as e:
-                if e.response["Error"]["Code"] == "404":
+                if e.response.get("Error", {}).get("Code", {}) == "404":
                     return False
 
                 else:
@@ -99,7 +99,7 @@ class S3Extension(ExtensionABC):
             raise BadRequest("S3 credentials are not set")
 
         c = boto3.client(
-            "s3",
+            service_name="s3",
             endpoint_url=credentials.url(),
             aws_access_key_id=credentials.username.get_secret_value(),
             aws_secret_access_key=credentials.password.get_secret_value(),
@@ -144,7 +144,7 @@ class S3Extension(ExtensionABC):
                 return True
 
             except client.exceptions.ClientError as e:
-                if e.response["Error"]["Code"] == "404":
+                if e.response.get("Error", {}).get("Code", {}) == "404":
                     return False
 
                 else:
@@ -192,7 +192,7 @@ class S3Extension(ExtensionABC):
             return client.put_object_tagging(
                 Bucket=cls._s3_get_bucket(),
                 Key=key,
-                Tagging={"TagSet": new_tags},
+                Tagging={"TagSet": new_tags},  # type: ignore
             )
 
     # ....................... #
@@ -215,7 +215,7 @@ class S3Extension(ExtensionABC):
             return client.put_object_tagging(
                 Bucket=cls._s3_get_bucket(),
                 Key=key,
-                Tagging={"TagSet": new_tags},
+                Tagging={"TagSet": new_tags},  # type: ignore
             )
 
     # ....................... #
@@ -252,8 +252,8 @@ class S3Extension(ExtensionABC):
             hits = []
 
             for x in contents:
-                tags = cls.s3_get_file_tags(x["Key"])
-                hits.append(S3File.from_s3_object(x, tags))
+                tags = cls.s3_get_file_tags(x["Key"])  # type: ignore
+                hits.append(S3File.from_s3_object(x, tags))  # type: ignore
 
             return TableResponse(
                 hits=TabularData(hits),
@@ -312,7 +312,7 @@ class S3Extension(ExtensionABC):
                     raise Conflict("File already exists.")
 
             client.upload_fileobj(
-                Fileobj=file,
+                Fileobj=file,  # type: ignore
                 Bucket=cls._s3_get_bucket(),
                 Key=key,
             )

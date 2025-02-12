@@ -48,6 +48,7 @@ services:
       - mongoconfig:/data/configdb
       - ./replica.key:/data/replica.key
     restart: unless-stopped
+
   
   mongoinit:
     <<: *base-variables

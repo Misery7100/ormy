@@ -32,9 +32,7 @@ class MongoCredentials(Base):
     # ....................... #
 
     def url(self) -> str:
-        """
-        Get the MongoDB connection URL
-        """
+        """Get the MongoDB connection URL"""
 
         username = self.username.get_secret_value() if self.username else None
         password = self.password.get_secret_value() if self.password else None
@@ -69,22 +67,18 @@ class MongoConfig(ConfigABC):
 
     # Global configuration
     credentials: MongoCredentials = MongoCredentials()
-    ping_database: str = "admin"
+    ping_database: str = "admin"  # TODO: remove
 
     # ....................... #
 
     def is_default(self) -> bool:
-        """
-        Validate if the config is default
-        """
+        """Validate if the config is default"""
 
         return self._default_helper("collection")
 
     # ....................... #
 
     def url(self) -> str:
-        """
-        Get the MongoDB connection URL
-        """
+        """Get the MongoDB connection URL"""
 
         return self.credentials.url()

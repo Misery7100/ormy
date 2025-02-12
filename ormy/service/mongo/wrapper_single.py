@@ -5,7 +5,7 @@ from motor.motor_asyncio import (
     AsyncIOMotorCollection,
     AsyncIOMotorDatabase,
 )
-from pymongo import InsertOne, MongoClient, UpdateMany, UpdateOne  # noqa: F401
+from pymongo import InsertOne, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
@@ -245,11 +245,7 @@ class MongoSingleBase(DocumentSingleABC):
     # ....................... #
 
     @classmethod
-    def create_many(
-        cls: Type[M],
-        data: List[M],
-        ordered: bool = False,
-    ):
+    def create_many(cls: Type[M], data: List[M], ordered: bool = False):
         """Create multiple documents in the collection"""
 
         collection = cls._get_collection()
@@ -507,7 +503,7 @@ class MongoSingleBase(DocumentSingleABC):
         batch_size: int = 100,
     ) -> List[M]:
         """
-        Find all documents in the collection
+        Find all documents in the collection matching the request
 
         Args:
             request (MongoRequest, optional): Request to find the documents
