@@ -51,6 +51,7 @@ class RabbitMQExtension(ExtensionABC):
     # ....................... #
 
     @classmethod
+    @contextmanager
     def __rmq_connection(cls):
         """
         Get RabbitMQ connection
@@ -59,16 +60,21 @@ class RabbitMQExtension(ExtensionABC):
             connection (pika.BlockingConnection): RabbitMQ connection
         """
 
-        if cls.__rmq is None:
-            cfg = cls.get_extension_config(type_=RabbitMQConfig)
-            url = cfg.url()
-            cls.__rmq = pika.BlockingConnection(pika.URLParameters(url))
+        cfg = cls.get_extension_config(type_=RabbitMQConfig)
+        url = cfg.url()
+        conn = pika.BlockingConnection(pika.URLParameters(url))
 
-        return cls.__rmq
+        try:
+            yield conn
+
+        finally:
+            if conn.is_open:
+                conn.close()
 
     # ....................... #
 
     @classmethod
+    @asynccontextmanager
     async def __armq_connection(cls):
         """
         Get async RabbitMQ connection
@@ -77,12 +83,16 @@ class RabbitMQExtension(ExtensionABC):
             connection (aio_pika.abc.AbstractRobustConnection): async RabbitMQ connection
         """
 
-        if cls.__armq is None:
-            cfg = cls.get_extension_config(type_=RabbitMQConfig)
-            url = cfg.url()
-            cls.__armq = await aio_pika.connect_robust(url)
+        cfg = cls.get_extension_config(type_=RabbitMQConfig)
+        url = cfg.url()
+        conn = await aio_pika.connect_robust(url)
 
-        return cls.__armq
+        try:
+            yield conn
+
+        finally:
+            if not conn.is_closed:
+                await conn.close()
 
     # ....................... #
 
@@ -96,14 +106,15 @@ class RabbitMQExtension(ExtensionABC):
             channel (pika.BlockingConnection): RabbitMQ channel
         """
 
-        connection = cls.__rmq_connection()
-        channel = connection.channel()
+        with cls.__rmq_connection() as connection:
+            channel = connection.channel()
 
-        try:
-            yield channel
+            try:
+                yield channel
 
-        finally:
-            channel.close()
+            finally:
+                if channel.is_open:
+                    channel.close()
 
     # ....................... #
 
@@ -117,14 +128,15 @@ class RabbitMQExtension(ExtensionABC):
             channel (aio_pika.abc.AbstractRobustConnection): async RabbitMQ channel
         """
 
-        connection = await cls.__armq_connection()
-        channel = await connection.channel()
+        async with cls.__armq_connection() as connection:
+            channel = await connection.channel()
 
-        try:
-            yield channel
+            try:
+                yield channel
 
-        finally:
-            await channel.close()
+            finally:
+                if not channel.is_closed:
+                    await channel.close()
 
     # ....................... #
 
