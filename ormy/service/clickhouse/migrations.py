@@ -5,14 +5,12 @@ from infi.clickhouse_orm import migrations  # type: ignore[import-untyped]
 
 from .models import ClickHouseModel as ClickHouseModelNew
 from .wrapper import ClickHouseBase, ClickHouseModel
-from .wrapper_new import ClickHouseSingleBase
 
 # ----------------------- #
 
 ChB = TypeVar("ChB", bound=ClickHouseBase)
 ChM = TypeVar("ChM", bound=ClickHouseModel)
 ChMNew = TypeVar("ChMNew", bound=ClickHouseModelNew)
-ChS = TypeVar("ChS", bound=ClickHouseSingleBase)
 
 logger = logging.getLogger("migrations")  # TODO: refactor
 
@@ -54,8 +52,8 @@ class RunSQLWithSettings(migrations.RunSQL):
 
 
 class ModelOperation(migrations.ModelOperation):
-    def __init__(self, model_class: Type[ChM] | Type[ChB] | Type[ChMNew] | Type[ChS]):
-        if issubclass(model_class, (ClickHouseBase, ClickHouseSingleBase)):
+    def __init__(self, model_class: Type[ChM] | Type[ChB] | Type[ChMNew]):
+        if issubclass(model_class, (ClickHouseBase)):
             model_class = model_class._model  # type: ignore
 
         super().__init__(model_class)

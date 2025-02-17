@@ -1,19 +1,5 @@
-from typing import Dict, List, Optional
+from typing import Optional
 
-from meilisearch_python_sdk.models.settings import (
-    Faceting,
-    HuggingFaceEmbedder,
-    LocalizedAttributes,
-    OllamaEmbedder,
-    OpenAiEmbedder,
-    Pagination,
-    ProximityPrecision,
-    RestEmbedder,
-    TypoTolerance,
-    UserProvidedEmbedder,
-)
-from meilisearch_python_sdk.models.settings import MeilisearchSettings as MsSettings
-from meilisearch_python_sdk.types import JsonDict
 from pydantic import SecretStr, model_validator
 
 from ormy.base.abc import ConfigABC
@@ -23,8 +9,24 @@ from ormy.base.pydantic import Base
 # ----------------------- #
 
 
+def _get_meilisearch_settings():
+    """Dynamically import MeilisearchSettings only when needed."""
+    try:
+        from meilisearch_python_sdk.models.settings import (
+            MeilisearchSettings as MsSettings,
+        )
+    except ImportError:
+        raise ImportError(
+            "Meilisearch dependency is missing. Install with `pip install ormy[meilisearch]`."
+        )
+    return MsSettings
+
+
+# ....................... #
+
+
 # TODO: merge settings option ?
-class MeilisearchSettings(MsSettings):
+class MeilisearchSettings(_get_meilisearch_settings()):  # type: ignore[misc]
     """
     Meilisearch extension settings
 
@@ -51,7 +53,7 @@ class MeilisearchSettings(MsSettings):
     """
 
     default_sort: Optional[str] = None
-    exclude_mask: Optional[Dict[str, str | List[str]]] = None
+    exclude_mask: Optional[dict[str, str | list[str]]] = None
 
     # ....................... #
 
@@ -139,23 +141,3 @@ class MeilisearchConfig(ConfigABC):
         """
 
         return self._default_helper("index")
-
-
-# ----------------------- #
-
-__all__ = [
-    "MeilisearchConfig",
-    "MeilisearchCredentials",
-    "MeilisearchSettings",
-    "JsonDict",
-    "TypoTolerance",
-    "Faceting",
-    "Pagination",
-    "ProximityPrecision",
-    "LocalizedAttributes",
-    "OpenAiEmbedder",
-    "OllamaEmbedder",
-    "RestEmbedder",
-    "UserProvidedEmbedder",
-    "HuggingFaceEmbedder",
-]

@@ -1,105 +1,65 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import Dict, List, Optional, Type, TypeVar
+from typing import Any, Callable, ClassVar, Optional, Type, TypeVar
 
-from meilisearch_python_sdk import AsyncClient, AsyncIndex, Client, Index
-from meilisearch_python_sdk.errors import MeilisearchApiError
-from meilisearch_python_sdk.models.search import SearchResults
-from meilisearch_python_sdk.models.settings import MeilisearchSettings
-from meilisearch_python_sdk.types import JsonDict
-
-from ormy.base.abc import AbstractABC
-from ormy.base.logging import LogManager
+from ormy.base.abc import ExtensionABC
+from ormy.base.typing import AsyncCallable
 
 from .config import MeilisearchConfig
-from .schema import (  # noqa: F401
-    AnyFilter,
-    ArrayFilter,
-    BooleanFilter,
-    DatetimeFilter,
-    MeilisearchReference,
-    NumberFilter,
-    SearchRequest,
-    SearchResponse,
-    SortField,
-)
+from .schema import MeilisearchReferenceV2, SearchRequest, SearchResponse
 
 # ----------------------- #
 
 M = TypeVar("M", bound="MeilisearchExtension")
-logger = LogManager.get_logger(__name__)
+T = TypeVar("T")
 
 # ----------------------- #
 
 
-class MeilisearchExtension(AbstractABC):
+class MeilisearchExtension(ExtensionABC):
+    """Meilisearch extension"""
 
-    configs = [MeilisearchConfig()]
-    _registry = {MeilisearchConfig: {}}
+    extension_configs: ClassVar[list[Any]] = [MeilisearchConfig()]
+
+    __meili_static: ClassVar[Optional[Any]] = None
+    __ameili_static: ClassVar[Optional[Any]] = None
 
     # ....................... #
 
     def __init_subclass__(cls: Type[M], **kwargs):
+        """Initialize subclass"""
+
         super().__init_subclass__(**kwargs)
 
-        cls._meili_register_subclass()
-        cls._merge_registry()
-        cls._meili_safe_create_or_update()
-
-        MeilisearchExtension._registry = cls._merge_registry_helper(
-            MeilisearchExtension._registry,
-            cls._registry,
+        cls._register_extension_subclass_helper(
+            config=MeilisearchConfig,
+            discriminator="index",
         )
+        cls.__meili_safe_create_or_update()
 
     # ....................... #
 
-    @classmethod
-    def _meili_register_subclass(cls: Type[M]):
-        """Register subclass in the registry"""
-
-        cfg = cls.get_config(type_=MeilisearchConfig)
-        ix = cfg.index
-
-        if cfg.include_to_registry and not cfg.is_default():
-            logger.debug(f"Registering {cls.__name__} in {ix}")
-            logger.debug(f"Registry before: {cls._registry}")
-
-            cls._registry[MeilisearchConfig] = cls._registry.get(MeilisearchConfig, {})
-            cls._registry[MeilisearchConfig][ix] = cls
-
-            logger.debug(f"Registry after: {cls._registry}")
-
-    # ....................... #
-
-    @classmethod
-    def meili_model_reference(
-        cls: Type[M],
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
-        extra: Optional[List[str]] = None,
-        extra_definitions: List[Dict[str, str]] = [],
-    ) -> MeilisearchReference:
+    @classmethod  # TODO: remove ? or simplify somehow
+    def meili_model_reference(cls: Type[M]) -> MeilisearchReferenceV2:
         """
         Generate a Meilisearch reference for the model schema with filters and sort fields
 
-        Args:
-            include (List[str], optional): The fields to include in the schema.
-            exclude (List[str], optional): The fields to exclude from the schema.
-            extra (List[str], optional): Extra fields to include in the schema.
-            extra_definitions (List[Dict[str, str]], optional): Extra definitions for the schema.
-
         Returns:
-            schema (MeilisearchReference): The Meilisearch reference for the model schema
+            schema (MeilisearchReferenceV2): The Meilisearch reference for the model schema
         """
 
-        table_schema = cls.model_flat_schema(
-            include=include,
-            exclude=exclude,
-            extra=extra,
-            extra_definitions=extra_definitions,
+        from .config import MeilisearchConfig
+        from .schema import (
+            AnyFilter,
+            ArrayFilter,
+            BooleanFilter,
+            DatetimeFilter,
+            MeilisearchReferenceV2,
+            NumberFilter,
+            SortField,
         )
 
         full_schema = cls.model_flat_schema()
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
         sort = []
         filters = []
@@ -126,7 +86,8 @@ class MeilisearchExtension(AbstractABC):
                             filter_model = ArrayFilter
 
                         case _:
-                            pass
+                            field["type"] = "array"
+                            filter_model = ArrayFilter
 
                     if filter_model:
                         filters.append(filter_model.model_validate(field))
@@ -139,8 +100,7 @@ class MeilisearchExtension(AbstractABC):
                     sort_key = SortField(**field, default=s == default_sort)
                     sort.append(sort_key)
 
-        return MeilisearchReference(
-            table_schema=table_schema,
+        return MeilisearchReferenceV2(
             filters=filters,
             sort=sort,
         )
@@ -148,93 +108,202 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    def _meili_safe_create_or_update(cls: Type[M]):
+    def __is_static_meili(cls: Type[M]):
+        """
+        Check if static Meilisearch client is used
+
+        Returns:
+            use_static (bool): Whether to use static Meilisearch client
+        """
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        use_static = not cfg.context_client
+
+        return use_static
+
+    # ....................... #
+
+    @classmethod
+    def __get_exclude_mask(cls: Type[M]) -> Optional[dict[str, str | list[str]]]:
+        """Get exclude mask"""
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        return cfg.settings.exclude_mask
+
+    # ....................... #
+
+    @classmethod
+    def __meili_abstract_client(cls):
+        """Abstract client"""
+
+        from meilisearch_python_sdk import Client
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        url = cfg.url()
+        key = cfg.credentials.master_key
+
+        if key:
+            api_key = key.get_secret_value()
+
+        else:
+            api_key = None
+
+        return Client(
+            url=url,
+            api_key=api_key,
+            custom_headers={"Content-Type": "application/json"},
+        )
+
+    # ....................... #
+
+    @classmethod
+    def __ameili_abstract_client(cls):
+        """Abstract async client"""
+
+        from meilisearch_python_sdk import AsyncClient
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        url = cfg.url()
+        key = cfg.credentials.master_key
+
+        if key:
+            api_key = key.get_secret_value()
+
+        else:
+            api_key = None
+
+        return AsyncClient(
+            url=url,
+            api_key=api_key,
+            custom_headers={"Content-Type": "application/json"},
+        )
+
+    # ....................... #
+
+    @classmethod
+    def __meili_static_client(cls):
+        """
+        Get static Meilisearch client
+
+        Returns:
+            client (meilisearch_python_sdk.Client): Static Meilisearch client
+        """
+
+        if cls.__meili_static is None:
+            cls.__meili_static = cls.__meili_abstract_client()
+
+        return cls.__meili_static
+
+    # ....................... #
+
+    @classmethod
+    def __ameili_static_client(cls):
+        """
+        Get static async Meilisearch client
+
+        Returns:
+            client (meilisearch_python_sdk.AsyncClient): Static async Meilisearch client
+        """
+
+        if cls.__ameili_static is None:
+            cls.__ameili_static = cls.__ameili_abstract_client()
+
+        return cls.__ameili_static
+
+    # ....................... #
+
+    @classmethod
+    def __meili_execute_task(
+        cls: Type[M],
+        task: Callable[[Any], T],
+    ) -> T:
+        """Execute task"""
+
+        if cls.__is_static_meili():
+            c = cls.__meili_static_client()
+            return task(c)
+
+        else:
+            with cls.__meili_client() as c:
+                return task(c)
+
+    # ....................... #
+
+    @classmethod
+    async def __ameili_execute_task(
+        cls: Type[M],
+        task: AsyncCallable[[Any], T],
+    ) -> T:
+        """Execute async task"""
+
+        if cls.__is_static_meili():
+            c = cls.__ameili_static_client()
+            return await task(c)
+
+        else:
+            async with cls.__ameili_client() as c:
+                return await task(c)
+
+    # ....................... #
+
+    @classmethod
+    def __meili_safe_create_or_update(cls: Type[M]):
         """
         Safely create or update the Meilisearch index.
         If the index does not exist, it will be created.
         If the index exists and settings were updated, index will be updated.
         """
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        from meilisearch_python_sdk import Client
+        from meilisearch_python_sdk.errors import MeilisearchApiError
+        from meilisearch_python_sdk.models.settings import MeilisearchSettings
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+
+        def _task(c: Client):
+            try:
+                ix = c.get_index(cfg.index)
+                cls._logger.debug(f"Index `{cfg.index}` already exists")
+                settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
+
+                if ix.get_settings() != settings:
+                    cls._meili_update_index(settings)
+                    cls._logger.debug(f"Update of index `{cfg.index}` is started")
+
+            except MeilisearchApiError:
+                settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
+                c.create_index(
+                    cfg.index,
+                    primary_key=cfg.primary_key,
+                    settings=settings,
+                )
+                cls._logger.debug(f"Index `{cfg.index}` is created")
 
         if not cfg.is_default():
-            with cls._meili_client() as c:  # type: ignore
-                try:
-                    ix = c.get_index(cfg.index)
-                    logger.debug(f"Index `{cfg.index}` already exists")
-                    settings = MeilisearchSettings.model_validate(
-                        cfg.settings.model_dump()
-                    )
-
-                    if ix.get_settings() != settings:
-                        cls._meili_update_index(settings)
-                        logger.debug(f"Update of index `{cfg.index}` is started")
-
-                except MeilisearchApiError:
-                    settings = MeilisearchSettings.model_validate(
-                        cfg.settings.model_dump()
-                    )
-                    c.create_index(
-                        cfg.index,
-                        primary_key=cfg.primary_key,
-                        settings=settings,
-                    )
-                    logger.debug(f"Index `{cfg.index}` is created")
+            cls.__meili_execute_task(_task)
 
     # ....................... #
 
-    @classmethod
+    @classmethod  # TODO: move above
     @contextmanager
-    def _meili_client(cls: Type[M]):
+    def __meili_client(cls):
         """Get syncronous Meilisearch client"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
-        url = cfg.url()
-        key = cfg.credentials.master_key
-
-        if key:
-            api_key = key.get_secret_value()
-
-        else:
-            api_key = None
-
-        c = Client(
-            url=url,
-            api_key=api_key,
-            custom_headers={"Content-Type": "application/json"},
-        )
-
         try:
-            yield c
+            yield cls.__meili_abstract_client()
 
         finally:
             pass
 
     # ....................... #
 
-    @classmethod
+    @classmethod  # TODO: move above
     @asynccontextmanager
-    async def _ameili_client(cls: Type[M]):
+    async def __ameili_client(cls):
         """Get asyncronous Meilisearch client"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
-        url = cfg.url()
-        key = cfg.credentials.master_key
-
-        if key:
-            api_key = key.get_secret_value()
-
-        else:
-            api_key = None
-
-        c = AsyncClient(
-            url=url,
-            api_key=api_key,
-            custom_headers={"Content-Type": "application/json"},
-        )
-
         try:
-            yield c
+            yield cls.__ameili_abstract_client()
 
         finally:
             pass
@@ -242,46 +311,83 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    def meili_health(cls: Type[M]) -> bool:
+    def _meili_health(cls: Type[M]) -> bool:
         """Check Meilisearch health"""
 
-        try:
-            with cls._meili_client() as c:  # type: ignore
+        from meilisearch_python_sdk import Client
+
+        def _task(c: Client):
+            try:
                 h = c.health()
                 status = h.status == "available"
 
-        except Exception:
-            status = False
+            except Exception:
+                status = False
 
-        return status
+            return status
+
+        return cls.__meili_execute_task(_task)
 
     # ....................... #
 
     @classmethod
-    def _meili_index(cls: Type[M]) -> Index:
+    async def _ameili_health(cls: Type[M]) -> bool:
+        """Check Meilisearch health"""
+
+        from meilisearch_python_sdk import AsyncClient
+
+        async def _task(c: AsyncClient):
+            try:
+                h = await c.health()
+                status = h.status == "available"
+
+            except Exception:
+                status = False
+
+            return status
+
+        return await cls.__ameili_execute_task(_task)
+
+    # ....................... #
+
+    @classmethod
+    def _meili_index(cls: Type[M]):
         """Get associated Meilisearch index"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        from meilisearch_python_sdk import Client
 
-        with cls._meili_client() as c:  # type: ignore
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+
+        def _task(c: Client):
             return c.get_index(cfg.index)
 
+        return cls.__meili_execute_task(_task)
+
     # ....................... #
 
     @classmethod
-    async def _ameili_index(cls: Type[M]) -> AsyncIndex:
+    async def _ameili_index(cls: Type[M]):
         """Get associated Meilisearch index in asyncronous mode"""
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        from meilisearch_python_sdk import AsyncClient
 
-        async with cls._ameili_client() as c:  # type: ignore
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+
+        async def _task(c: AsyncClient):
             return await c.get_index(cfg.index)
+
+        return await cls.__ameili_execute_task(_task)
 
     # ....................... #
 
     @classmethod
-    def _meili_update_index(cls: Type[M], settings: MeilisearchSettings):
-        """Update Meilisearch index settings"""
+    def _meili_update_index(cls: Type[M], settings: Any):
+        """
+        Update Meilisearch index settings
+
+        Args:
+            settings (MeilisearchSettings): The settings to update
+        """
 
         ix = cls._meili_index()
         available_settings = ix.get_settings()
@@ -298,9 +404,19 @@ class MeilisearchExtension(AbstractABC):
         page: int = 1,
         size: int = 20,
     ):
-        """Prepare search request"""
+        """
+        Prepare search request
 
-        cfg = cls.get_config(type_=MeilisearchConfig)
+        Args:
+            request (SearchRequest): The search request
+            page (int, optional): The page number
+            size (int, optional): The number of hits per page
+
+        Returns:
+            request (dict): The prepared search request
+        """
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
         sortable = cfg.settings.sortable_attributes
         filterable = cfg.settings.filterable_attributes
 
@@ -335,9 +451,15 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @staticmethod
-    def _meili_prepare_response(res: SearchResults) -> SearchResponse:
+    def _meili_prepare_response(res: Any):
         """
-        ...
+        Prepare search response
+
+        Args:
+            res (meilisearch_python_sdk.models.search.SearchResults): The search results
+
+        Returns:
+            response (SearchResponse): The prepared search response
         """
 
         return SearchResponse.from_search_results(res)
@@ -350,12 +472,23 @@ class MeilisearchExtension(AbstractABC):
         request: SearchRequest,
         page: int = 1,
         size: int = 20,
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
-    ) -> SearchResponse:
+        include: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
+    ):
         """
-        ...
+        Search documents in Meilisearch
+
+        Args:
+            request (SearchRequest): The search request
+            page (int, optional): The page number
+            size (int, optional): The number of hits per page
+            include (List[str], optional): The fields to include in the search
+            exclude (List[str], optional): The fields to exclude from the search
+
+        Returns:
+            response (SearchResponse): The search response
         """
+
         fields = list(cls.model_fields.keys()) + list(cls.model_computed_fields.keys())
 
         if exclude is not None and include is None:
@@ -381,12 +514,23 @@ class MeilisearchExtension(AbstractABC):
         request: SearchRequest,
         page: int = 1,
         size: int = 20,
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
-    ) -> SearchResponse:
+        include: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
+    ):
         """
-        ...
+        Search documents in Meilisearch in asyncronous mode
+
+        Args:
+            request (SearchRequest): The search request
+            page (int, optional): The page number
+            size (int, optional): The number of hits per page
+            include (List[str], optional): The fields to include in the search
+            exclude (List[str], optional): The fields to exclude from the search
+
+        Returns:
+            response (SearchResponse): The search response
         """
+
         fields = list(cls.model_fields.keys()) + list(cls.model_computed_fields.keys())
 
         if exclude is not None and include is None:
@@ -407,7 +551,14 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    def meili_delete_documents(cls: Type[M], ids: str | List[str]):
+    def meili_delete_documents(cls: Type[M], ids: str | list[str]):
+        """
+        Delete documents from Meilisearch
+
+        Args:
+            ids (str | List[str]): The document IDs
+        """
+
         ix = cls._meili_index()
 
         if isinstance(ids, str):
@@ -418,7 +569,14 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    async def ameili_delete_documents(cls: Type[M], ids: str | List[str]):
+    async def ameili_delete_documents(cls: Type[M], ids: str | list[str]):
+        """
+        Delete documents from Meilisearch in asyncronous mode
+
+        Args:
+            ids (str | List[str]): The document IDs
+        """
+
         ix = await cls._ameili_index()
 
         if isinstance(ids, str):
@@ -430,8 +588,17 @@ class MeilisearchExtension(AbstractABC):
 
     @classmethod
     def _meili_all_documents(cls: Type[M]):
+        """
+        Get all documents from Meilisearch
+
+        Returns:
+            documents (List[JsonDict]): The list of documents
+        """
+
+        from meilisearch_python_sdk.types import JsonDict
+
         ix = cls._meili_index()
-        res: List[JsonDict] = []
+        res: list[JsonDict] = []
         offset = 0
 
         while docs := ix.get_documents(offset=offset, limit=1000).results:
@@ -444,8 +611,17 @@ class MeilisearchExtension(AbstractABC):
 
     @classmethod
     async def _ameili_all_documents(cls: Type[M]):
+        """
+        Get all documents from Meilisearch in asyncronous mode
+
+        Returns:
+            documents (List[JsonDict]): The list of documents
+        """
+
+        from meilisearch_python_sdk.types import JsonDict
+
         ix = await cls._ameili_index()
-        res: List[JsonDict] = []
+        res: list[JsonDict] = []
         offset = 0
 
         while docs := (await ix.get_documents(offset=offset, limit=1000)).results:
@@ -457,31 +633,98 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    def meili_update_documents(cls: Type[M], docs: M | List[M]):
+    def meili_update_documents(cls: Type[M], docs: M | list[M]):
+        """
+        Update documents in Meilisearch
+
+        Args:
+            docs (M | List[M]): The documents to update
+        """
+
         ix = cls._meili_index()
+        exclude_mask = cls.__get_exclude_mask()
 
         if not isinstance(docs, list):
             docs = [docs]
 
-        doc_dicts = [d.model_dump() for d in docs]
+        masked = []
+
+        if exclude_mask:
+            for d in docs:
+                for k, v in exclude_mask.items():
+                    if hasattr(d, k):
+                        doc_value = getattr(d, k)
+
+                        if not isinstance(v, list):
+                            v = [v]
+
+                        if not isinstance(doc_value, list):
+                            doc_value = [doc_value]
+
+                        # Handle unhashable exceptions
+                        try:
+                            if set(doc_value).intersection(v):
+                                masked.append(d)
+
+                        except Exception:
+                            pass
+
+        doc_dicts = [d.model_dump() for d in docs if d not in masked]
         ix.update_documents(doc_dicts)
 
     # ....................... #
 
     @classmethod
-    async def ameili_update_documents(cls: Type[M], docs: M | List[M]):
+    async def ameili_update_documents(cls: Type[M], docs: M | list[M]):
+        """
+        Update documents in Meilisearch in asyncronous mode
+
+        Args:
+            docs (M | List[M]): The documents to update
+        """
+
         ix = await cls._ameili_index()
+        exclude_mask = cls.__get_exclude_mask()
 
         if not isinstance(docs, list):
             docs = [docs]
 
-        doc_dicts = [d.model_dump() for d in docs]
+        masked = []
+
+        if exclude_mask:
+            for d in docs:
+                for k, v in exclude_mask.items():
+                    if hasattr(d, k):
+                        doc_value = getattr(d, k)
+
+                        if not isinstance(v, list):
+                            v = [v]
+
+                        if not isinstance(doc_value, list):
+                            doc_value = [doc_value]
+
+                        # Handle unhashable exceptions
+                        try:
+                            if set(doc_value).intersection(v):
+                                masked.append(d)
+
+                        except Exception:
+                            pass
+
+        doc_dicts = [d.model_dump() for d in docs if d not in masked]
         await ix.update_documents(doc_dicts)
 
     # ....................... #
 
     @classmethod
-    def meili_last_update(cls: Type[M]) -> Optional[int]:
+    def meili_last_update(cls: Type[M]):
+        """
+        Get the last update timestamp of the Meilisearch index
+
+        Returns:
+            timestamp (int | None): The last update timestamp
+        """
+
         ix = cls._meili_index()
         dt = ix.updated_at
 
@@ -493,7 +736,14 @@ class MeilisearchExtension(AbstractABC):
     # ....................... #
 
     @classmethod
-    async def ameili_last_update(cls: Type[M]) -> Optional[int]:
+    async def ameili_last_update(cls: Type[M]):
+        """
+        Get the last update timestamp of the Meilisearch index in asyncronous mode
+
+        Returns:
+            timestamp (int | None): The last update timestamp
+        """
+
         ix = await cls._ameili_index()
         dt = ix.updated_at
 

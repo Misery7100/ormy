@@ -2,9 +2,6 @@ import re
 from contextlib import contextmanager
 from typing import Any, ClassVar, Dict, List, TypeVar
 
-import boto3  # type: ignore[import-untyped]
-from botocore.client import Config  # type: ignore[import-untyped]
-
 from ormy.base.abc import ExtensionABC
 from ormy.base.error import BadRequest, Conflict
 from ormy.base.generic import TabularData
@@ -91,6 +88,9 @@ class S3Extension(ExtensionABC):
     @contextmanager
     def __s3_client(cls):
         """Get syncronous S3 client"""
+
+        import boto3  # type: ignore[import-untyped]
+        from botocore.client import Config  # type: ignore[import-untyped]
 
         cfg = cls.get_extension_config(type_=S3Config)
         credentials = cfg.credentials

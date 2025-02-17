@@ -1,8 +1,5 @@
 from typing import Any, ClassVar, Literal, Optional, Sequence, Type, TypeVar, cast
 
-from arango.client import ArangoClient
-from arango.cursor import Cursor
-
 from ormy.base.abc import DocumentSingleABC
 from ormy.base.error import BadRequest, Conflict, NotFound
 from ormy.base.generic import TabularData
@@ -22,7 +19,8 @@ class ArangoBase(DocumentSingleABC):
 
     config: ClassVar[ArangoConfig] = ArangoConfig()
 
-    __static: ClassVar[Optional[ArangoClient]] = None
+    __static: ClassVar[Optional[Any]] = None
+
     # ....................... #
 
     def __init_subclass__(cls: Type[A], **kwargs):
@@ -42,6 +40,8 @@ class ArangoBase(DocumentSingleABC):
         Returns:
             client (arango.ArangoClient): Syncronous ArangoDB client
         """
+
+        from arango.client import ArangoClient
 
         if cls.__static is None:
             cls.__static = ArangoClient(hosts=cls.config.url())
@@ -252,6 +252,8 @@ class ArangoBase(DocumentSingleABC):
             res (int): Number of documents
         """
 
+        from arango.cursor import Cursor
+
         if query is None:
             collection = cls._get_collection()
             cnt = collection.count()
@@ -301,6 +303,8 @@ class ArangoBase(DocumentSingleABC):
             res (list[ArangoBase]): List of found data models
         """
 
+        from arango.cursor import Cursor
+
         db = cls._get_database()
 
         q = f"""
@@ -341,6 +345,8 @@ class ArangoBase(DocumentSingleABC):
         Returns:
             res (list[ArangoBase]): List of found data models
         """
+
+        from arango.cursor import Cursor
 
         db = cls._get_database()
 

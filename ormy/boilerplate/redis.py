@@ -2,14 +2,14 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, List
 
 from ormy.base.error import InternalError
-from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtensionV2
+from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtension
 from ormy.extension.redlock import RedlockConfig, RedlockExtension
-from ormy.service.redis import RedisConfig, RedisSingleBase
+from ormy.service.redis import RedisBase, RedisConfig
 
 # ----------------------- #
 
 
-class RedisMeilisearchBoilerplate(RedisSingleBase, MeilisearchExtensionV2):
+class RedisMeilisearchBoilerplate(RedisBase, MeilisearchExtension):
     config: ClassVar[RedisConfig] = RedisConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
 
@@ -38,7 +38,7 @@ class RedisMeilisearchBoilerplate(RedisSingleBase, MeilisearchExtensionV2):
 # ....................... #
 
 
-class RedisRedlockBoilerplate(RedisSingleBase, RedlockExtension):
+class RedisRedlockBoilerplate(RedisBase, RedlockExtension):
     config: ClassVar[RedisConfig] = RedisConfig()
     extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
 

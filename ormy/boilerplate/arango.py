@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Dict, List, Optional, Self
 
 from ormy.base.error import InternalError
-from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtensionV2
+from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtension
 from ormy.extension.rabbitmq import RabbitMQConfig, RabbitMQExtension
 from ormy.extension.redlock import RedlockConfig, RedlockExtension
 from ormy.extension.s3 import S3Config, S3Extension
@@ -11,7 +11,7 @@ from ormy.service.arango import ArangoBase, ArangoConfig
 # ----------------------- #
 
 
-class ArangoMeilisearchBoilerplate(ArangoBase, MeilisearchExtensionV2):
+class ArangoMeilisearchBoilerplate(ArangoBase, MeilisearchExtension):
     config: ClassVar[ArangoConfig] = ArangoConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
 

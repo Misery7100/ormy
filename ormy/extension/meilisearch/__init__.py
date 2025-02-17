@@ -1,20 +1,10 @@
 from .config import (
-    Faceting,
-    HuggingFaceEmbedder,
-    JsonDict,
-    LocalizedAttributes,
     MeilisearchConfig,
     MeilisearchCredentials,
     MeilisearchSettings,
-    OllamaEmbedder,
-    OpenAiEmbedder,
-    Pagination,
-    ProximityPrecision,
-    RestEmbedder,
-    TypoTolerance,
-    UserProvidedEmbedder,
 )
 from .schema import (
+    AnyFilter,
     ArrayFilter,
     BooleanFilter,
     DatetimeFilter,
@@ -22,11 +12,9 @@ from .schema import (
     NumberFilter,
     SearchRequest,
     SearchResponse,
-    AnyFilter,
     SortOrder,
 )
 from .wrapper import MeilisearchExtension
-from .wrapper_new import MeilisearchExtensionV2
 
 # ----------------------- #
 
@@ -35,7 +23,6 @@ __all__ = [
     "MeilisearchCredentials",
     "MeilisearchSettings",
     "MeilisearchExtension",
-    "MeilisearchExtensionV2",
     "SortOrder",
     "SearchRequest",
     "SearchResponse",
@@ -45,15 +32,4 @@ __all__ = [
     "BooleanFilter",
     "DatetimeFilter",
     "NumberFilter",
-    "JsonDict",
-    "TypoTolerance",
-    "Faceting",
-    "Pagination",
-    "ProximityPrecision",
-    "LocalizedAttributes",
-    "OpenAiEmbedder",
-    "OllamaEmbedder",
-    "RestEmbedder",
-    "UserProvidedEmbedder",
-    "HuggingFaceEmbedder",
 ]

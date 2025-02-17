@@ -4,26 +4,9 @@ import json
 import re
 import time
 from abc import abstractmethod
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    ParamSpec,
-    TypeVar,
-)
+from typing import Any, Callable, Optional, ParamSpec, TypeVar
 
 import anyio
-from aiocache import Cache as AioCache  # type: ignore[import-untyped]
-from aiocache import cached as aiocache_cached  # type: ignore[import-untyped]
-from aiocache.backends.redis import (  # type: ignore[import-untyped]
-    RedisCache as AiocacheRedisCache,
-)
-from aiocache.base import API  # type: ignore[import-untyped]
-from aiocache.base import BaseCache as AioBaseCache  # type: ignore[import-untyped]
-from aiocache.decorators import logger  # type: ignore[import-untyped]
-from aiocache.factory import caches  # type: ignore[import-untyped]
 
 from ormy.base.error import InternalError
 from ormy.base.typing import AsyncCallable
@@ -36,18 +19,91 @@ T = TypeVar("T")
 # ----------------------- #
 
 
-class BaseCache(AioBaseCache):
-    @API.register
-    @API.aiocache_enabled(fake_return=True)
-    @API.timeout
-    @API.plugins
+def _get_api():
+    """Dynamically import API only when needed."""
+    try:
+        from aiocache.base import API  # type: ignore[import-untyped]
+    except ImportError:
+        raise ImportError(
+            "Aiocache dependency is missing. Install with `pip install ormy[cache]`."
+        )
+    return API
+
+
+# ....................... #
+
+
+def _get_cache():
+    """Dynamically import AioCache only when needed."""
+    try:
+        from aiocache import Cache  # type: ignore[import-untyped]
+    except ImportError:
+        raise ImportError(
+            "Aiocache dependency is missing. Install with `pip install ormy[cache]`."
+        )
+    return Cache
+
+
+# ....................... #
+
+
+def _get_cached():
+    """Dynamically import cached only when needed."""
+    try:
+        from aiocache.decorators import cached  # type: ignore[import-untyped]
+    except ImportError:
+        raise ImportError(
+            "Aiocache dependency is missing. Install with `pip install ormy[cache]`."
+        )
+
+    return cached
+
+
+# ....................... #
+
+
+def _get_redis_cache():
+    """Dynamically import RedisCache only when needed."""
+    try:
+        from aiocache.backends.redis import RedisCache  # type: ignore[import-untyped]
+    except ImportError:
+        raise ImportError(
+            "Aiocache dependency is missing. Install with `pip install ormy[cache]`."
+        )
+
+    return RedisCache
+
+
+# ....................... #
+
+
+def _get_base_cache():
+    """Dynamically import BaseCache only when needed."""
+    try:
+        from aiocache.base import BaseCache  # type: ignore[import-untyped]
+    except ImportError:
+        raise ImportError(
+            "Aiocache dependency is missing. Install with `pip install ormy[cache]`."
+        )
+
+    return BaseCache
+
+
+# ....................... #
+
+
+class BaseCache(_get_base_cache()):  # type: ignore[misc]
+    @_get_api().register  # type: ignore[misc]
+    @_get_api().aiocache_enabled(fake_return=True)  # type: ignore[misc]
+    @_get_api().timeout  # type: ignore[misc]
+    @_get_api().plugins  # type: ignore[misc]
     async def clear(
         self,
         namespace: Optional[str] = None,
         _conn: Optional[Any] = None,
-        patterns: Optional[List[str]] = None,
-        except_keys: Optional[List[str]] = None,
-        except_patterns: Optional[List[str]] = None,
+        patterns: Optional[list[str]] = None,
+        except_keys: Optional[list[str]] = None,
+        except_patterns: Optional[list[str]] = None,
     ):
         """
         Clears the cache in the cache namespace. If an alternative namespace is given, it will
@@ -59,6 +115,9 @@ class BaseCache(AioBaseCache):
         :returns: True
         :raises: :class:`asyncio.TimeoutError` if it lasts more than self.timeout
         """
+
+        from aiocache.decorators import logger
+
         start = time.monotonic()
         ret = await self._clear(
             namespace,
@@ -77,9 +136,9 @@ class BaseCache(AioBaseCache):
         self,
         namespace: Optional[str] = None,
         _conn: Optional[Any] = None,
-        patterns: Optional[List[str]] = None,
-        except_keys: Optional[List[str]] = None,
-        except_patterns: Optional[List[str]] = None,
+        patterns: Optional[list[str]] = None,
+        except_keys: Optional[list[str]] = None,
+        except_patterns: Optional[list[str]] = None,
     ):
         raise NotImplementedError()
 
@@ -87,14 +146,14 @@ class BaseCache(AioBaseCache):
 # ....................... #
 
 
-class RedisCache(AiocacheRedisCache, BaseCache):
+class RedisCache(_get_redis_cache(), BaseCache):  # type: ignore[misc]
     async def _clear(
         self,
         namespace: Optional[str] = None,
         _conn: Optional[Any] = None,
-        patterns: Optional[List[str]] = None,
-        except_keys: Optional[List[str]] = None,
-        except_patterns: Optional[List[str]] = None,
+        patterns: Optional[list[str]] = None,
+        except_keys: Optional[list[str]] = None,
+        except_patterns: Optional[list[str]] = None,
     ):
         if namespace:
             keys = await self.client.keys("{}:*".format(namespace))
@@ -146,19 +205,22 @@ class RedisCache(AiocacheRedisCache, BaseCache):
 # ....................... #
 
 
-class CustomCache(AioCache):
+class CustomCache(_get_cache()):  # type: ignore[misc]
     REDIS = RedisCache
 
 
 # ....................... #
 
 
-class _acached(aiocache_cached):
+class _acached(_get_cached()):  # type: ignore[misc]
     """
-    Subclass of `.aiocache_cached` decorator that supports synchronous functions.
+    Subclass of `aiocache_cached` decorator that supports synchronous functions.
     """
 
     def __call__(self, f: AsyncCallable[P, T]):
+        from aiocache.decorators import logger  # type: ignore[import-untyped]
+        from aiocache.factory import caches  # type: ignore[import-untyped]
+
         if self.alias:
             self.cache = caches.get(self.alias)  #! ???
             for arg in ("serializer", "namespace", "plugins"):
@@ -217,12 +279,15 @@ class _acached(aiocache_cached):
 # ....................... #
 
 
-class _cached(aiocache_cached):
+class _cached(_get_cached()):  # type: ignore[misc]
     """
-    Subclass of `.aiocache_cached` decorator that supports synchronous functions.
+    Subclass of `aiocache_cached` decorator that supports synchronous functions.
     """
 
     def __call__(self, f: Callable[P, T]):
+        from aiocache.decorators import logger
+        from aiocache.factory import caches
+
         if self.alias:
             self.cache = caches.get(self.alias)  #! ???
             for arg in ("serializer", "namespace", "plugins"):
@@ -281,7 +346,7 @@ class _cached(aiocache_cached):
 # ....................... #
 
 
-def generate_pattern(criteria: Dict[str, Any]):
+def generate_pattern(criteria: dict[str, Any]):
     """
     Generate a regex pattern to match all key-value pairs in the given dictionary.
 
@@ -334,14 +399,14 @@ def _parse_f_signature(f: Callable | AsyncCallable, *args, **kwargs):
 
 def _key_factory(
     name: str,
-    include_params: Optional[List[str]] = None,
+    include_params: Optional[list[str]] = None,
 ):
     """
     Create a cache key for a function.
 
     Args:
         name (str): A name to use.
-        include_params (List[str], optional): A list of keys to use as the cache key.
+        include_params (list[str], optional): A list of keys to use as the cache key.
 
     Returns:
         key_builder (Callable): A function that creates a cache key for a function.
@@ -363,7 +428,7 @@ def _key_factory(
         _id, pos_defaults, arg_names, self_or_cls = _parse_f_signature(
             f, *args, **kwargs
         )
-        key_dict: Dict[str, Any] = {"name": name, "id": _id}
+        key_dict: dict[str, Any] = {"name": name, "id": _id}
 
         if include_params:
             for u in include_params:
@@ -401,7 +466,7 @@ def _extract_namespace(self_or_cls):
 
 def acache(
     name: str,
-    include_params: Optional[List[str]] = None,
+    include_params: Optional[list[str]] = None,
     **cache_kwargs,
 ):
     """
@@ -409,7 +474,7 @@ def acache(
 
     Args:
         name (str): The name to use in the cache key.
-        include_params (List[str], optional): The parameters to use in the cache key.
+        include_params (list[str], optional): The parameters to use in the cache key.
         **cache_kwargs: The cache kwargs.
 
     Returns:
@@ -435,7 +500,7 @@ def acache(
 
 def cache(
     name: str,
-    include_params: Optional[List[str]] = None,
+    include_params: Optional[list[str]] = None,
     **cache_kwargs,
 ):
     """
@@ -443,7 +508,7 @@ def cache(
 
     Args:
         name (str): The name to use in the cache key.
-        include_params (List[str], optional): The parameters to use in the cache key.
+        include_params (list[str], optional): The parameters to use in the cache key.
         **cache_kwargs: The cache kwargs.
 
     Returns:
@@ -469,10 +534,10 @@ def cache(
 
 def inline_cache_clear(
     namespace: str,
-    keys: Optional[List[str]] = None,
-    patterns: Optional[List[Dict[str, Any]]] = None,
-    except_keys: Optional[List[str]] = None,
-    except_patterns: Optional[List[Dict[str, Any]]] = None,
+    keys: Optional[list[str]] = None,
+    patterns: Optional[list[dict[str, Any]]] = None,
+    except_keys: Optional[list[str]] = None,
+    except_patterns: Optional[list[dict[str, Any]]] = None,
     **cache_kwargs,
 ):
     """
@@ -480,10 +545,10 @@ def inline_cache_clear(
 
     Args:
         namespace (str): The namespace to clear the cache for.
-        keys (List[str], optional): The keys to clear the cache for.
-        patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
-        except_keys (List[str], optional): The keys to exclude from the cache clear.
-        except_patterns (List[Dict[str, Any]], optional): The patterns to exclude from the cache clear.
+        keys (list[str], optional): The keys to clear the cache for.
+        patterns (list[dict[str, Any]], optional): The patterns to clear the cache for.
+        except_keys (list[str], optional): The keys to exclude from the cache clear.
+        except_patterns (list[dict[str, Any]], optional): The patterns to exclude from the cache clear.
     """
 
     if patterns is not None:
@@ -532,10 +597,10 @@ def inline_cache_clear(
 
 async def ainline_cache_clear(
     namespace: str,
-    keys: Optional[List[str]] = None,
-    patterns: Optional[List[Dict[str, Any]]] = None,
-    except_keys: Optional[List[str]] = None,
-    except_patterns: Optional[List[Dict[str, Any]]] = None,
+    keys: Optional[list[str]] = None,
+    patterns: Optional[list[dict[str, Any]]] = None,
+    except_keys: Optional[list[str]] = None,
+    except_patterns: Optional[list[dict[str, Any]]] = None,
     **cache_kwargs,
 ):
     """
@@ -543,10 +608,10 @@ async def ainline_cache_clear(
 
     Args:
         namespace (str): The namespace to clear the cache for.
-        keys (List[str], optional): The keys to clear the cache for.
-        patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
-        except_keys (List[str], optional): The keys to exclude from the cache clear.
-        except_patterns (List[Dict[str, Any]], optional): The patterns to exclude from the cache clear.
+        keys (list[str], optional): The keys to clear the cache for.
+        patterns (list[dict[str, Any]], optional): The patterns to clear the cache for.
+        except_keys (list[str], optional): The keys to exclude from the cache clear.
+        except_patterns (list[dict[str, Any]], optional): The patterns to exclude from the cache clear.
     """
 
     if patterns is not None:
@@ -585,20 +650,20 @@ async def ainline_cache_clear(
 
 
 def acache_clear(
-    keys: Optional[List[str]] = None,
-    patterns: Optional[List[Dict[str, Any]]] = None,
-    except_keys: Optional[List[str]] = None,
-    except_patterns: Optional[List[Dict[str, Any]]] = None,
+    keys: Optional[list[str]] = None,
+    patterns: Optional[list[dict[str, Any]]] = None,
+    except_keys: Optional[list[str]] = None,
+    except_patterns: Optional[list[dict[str, Any]]] = None,
     **cache_kwargs,
 ):
     """
     Decorator to clear the cache
 
     Args:
-        keys (List[str], optional): The keys to clear the cache for.
-        patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
-        except_keys (List[str], optional): The keys to exclude from the cache clear.
-        except_patterns (List[Dict[str, Any]], optional): The patterns to exclude from the cache clear.
+        keys (list[str], optional): The keys to clear the cache for.
+        patterns (list[dict[str, Any]], optional): The patterns to clear the cache for.
+        except_keys (list[str], optional): The keys to exclude from the cache clear.
+        except_patterns (list[dict[str, Any]], optional): The patterns to exclude from the cache clear.
 
     Returns:
         decorator (Callable): The decorator to clear the cache.
@@ -647,20 +712,20 @@ def acache_clear(
 
 
 def cache_clear(
-    keys: Optional[List[str]] = None,
-    patterns: Optional[List[Dict[str, Any]]] = None,
-    except_keys: Optional[List[str]] = None,
-    except_patterns: Optional[List[Dict[str, Any]]] = None,
+    keys: Optional[list[str]] = None,
+    patterns: Optional[list[dict[str, Any]]] = None,
+    except_keys: Optional[list[str]] = None,
+    except_patterns: Optional[list[dict[str, Any]]] = None,
     **cache_kwargs,
 ):
     """
     Decorator to clear the cache
 
     Args:
-        keys (List[str], optional): The keys to clear the cache for.
-        patterns (List[Dict[str, Any]], optional): The patterns to clear the cache for.
-        except_keys (List[str], optional): The keys to exclude from the cache clear.
-        except_patterns (List[Dict[str, Any]], optional): The patterns to exclude from the cache clear.
+        keys (list[str], optional): The keys to clear the cache for.
+        patterns (list[dict[str, Any]], optional): The patterns to clear the cache for.
+        except_keys (list[str], optional): The keys to exclude from the cache clear.
+        except_patterns (list[dict[str, Any]], optional): The patterns to exclude from the cache clear.
 
     Returns:
         decorator (Callable): The decorator to clear the cache.

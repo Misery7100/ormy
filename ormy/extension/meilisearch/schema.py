@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import Annotated, Any, List, Literal, Optional, Tuple, Type, TypeVar, Union
+from typing import Annotated, Any, Literal, Optional, Type, TypeVar, Union
 
-from meilisearch_python_sdk.models.search import SearchResults
 from pydantic import BaseModel, Field
 
 from ormy.base.generic import TabularData
@@ -105,7 +104,7 @@ class NumberFilter(FilterABC):
         value (Tuple[float | None, float | None]): The filter value
     """
 
-    value: Tuple[Optional[float], Optional[float]] = (None, None)
+    value: tuple[Optional[float], Optional[float]] = (None, None)
     type: Literal["number"] = "number"
 
     # ....................... #
@@ -137,7 +136,7 @@ class DatetimeFilter(FilterABC):
         value (Tuple[int | None, int | None]): The filter value
     """
 
-    value: Tuple[Optional[int], Optional[int]] = (None, None)
+    value: tuple[Optional[int], Optional[int]] = (None, None)
     type: Literal["datetime"] = "datetime"
 
     # ....................... #
@@ -169,7 +168,7 @@ class ArrayFilter(FilterABC):
         value (List[Any]): The filter value
     """
 
-    value: List[Any] = []
+    value: list[Any] = []
     type: Literal["array"] = "array"
 
     # ....................... #
@@ -195,7 +194,7 @@ class SearchRequest(BaseModel):
     query: str = ""
     sort: Optional[str] = None
     order: SortOrder = SortOrder.desc
-    filters: List[AnyFilter] = []
+    filters: list[AnyFilter] = []
 
 
 # ----------------------- #
@@ -207,7 +206,7 @@ class SearchResponse(TableResponse):
     @classmethod
     def from_search_results(
         cls: Type[S],
-        res: SearchResults,
+        res: Any,
     ) -> S:
         """
         ...
@@ -232,8 +231,8 @@ class SearchResponse(TableResponse):
 
 
 class MeilisearchReference(BaseReference):
-    sort: List[SortField] = []
-    filters: List[AnyFilter] = []
+    sort: list[SortField] = []
+    filters: list[AnyFilter] = []
 
 
 # ....................... #
@@ -248,5 +247,5 @@ class MeilisearchReferenceV2(BaseModel):
         filters (List[ormy.extension.meilisearch.schema.AnyFilter]): The filters
     """
 
-    sort: List[SortField] = []
-    filters: List[AnyFilter] = []
+    sort: list[SortField] = []
+    filters: list[AnyFilter] = []

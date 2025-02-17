@@ -4,11 +4,11 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Dict, List, Optional, Self, Type, TypeVar
 
 from ormy.base.error import InternalError
-from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtensionV2
+from ormy.extension.meilisearch import MeilisearchConfig, MeilisearchExtension
 from ormy.extension.rabbitmq import RabbitMQConfig, RabbitMQExtension
 from ormy.extension.redlock import RedlockConfig, RedlockExtension
 from ormy.extension.s3 import S3Config, S3Extension
-from ormy.service.mongo import MongoConfig, MongoSingleBase
+from ormy.service.mongo import MongoBase, MongoConfig
 
 # ----------------------- #
 
@@ -17,7 +17,7 @@ M = TypeVar("M", bound="MongoMeilisearchBackgroundBoilerplate")
 # ----------------------- #
 
 
-class MongoMeilisearchBoilerplate(MongoSingleBase, MeilisearchExtensionV2):
+class MongoMeilisearchBoilerplate(MongoBase, MeilisearchExtension):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [MeilisearchConfig()]
 
@@ -124,7 +124,7 @@ class MongoMeilisearchBackgroundBoilerplate(MongoMeilisearchBoilerplate):
 # ....................... #
 
 
-class MongoS3Boilerplate(MongoSingleBase, S3Extension):
+class MongoS3Boilerplate(MongoBase, S3Extension):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [S3Config()]
 
@@ -267,7 +267,7 @@ class MongoS3Boilerplate(MongoSingleBase, S3Extension):
 # ....................... #
 
 
-class MongoRedlockBoilerplate(MongoSingleBase, RedlockExtension):
+class MongoRedlockBoilerplate(MongoBase, RedlockExtension):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
 
@@ -362,7 +362,7 @@ class MongoRedlockBoilerplate(MongoSingleBase, RedlockExtension):
 # ....................... #
 
 
-class MongoRabbitMQBoilerplate(MongoSingleBase, RabbitMQExtension):
+class MongoRabbitMQBoilerplate(MongoBase, RabbitMQExtension):
     config: ClassVar[MongoConfig] = MongoConfig()
     extension_configs: ClassVar[List[Any]] = [RabbitMQConfig()]
 

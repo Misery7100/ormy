@@ -1,77 +1,101 @@
 import json
 from contextlib import asynccontextmanager, contextmanager
-from typing import Optional, Self, Type, TypeVar
+from typing import Any, Callable, ClassVar, Optional, Self, Type, TypeVar, cast
 
-from redis import Redis
-from redis import asyncio as aioredis
-from redis.asyncio.client import Pipeline as Apipeline
-from redis.client import Pipeline
-
-from ormy.base.abc import DocumentABC
-from ormy.base.logging import LogManager
-from ormy.base.typing import DocumentID
+from ormy.base.abc import DocumentSingleABC
+from ormy.base.error import Conflict, NotFound
+from ormy.base.typing import AsyncCallable, DocumentID
 
 from .config import RedisConfig
 
 # ----------------------- #
 
-T = TypeVar("T", bound="RedisBase")
-
-logger = LogManager.get_logger(__name__)
+R = TypeVar("R", bound="RedisBase")
+T = TypeVar("T")
 
 # ----------------------- #
 
 
-class RedisBase(DocumentABC):  # TODO: add docstrings
-    """Base ORM document model class for Redis"""
+class RedisBase(DocumentSingleABC):
+    """MongoDB base class"""
 
-    configs = [RedisConfig()]
-    _registry = {RedisConfig: {}}
+    config: ClassVar[RedisConfig] = RedisConfig()
+
+    __static: ClassVar[Optional[Any]] = None
+    __astatic: ClassVar[Optional[Any]] = None
 
     # ....................... #
 
-    def __init_subclass__(cls: Type[T], **kwargs):
+    def __init_subclass__(cls: Type[R], **kwargs):
+        """Initialize subclass"""
+
         super().__init_subclass__(**kwargs)
 
-        cls._redis_register_subclass()
-        cls._merge_registry()
-
-        RedisBase._registry = cls._merge_registry_helper(
-            RedisBase._registry,
-            cls._registry,
-        )
+        cls._register_subclass_helper(discriminator=["database", "collection"])
 
     # ....................... #
 
     @classmethod
-    def _redis_register_subclass(cls: Type[T]):
-        """Register subclass in the registry"""
+    def __is_static_redis(cls: Type[R]):
+        """Check if static Redis client is used"""
 
-        cfg = cls.get_config(type_=RedisConfig)
-        db = cfg.database
-        col = cfg.collection
+        return not cls.config.context_client
 
-        # TODO: use exact default value from class
-        if cfg.include_to_registry and not cfg.is_default():
-            logger.debug(f"Registering {cls.__name__} in {db}.{col}")
-            logger.debug(f"Registry before: {cls._registry}")
+    # ....................... #
 
-            cls._registry[RedisConfig] = cls._registry.get(RedisConfig, {})
-            cls._registry[RedisConfig][db] = cls._registry[RedisConfig].get(db, {})
-            cls._registry[RedisConfig][db][col] = cls
+    @classmethod
+    def __static_client(cls):
+        """
+        Get static Redis client
 
-            logger.debug(f"Registry after: {cls._registry}")
+        Returns:
+            client (redis.Redis): Static Redis client
+        """
+
+        from redis import Redis
+
+        if cls.__static is None:
+            url = cls.config.url()
+            cls.__static = Redis.from_url(
+                url,
+                decode_responses=True,
+            )
+
+        return cls.__static
+
+    # ....................... #
+
+    @classmethod
+    async def __astatic_client(cls):
+        """
+        Get static async Redis client
+
+        Returns:
+            client (redis.asyncio.Redis): Static async Redis client
+        """
+
+        from redis import asyncio as aioredis
+
+        if cls.__astatic is None:
+            url = cls.config.url()
+            cls.__astatic = aioredis.from_url(
+                url,
+                decode_responses=True,
+            )
+
+        return cls.__astatic
 
     # ....................... #
 
     @classmethod
     @contextmanager
-    def _client(cls: Type[T]):
+    def __client(cls):
         """Get syncronous Redis client"""
 
-        cfg = cls.get_config(type_=RedisConfig)
-        url = cfg.url()
-        r = Redis.from_url(url)
+        from redis import Redis
+
+        url = cls.config.url()
+        r = Redis.from_url(url, decode_responses=True)
 
         try:
             yield r
@@ -83,12 +107,13 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     @classmethod
     @asynccontextmanager
-    async def _aclient(cls: Type[T]):
+    async def __aclient(cls):
         """Get asyncronous Redis client"""
 
-        cfg = cls.get_config(type_=RedisConfig)
-        url = cfg.url()
-        r = aioredis.from_url(url)
+        from redis import asyncio as aioredis
+
+        url = cls.config.url()
+        r = aioredis.from_url(url, decode_responses=True)
 
         try:
             yield r
@@ -99,62 +124,112 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    def _build_key(cls: Type[T], key: DocumentID) -> str:
-        """Build key for Redis storage"""
+    def __execute_task(cls, task: Callable[[Any], T]) -> T:
+        """Execute task"""
 
-        cfg = cls.get_config(type_=RedisConfig)
+        if cls.__is_static_redis():
+            c = cls.__static_client()
+            return task(c)
 
-        return f"{cfg.collection}:{key}"
+        else:
+            with cls.__client() as c:
+                return task(c)
 
     # ....................... #
 
     @classmethod
-    def create(cls: Type[T], data: T) -> T:
+    async def __aexecute_task(cls, task: AsyncCallable[[Any], T]) -> T:
+        """Execute async task"""
+
+        if cls.__is_static_redis():
+            c = await cls.__astatic_client()
+            return await task(c)
+
+        else:
+            async with cls.__aclient() as c:
+                return await task(c)
+
+    # ....................... #
+
+    @classmethod
+    def _build_key(cls, key: DocumentID) -> str:
+        """Build key for Redis storage"""
+
+        return f"{cls.config.collection}:{key}"
+
+    # ....................... #
+
+    @classmethod
+    def create(cls: Type[R], data: R) -> R:
         """
-        Create a new document in the collection (meta)
+        Create a new document in Redis
 
         Args:
-            data (RedisBase): Data model to be created
+            data (RedisSingleBase): Data model to be created
 
         Returns:
-            res (RedisBase): Created data model
+            res (RedisSingleBase): Created data model
+
+        Raises:
+            _ (ormy.base.error.Conflict): Document already exists
         """
 
-        document = data.model_dump()
+        from redis import Redis
+
+        document = data.model_dump(mode="json")
+
         _id = document["id"]
         key = cls._build_key(_id)
 
-        if cls.find(_id, bypass=True) is not None:
-            raise ValueError(f"Document with ID {_id} already exists")
+        try:
+            cls.find(_id)
+            raise Conflict("Document already exists")
 
-        with cls._client() as client:  # type: ignore
-            client.set(key, json.dumps(document))
+        except NotFound:
+            pass
+
+        def _task(c: Redis):
+            c.set(key, json.dumps(document))
+
+        cls.__execute_task(_task)
 
         return data
 
     # ....................... #
 
     @classmethod
-    async def acreate(cls: Type[T], data: T) -> T:
+    async def acreate(cls: Type[R], data: R) -> R:
         """
-        Create a new document in the collection (meta) in async mode
+        Create a new document in Redis
 
         Args:
-            data (RedisBase): Data model to be created
+            data (RedisSingleBase): Data model to be created
 
         Returns:
-            res (RedisBase): Created data model
+            res (RedisSingleBase): Created data model
+
+        Raises:
+            _ (ormy.base.error.Conflict): Document already exists
         """
 
-        document = data.model_dump()
+        from redis import asyncio as aioredis
+
+        document = data.model_dump(mode="json")
+
         _id = document["id"]
         key = cls._build_key(_id)
 
-        if await cls.afind(_id, bypass=True) is not None:
-            raise ValueError(f"Document with ID {_id} already exists")
+        try:
+            await cls.afind(_id)
+            raise Conflict("Document already exists")
 
-        async with cls._aclient() as client:  # type: ignore
-            await client.set(key, json.dumps(document))
+        except NotFound:
+            pass
+
+        async def _atask(c: aioredis.Redis):
+            await c.set(key, json.dumps(document))
+
+        await cls.__aexecute_task(_atask)
 
         return data
 
@@ -162,12 +237,17 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     @classmethod
     @contextmanager
-    def pipe(cls: Type[T], **kwargs):
-        with cls._client() as client:  # type: ignore
-            p = client.pipeline(**kwargs)
+    def pipe(cls, **kwargs):
+        """Get syncronous Redis pipeline"""
+
+        from redis import Redis
+
+        def _task(c: Redis):
+            p = c.pipeline(**kwargs)
+            return p
 
         try:
-            yield p
+            yield cls.__execute_task(_task)
 
         finally:
             pass
@@ -176,49 +256,75 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     @classmethod
     @asynccontextmanager
-    async def apipe(cls: Type[T], **kwargs):
-        async with cls._aclient() as client:  # type: ignore
-            p = client.pipeline(**kwargs)
+    async def apipe(cls, **kwargs):
+        """Get asyncronous Redis pipeline"""
+
+        from redis import asyncio as aioredis
+
+        async def _atask(c: aioredis.Redis):
+            p = c.pipeline(**kwargs)
+            return p
 
         try:
-            yield p
+            yield await cls.__aexecute_task(_atask)
 
         finally:
             pass
 
     # ....................... #
 
-    def watch(self: Self, pipe: Pipeline) -> None:
+    def watch(self: Self, pipe: Any):
         """
-        ...
+        Watch for changes in the Redis key
+
+        Args:
+            pipe (redis.Pipeline): Redis pipeline
         """
+
+        from redis.client import Pipeline
+
+        pipe = cast(Pipeline, pipe)
 
         key = self._build_key(self.id)
         pipe.watch(key)
 
     # ....................... #
 
-    async def awatch(self: Self, pipe: Apipeline) -> None:
+    async def awatch(self: Self, pipe: Any):
         """
-        ...
+        Watch for changes in the Redis key
+
+        Args:
+            pipe (redis.asyncio.Pipeline): Redis pipeline
         """
+
+        from redis.asyncio.client import Pipeline as Apipeline
+
+        pipe = cast(Apipeline, pipe)
 
         key = self._build_key(self.id)
         await pipe.watch(key)
 
     # ....................... #
 
-    def save(self: T, pipe: Optional[Pipeline] = None) -> T:
+    def save(self: Self, pipe: Optional[Any] = None):
         """
-        ...
+        Save document to Redis
         """
+
+        from redis import Redis
+        from redis.client import Pipeline
+
+        pipe = cast(Pipeline, pipe)
 
         document = self.model_dump()
         key = self._build_key(self.id)
 
+        def _task(c: Redis):
+            c.set(key, json.dumps(document))
+
         if pipe is None:
-            with self._client() as client:  # type: ignore
-                client.set(key, json.dumps(document))
+            self.__execute_task(_task)
 
         else:
             pipe.multi()
@@ -229,22 +335,28 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
 
     # ....................... #
 
-    async def asave(self: T, pipe: Optional[Apipeline] = None) -> T:
+    async def asave(self: Self, pipe: Optional[Any] = None):
         """
-        ...
+        Save document to Redis
         """
+
+        from redis import asyncio as aioredis
+        from redis.asyncio.client import Pipeline as Apipeline
+
+        pipe = cast(Apipeline, pipe)
 
         document = self.model_dump()
         key = self._build_key(self.id)
 
+        async def _atask(c: aioredis.Redis):
+            await c.set(key, json.dumps(document))
+
         if pipe is None:
-            async with self._aclient() as client:  # type: ignore
-                await client.set(key, json.dumps(document))
+            await self.__aexecute_task(_atask)
 
         else:
             pipe.multi()
             pipe.set(key, json.dumps(document))
-
             await pipe.execute()
 
         return self
@@ -252,35 +364,61 @@ class RedisBase(DocumentABC):  # TODO: add docstrings
     # ....................... #
 
     @classmethod
-    def find(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
+    def find(cls: Type[R], id_: DocumentID) -> R:
+        """
+        Find document in Redis
+
+        Args:
+            id_ (DocumentID): Document ID
+
+        Returns:
+            res (RedisSingleBase): Found document
+
+        Raises:
+            _ (ormy.base.error.NotFound): Document not found
+        """
+
+        from redis import Redis
+
         key = cls._build_key(id_)
 
-        with cls._client() as client:  # type: ignore
-            res = client.get(key)
+        def _task(c: Redis):
+            res = c.get(key)
 
-        if res:
-            return cls.model_validate_json(res)
+            if res:
+                return cls.model_validate_json(res)
 
-        elif not bypass:
-            raise ValueError(f"Document with ID {id_} not found")
+            raise NotFound("Document not found")
 
-        return res
+        return cls.__execute_task(_task)
 
     # ....................... #
 
     @classmethod
-    async def afind(cls: Type[T], id_: DocumentID, bypass: bool = False) -> Optional[T]:
+    async def afind(cls: Type[R], id_: DocumentID) -> R:
+        """
+        Find document in Redis
+
+        Args:
+            id_ (DocumentID): Document ID
+
+        Returns:
+            res (RedisSingleBase): Found document
+
+        Raises:
+            _ (ormy.base.error.NotFound): Document not found
+        """
+
+        from redis import asyncio as aioredis
+
         key = cls._build_key(id_)
 
-        async with cls._aclient() as client:  # type: ignore
-            res = await client.get(key)
+        async def _atask(c: aioredis.Redis):
+            res = await c.get(key)
 
-        if res:
-            return cls.model_validate_json(res)
+            if res:
+                return cls.model_validate_json(res)
 
-        elif not bypass:
-            raise ValueError(f"Document with ID {id_} not found")
+            raise NotFound("Document not found")
 
-        return res
-
-    # ....................... #
+        return await cls.__aexecute_task(_atask)

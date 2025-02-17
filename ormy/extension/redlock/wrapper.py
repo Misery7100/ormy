@@ -3,10 +3,7 @@ import threading
 import time
 import uuid
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, Callable, ClassVar, List, Optional, Tuple, Type, TypeVar
-
-from redis import Redis
-from redis import asyncio as aioredis
+from typing import Any, Callable, ClassVar, Optional, Type, TypeVar
 
 from ormy.base.abc import ExtensionABC
 from ormy.base.error import Conflict, InternalError
@@ -25,10 +22,10 @@ T = TypeVar("T")
 class RedlockExtension(ExtensionABC):
     """Redlock extension"""
 
-    extension_configs: ClassVar[List[Any]] = [RedlockConfig()]
+    extension_configs: ClassVar[list[Any]] = [RedlockConfig()]
 
-    __redlock_static: ClassVar[Optional[Redis]] = None
-    __aredlock_static: ClassVar[Optional[aioredis.Redis]] = None
+    __redlock_static: ClassVar[Optional[Any]] = None
+    __aredlock_static: ClassVar[Optional[Any]] = None
 
     # ....................... #
 
@@ -75,6 +72,8 @@ class RedlockExtension(ExtensionABC):
             client (redis.Redis): Static Redis client
         """
 
+        from redis import Redis
+
         if cls.__redlock_static is None:
             cfg = cls.get_extension_config(type_=RedlockConfig)
             url = cfg.url()
@@ -96,6 +95,8 @@ class RedlockExtension(ExtensionABC):
             client (redis.asyncio.Redis): Static async Redis client
         """
 
+        from redis import asyncio as aioredis
+
         if cls.__aredlock_static is None:
             cfg = cls.get_extension_config(type_=RedlockConfig)
             url = cfg.url()
@@ -112,6 +113,8 @@ class RedlockExtension(ExtensionABC):
     @contextmanager
     def __redlock_client(cls):
         """Get syncronous Redis client for lock purposes"""
+
+        from redis import Redis
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
         url = cfg.url()
@@ -130,6 +133,8 @@ class RedlockExtension(ExtensionABC):
     async def __aredlock_client(cls):
         """Get asyncronous Redis client for lock purposes"""
 
+        from redis import asyncio as aioredis
+
         cfg = cls.get_extension_config(type_=RedlockConfig)
         url = cfg.url()
         r = aioredis.from_url(url, decode_responses=True)
@@ -145,7 +150,7 @@ class RedlockExtension(ExtensionABC):
     @classmethod
     def __redlock_execute_task(
         cls: Type[R],
-        task: Callable[[Redis], T],
+        task: Callable[[Any], T],
     ) -> T:
         """Execute task"""
 
@@ -162,7 +167,7 @@ class RedlockExtension(ExtensionABC):
     @classmethod
     async def __aredlock_execute_task(
         cls: Type[R],
-        task: AsyncCallable[[aioredis.Redis], T],
+        task: AsyncCallable[[Any], T],
     ) -> T:
         """Execute async task"""
 
@@ -182,7 +187,7 @@ class RedlockExtension(ExtensionABC):
         key: str,
         unique_id: Optional[str] = None,
         timeout: int = 10,
-    ) -> Tuple[Optional[bool], Optional[str]]:
+    ) -> tuple[Optional[bool], Optional[str]]:
         """
         Acquire a lock with a unique identifier.
 
@@ -195,6 +200,8 @@ class RedlockExtension(ExtensionABC):
             result (bool): True if the lock was acquired, False otherwise.
             unique_id (str): The unique identifier for this lock holder.
         """
+
+        from redis import Redis
 
         unique_id = unique_id or str(uuid.uuid4())
 
@@ -218,7 +225,7 @@ class RedlockExtension(ExtensionABC):
         key: str,
         unique_id: Optional[str] = None,
         timeout: int = 10,
-    ) -> Tuple[Optional[bool], Optional[str]]:
+    ) -> tuple[Optional[bool], Optional[str]]:
         """
         Acquire a lock with a unique identifier.
 
@@ -231,6 +238,8 @@ class RedlockExtension(ExtensionABC):
             result (bool): True if the lock was acquired, False otherwise.
             unique_id (str): The unique identifier for this lock holder.
         """
+
+        from redis import asyncio as aioredis
 
         unique_id = unique_id or str(uuid.uuid4())
 
@@ -260,6 +269,8 @@ class RedlockExtension(ExtensionABC):
         Returns:
             result (bool): True if the lock was released, False otherwise.
         """
+
+        from redis import Redis
 
         script = """
         if redis.call("GET", KEYS[1]) == ARGV[1] then
@@ -295,6 +306,8 @@ class RedlockExtension(ExtensionABC):
         Returns:
             result (bool): True if the lock was released, False otherwise.
         """
+
+        from redis import asyncio as aioredis
 
         script = """
         if redis.call("GET", KEYS[1]) == ARGV[1] then
@@ -337,6 +350,8 @@ class RedlockExtension(ExtensionABC):
             result (bool): True if the lock was extended, False otherwise.
         """
 
+        from redis import Redis
+
         script = """
         if redis.call("GET", KEYS[1]) == ARGV[1] then
             return redis.call("EXPIRE", KEYS[1], ARGV[2])
@@ -378,6 +393,8 @@ class RedlockExtension(ExtensionABC):
         Returns:
             result (bool): True if the lock was extended, False otherwise.
         """
+
+        from redis import asyncio as aioredis
 
         script = """
         if redis.call("GET", KEYS[1]) == ARGV[1] then
