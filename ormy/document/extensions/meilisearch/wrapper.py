@@ -256,12 +256,12 @@ class MeilisearchExtension(DocumentExtensionABC):
         def _task(c: Client):
             try:
                 ix = c.get_index(cfg.index)
-                cls._logger.debug(f"Index `{cfg.index}` already exists")
+                cls._logger().debug(f"Index `{cfg.index}` already exists")
                 settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
 
                 if ix.get_settings() != settings:
                     cls._meili_update_index(settings)
-                    cls._logger.debug(f"Update of index `{cfg.index}` is started")
+                    cls._logger().debug(f"Update of index `{cfg.index}` is started")
 
             except MeilisearchApiError:
                 settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
@@ -270,7 +270,7 @@ class MeilisearchExtension(DocumentExtensionABC):
                     primary_key=cfg.primary_key,
                     settings=settings,
                 )
-                cls._logger.debug(f"Index `{cfg.index}` is created")
+                cls._logger().debug(f"Index `{cfg.index}` is created")
 
         if not cfg.is_default():
             cls.__meili_execute_task(_task)

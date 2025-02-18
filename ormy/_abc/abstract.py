@@ -14,7 +14,6 @@ from typing import (
 
 from pydantic import BaseModel, model_validator
 
-from ormy.base.generic import classproperty
 from ormy.base.logging import LogLevel, LogManager
 from ormy.base.pydantic import IGNORE, Base
 from ormy.exceptions import InternalError
@@ -49,7 +48,7 @@ class AbstractABC(Base, ABC):
 
     # ....................... #
 
-    @classproperty
+    @classmethod
     def _logger(cls):
         """Logger"""
 
@@ -80,7 +79,7 @@ class AbstractABC(Base, ABC):
             ignored_types += (tx,)
 
         cls.model_config["ignored_types"] = ignored_types
-        cls._logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
+        cls._logger().debug(f"Ignored types for {cls.__name__}: {ignored_types}")
 
     # ....................... #
 
@@ -99,21 +98,21 @@ class AbstractABC(Base, ABC):
                 break
 
         if parent_config is None or parent_selected is None:
-            cls._logger.debug(f"Parent config for `{cls.__name__}` not found")
+            cls._logger().debug(f"Parent config for `{cls.__name__}` not found")
             return
 
         if cls.config is not None:
             merged_config = cls.config.merge(parent_config)
-            cls._logger.debug(
+            cls._logger().debug(
                 f"Merge config: `{parent_selected.__name__}` -> `{cls.__name__}`"
             )
 
         else:
             merged_config = parent_config
-            cls._logger.debug(f"Use parent config: `{parent_selected.__name__}`")
+            cls._logger().debug(f"Use parent config: `{parent_selected.__name__}`")
 
         cls.config = merged_config
-        cls._logger.debug(f"Final config for `{cls.__name__}`: {merged_config}")
+        cls._logger().debug(f"Final config for `{cls.__name__}`: {merged_config}")
 
     # ....................... #
 
@@ -315,7 +314,7 @@ class AbstractExtensionABC(Base, ABC):
 
     # ....................... #
 
-    @classproperty
+    @classmethod
     def _logger(cls):
         """Logger"""
 
@@ -371,7 +370,7 @@ class AbstractExtensionABC(Base, ABC):
 
         cls.model_config["ignored_types"] = ignored_types
 
-        cls._logger.debug(f"Ignored types for {cls.__name__}: {ignored_types}")
+        cls._logger().debug(f"Ignored types for {cls.__name__}: {ignored_types}")
 
     # ....................... #
 
@@ -391,7 +390,7 @@ class AbstractExtensionABC(Base, ABC):
                 parent_selected = p
                 break
 
-        cls._logger.debug(
+        cls._logger().debug(
             f"Parent configs from `{parent_selected.__name__ if parent_selected else None}`: {list(map(lambda x: type(x).__name__, cfgs))}"
         )
 
