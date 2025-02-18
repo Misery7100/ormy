@@ -1,6 +1,6 @@
 import unittest
 
-from ormy.service.redis import RedisBase, RedisConfig, RedisCredentials
+from ormy.document.redis import RedisBase, RedisConfig, RedisCredentials
 
 # ----------------------- #
 

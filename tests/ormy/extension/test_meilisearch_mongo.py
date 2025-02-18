@@ -7,7 +7,7 @@ from ormy.extension.meilisearch import (
     SearchRequest,
     SearchResponse,
 )
-from ormy.service.mongo import MongoBase, MongoConfig, MongoCredentials
+from ormy.document.mongo import MongoBase, MongoConfig, MongoCredentials
 
 # ----------------------- #
 

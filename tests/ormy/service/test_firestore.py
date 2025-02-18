@@ -3,7 +3,7 @@ import unittest
 
 import firebase_admin  # type: ignore
 
-from ormy.service.firestore import (
+from ormy.document.firestore import (
     FirestoreBase,
     FirestoreConfig,
     FirestoreCredentials,

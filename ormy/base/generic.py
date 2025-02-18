@@ -3,13 +3,11 @@ from enum import Enum
 from functools import reduce
 from typing import (
     Any,
-    Dict,
     Iterable,
-    List,
     Literal,
     Optional,
+    Self,
     Sequence,
-    Set,
     SupportsIndex,
     TypeVar,
     overload,
@@ -18,14 +16,24 @@ from typing import (
 from pydantic import BaseModel, GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
-from .error import BadRequest
+from ormy.exceptions import BadRequest
 
 # ----------------------- #
 
-Bm = TypeVar("Bm", bound="BaseModel")
-Tb = TypeVar("Tb", bound="TabularData")
+B = TypeVar("B", bound=BaseModel)
 
 # ----------------------- #
+
+
+class classproperty:
+    def __init__(self, func):
+        self.fget = func
+
+    def __get__(self, instance, owner):
+        return self.fget(owner)
+
+
+# ....................... #
 
 
 class ExtendedEnum(Enum):
@@ -50,7 +58,7 @@ class ExtendedEnum(Enum):
 
 
 class TabularData(list):
-    _valid_keys: Set[str] = set()
+    _valid_keys: set[str] = set()
 
     # ....................... #
 
@@ -72,17 +80,20 @@ class TabularData(list):
         """
 
         return core_schema.no_info_after_validator_function(
-            cls, handler(Sequence[Dict[str, Any]])
+            cls, handler(list[dict[str, Any]])
         )
 
     # ....................... #
 
-    def __init__(self: Tb, items: Sequence[Dict[str, Any] | Bm] | Tb = []):
+    def __init__(
+        self: Self,
+        items: list[dict[str, Any]] | list[B] | Self = [],
+    ):
         """
         Initialize the tabular data
 
         Args:
-            items (Sequence[Dict[str, Any] | BaseModel] | TabularData): The items to initialize the tabular data with
+            items (list[dict[str, Any] | BaseModel] | TabularData): The items to initialize the tabular data with
         """
 
         items = self._validate_data(items)
@@ -91,21 +102,21 @@ class TabularData(list):
     # ....................... #
 
     @overload
-    def __getitem__(self, index: SupportsIndex) -> Any: ...
+    def __getitem__(self: Self, index: SupportsIndex) -> Any: ...
 
     # ....................... #
 
     @overload
-    def __getitem__(self, index: slice) -> list[Any]: ...
+    def __getitem__(self: Self, index: slice) -> list[Any]: ...
 
     # ....................... #
 
     @overload
-    def __getitem__(self, index: str) -> list[Any]: ...
+    def __getitem__(self: Self, index: str) -> list[Any]: ...
 
     # ....................... #
 
-    def __getitem__(self, index: str | SupportsIndex | slice | List[str]):
+    def __getitem__(self: Self, index: str | SupportsIndex | slice | list[str]):
         """
         Get an item from the tabular data
 
@@ -127,7 +138,10 @@ class TabularData(list):
                 if k not in self._valid_keys:
                     raise BadRequest(f"Column '{k}' not found")
 
-            records = [{k: v for k, v in x.items() if k in index} for x in self]
+            records: list[dict[str, Any]] = [
+                {k: v for k, v in x.items() if k in index} for x in self
+            ]
+
             return self.__class__(records)
 
         elif isinstance(index, slice):  # ???
@@ -139,22 +153,22 @@ class TabularData(list):
     # ....................... #
 
     @overload
-    def __setitem__(self, index: SupportsIndex, value: Any) -> None: ...
+    def __setitem__(self: Self, index: SupportsIndex, value: Any) -> None: ...
 
     # ....................... #
 
     @overload
-    def __setitem__(self, index: slice, value: Iterable[Any]) -> None: ...
+    def __setitem__(self: Self, index: slice, value: Iterable[Any]) -> None: ...
 
     # ....................... #
 
     @overload
-    def __setitem__(self, index: str, value: Any): ...
+    def __setitem__(self: Self, index: str, value: Any): ...
 
     # ....................... #
 
     def __setitem__(
-        self,
+        self: Self,
         index: str | SupportsIndex | slice,
         value: Any | Iterable[Any],
     ):
@@ -185,12 +199,12 @@ class TabularData(list):
 
     # ....................... #
 
-    def _validate_item(self, item: Dict[str, Any]):
+    def _validate_item(self: Self, item: dict[str, Any]):
         """
         Validate an item
 
         Args:
-            item (Dict[str, Any]): The item to validate
+            item (dict[str, Any]): The item to validate
 
         Returns:
             res (bool): Whether the item is valid
@@ -207,12 +221,15 @@ class TabularData(list):
 
     # ....................... #
 
-    def _validate_data(self: Tb, data: Sequence[Dict[str, Any] | Bm] | Tb = []):
+    def _validate_data(
+        self: Self,
+        data: list[dict[str, Any]] | list[B] | Self = [],
+    ):
         """
         Validate the data
 
         Args:
-            data (Sequence[Dict[str, Any] | Bm] | TabularData): The data to validate
+            data (Sequence[dict[str, Any] | Bm] | TabularData): The data to validate
 
         Returns:
             res (list): The validated data
@@ -231,7 +248,7 @@ class TabularData(list):
     # ....................... #
 
     def slice(
-        self,
+        self: Self,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
     ):
@@ -260,7 +277,7 @@ class TabularData(list):
 
     # ....................... #
 
-    def paginate(self, page: int = 1, size: int = 20):
+    def paginate(self: Self, page: int = 1, size: int = 20):
         start = (page - 1) * size
         end = page * size
 
@@ -268,20 +285,20 @@ class TabularData(list):
 
     # ....................... #
 
-    def append(self, x: Dict[str, Any]):
+    def append(self: Self, x: dict[str, Any]):
         self._validate_item(x)
         super().append(x)
 
     # ....................... #
 
-    def unique(self, key: str) -> Set[str]:
+    def unique(self: Self, key: str):
         return set(x[key] for x in self if key in x)
 
     # ....................... #
 
     def join(
-        self: Tb,
-        other: Tb,
+        self: Self,
+        other: Self,
         *,
         on: Optional[str] = None,
         left_on: Optional[str] = None,
@@ -289,7 +306,7 @@ class TabularData(list):
         kind: Literal["inner", "left"] = "inner",
         fill_none: Any = None,
         prefix: Optional[str] = None,
-    ) -> Tb:
+    ):
         """
         Merge two tabular data objects
         """

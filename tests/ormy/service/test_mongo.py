@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch  # noqa: F401
 
-from ormy.service.mongo import MongoBase, MongoConfig, MongoCredentials
+from ormy.document.mongo import MongoBase, MongoConfig, MongoCredentials
 
 # ----------------------- #
 

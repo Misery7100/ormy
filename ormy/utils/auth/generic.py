@@ -1,35 +1,20 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, field_validator
 
 # ----------------------- #
 
 
 class SignInWithEmailAndPassword(BaseModel):
-    email: EmailStr = Field(
-        ...,
-        title="Email",
-    )
-    password: str = Field(
-        ...,
-        title="Password",
-    )
+    email: EmailStr
+    password: str
 
 
 # ....................... #
 
 
 class SignUpWithEmailAndPassword(BaseModel):
-    email: EmailStr = Field(
-        ...,
-        title="Email",
-    )
-    username: str = Field(
-        ...,
-        title="Username",
-    )
-    password: str = Field(
-        ...,
-        title="Password",
-    )
+    email: EmailStr
+    username: str
+    password: str
 
     # ....................... #
 

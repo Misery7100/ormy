@@ -1,15 +1,4 @@
-from typing import (
-    Annotated,
-    Any,
-    ClassVar,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    Self,
-    Type,
-    TypeVar,
-)
+from typing import Annotated, Any, ClassVar, Generic, Optional, Self, TypeVar
 
 from pydantic import (
     BaseModel,
@@ -25,8 +14,6 @@ from .generic import TabularData
 
 # ----------------------- #
 
-T = TypeVar("T", bound="Base")
-Br = TypeVar("Br", bound="BaseReference")
 G = TypeVar("G")
 
 # ----------------------- #
@@ -162,7 +149,7 @@ class Base(BaseModel):
         validate_default=True,
     )
 
-    specific_fields: ClassVar[Dict[str, List[str]]] = {
+    specific_fields: ClassVar[dict[str, list[str]]] = {
         "datetime": [
             "created_at",
             "last_update_at",
@@ -181,11 +168,11 @@ class Base(BaseModel):
             json_schema (dict): The JSON schema to parse
 
         Returns:
-            extracted_defs (Dict[str, dict]): The extracted definitions
+            extracted_defs (dict[str, dict]): The extracted definitions
         """
 
         defs = json_schema.get("$defs", {})
-        extracted_defs: Dict[str, dict] = {}
+        extracted_defs: dict[str, dict] = {}
 
         for k, v in defs.items():
             if "enum" in v:
@@ -199,29 +186,29 @@ class Base(BaseModel):
 
     @classmethod
     def model_flat_schema(
-        cls: Type[T],
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
-        extra: Optional[List[str]] = None,
-        extra_definitions: List[Dict[str, str]] = [],
-    ) -> List[Dict[str, Any]]:
+        cls,
+        include: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
+        extra: Optional[list[str]] = None,
+        extra_definitions: list[dict[str, str]] = [],
+    ):
         """
         Generate a flat schema for the model data structure with extra definitions
 
         Args:
-            include (List[str], optional): The fields to include in the schema. Defaults to None.
-            exclude (List[str], optional): The fields to exclude from the schema. Defaults to None.
-            extra (List[str], optional): The extra fields to include in the schema. Defaults to None.
-            extra_definitions (List[Dict[str, str]], optional): The extra definitions to include in the schema. Defaults to [].
+            include (list[str], optional): The fields to include in the schema. Defaults to None.
+            exclude (list[str], optional): The fields to exclude from the schema. Defaults to None.
+            extra (list[str], optional): The extra fields to include in the schema. Defaults to None.
+            extra_definitions (list[dict[str, str]], optional): The extra definitions to include in the schema. Defaults to [].
 
         Returns:
-            schema (List[Dict[str, Any]]): The flat schema for the model
+            schema (list[dict[str, Any]]): The flat schema for the model
         """
 
         schema = cls.model_json_schema(mode="serialization")
         defs = cls._parse_json_schema_defs(schema)
-        keys: List[str] = [k for k, _ in schema["properties"].items()]
-        flat_schema: List[Dict[str, Any]] = []
+        keys: list[str] = [k for k, _ in schema["properties"].items()]
+        flat_schema: list[dict[str, Any]] = []
         schema_keys = ["key", "type", "value"]
 
         if include is not None:
@@ -298,21 +285,21 @@ class Base(BaseModel):
 
     @classmethod
     def model_reference(
-        cls: Type[T],
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
-        extra: Optional[List[str]] = None,
-        extra_definitions: List[Dict[str, str]] = [],
+        cls,
+        include: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
+        extra: Optional[list[str]] = None,
+        extra_definitions: list[dict[str, str]] = [],
         prefix: str = "",
-    ) -> "BaseReference":
+    ):
         """
         Generate a reference schema for the model data structure with extra definitions
 
         Args:
-            include (List[str], optional): The fields to include in the schema. Defaults to None.
-            exclude (List[str], optional): The fields to exclude from the schema. Defaults to None.
-            extra (List[str], optional): The extra fields to include in the schema. Defaults to None.
-            extra_definitions (List[Dict[str, str]], optional): The extra definitions to include in the schema. Defaults to [].
+            include (list[str], optional): The fields to include in the schema. Defaults to None.
+            exclude (list[str], optional): The fields to exclude from the schema. Defaults to None.
+            extra (list[str], optional): The extra fields to include in the schema. Defaults to None.
+            extra_definitions (list[dict[str, str]], optional): The extra definitions to include in the schema. Defaults to [].
 
         Returns:
             schema (BaseReference): The reference schema for the model
@@ -357,12 +344,12 @@ class Base(BaseModel):
 
     # ....................... #
 
-    def model_dump_with_secrets(self: Self) -> Dict[str, Any]:
+    def model_dump_with_secrets(self: Self):
         """
         Dump the model with secrets
 
         Returns:
-            data (Dict[str, Any]): The model data with secrets
+            data (dict[str, Any]): The model data with secrets
         """
 
         res = self.model_dump()
@@ -376,14 +363,14 @@ class Base(BaseModel):
 
     @classmethod
     def model_validate_universal(
-        cls: Type[T],
-        data: Dict[str, Any] | str | T,
-    ) -> T:
+        cls,
+        data: dict[str, Any] | str | Self,
+    ):
         """
         Validate the model data in a universal way
 
         Args:
-            data (Dict[str, Any] | str | Base): The data to validate
+            data (dict[str, Any] | str | Base): The data to validate
 
         Returns:
             model (Base): The validated
@@ -402,10 +389,10 @@ class Base(BaseModel):
 
     @classmethod
     def _define_dtype(
-        cls: Type[T],
+        cls,
         key: str,
         dtype: Optional[str] = None,
-    ) -> str:
+    ):
         """
         Define the data type of a given key
 
@@ -432,14 +419,11 @@ class Base(BaseModel):
 
 
 class BaseReference(BaseModel):
-    table_schema: List[Dict[str, str]] = Field(
-        default_factory=list,
-        title="Table Schema",
-    )
+    table_schema: list[dict[str, str]] = []
 
     # ....................... #
 
-    def merge(self: Br, *others: Br):
+    def merge(self: Self, *others: Self):
         """
         Merge two references
 
@@ -461,7 +445,7 @@ class BaseReference(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def filter_schema_fields(cls: Type[Br], v):
+    def filter_schema_fields(cls, v: dict[str, Any]):
         v["table_schema"] = [
             {k: v for k, v in field.items() if k in ["key", "title", "type"]}
             for field in v["table_schema"]
@@ -492,7 +476,7 @@ class TableResponse(BaseModel):
     # ....................... #
 
     @classmethod
-    def example(cls, hit: Dict[str, Any]):
+    def example(cls, hit: dict[str, Any]):
         return {
             "hits": [hit] * 2,
             "size": 2,

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from camel_converter.pydantic_base import CamelBase
-from pydantic import EmailStr, Field
+from pydantic import EmailStr
 
 # ----------------------- #
 
@@ -22,42 +22,15 @@ class FirebaseUserInfo(CamelBase):
         expires_at (int, optional): The expiration timestamp of the user.
     """
 
-    kind: str = Field(
-        ...,
-        title="Kind",
-    )
-    local_id: str = Field(
-        ...,
-        title="Local ID",
-    )
-    email: EmailStr = Field(
-        ...,
-        title="Email",
-    )
-    display_name: Optional[str] = Field(
-        default=None,
-        title="Display Name",
-    )
-    id_token: str = Field(
-        ...,
-        title="ID Token",
-    )
-    registered: Optional[bool] = Field(
-        default=None,
-        title="Registered",
-    )
-    refresh_token: str = Field(
-        ...,
-        title="Refresh Token",
-    )
-    expires_in: str = Field(
-        ...,
-        title="Expires In",
-    )
-    expires_at: Optional[int] = Field(
-        default=None,
-        title="Expires At",
-    )
+    kind: str
+    local_id: str
+    email: EmailStr
+    display_name: Optional[str] = None
+    id_token: str
+    registered: Optional[bool] = None
+    refresh_token: str
+    expires_in: str
+    expires_at: Optional[int] = None
 
 
 # ....................... #
@@ -78,38 +51,14 @@ class FirebaseAccessCredentials(CamelBase):
         uid (str): The user ID of the credentials.
     """
 
-    sub: str = Field(
-        ...,
-        title="Subject",
-    )
-    email: EmailStr = Field(
-        ...,
-        title="Email",
-    )
-    name: str = Field(
-        ...,
-        title="Name",
-    )
-    email_verified: bool = Field(
-        ...,
-        title="Email Verified",
-    )
-    exp: int = Field(
-        ...,
-        title="Expiration Time",
-    )
-    iat: int = Field(
-        ...,
-        title="Issued At",
-    )
-    auth_time: int = Field(
-        ...,
-        title="Authentication Time",
-    )
-    uid: str = Field(
-        ...,
-        title="User ID",
-    )
+    sub: str
+    email: EmailStr
+    name: str
+    email_verified: bool
+    exp: int
+    iat: int
+    auth_time: int
+    uid: str
 
 
 # ....................... #
@@ -127,23 +76,8 @@ class FirebaseRefreshCredentials(CamelBase):
         expires_at (int): The expiration timestamp of the credentials.
     """
 
-    local_id: str = Field(
-        ...,
-        title="Local ID",
-    )
-    id_token: str = Field(
-        ...,
-        title="ID Token",
-    )
-    refresh_token: str = Field(
-        ...,
-        title="Refresh Token",
-    )
-    expires_in: str = Field(
-        ...,
-        title="Expires In",
-    )
-    expires_at: int = Field(
-        ...,
-        title="Expires At",
-    )
+    local_id: str
+    id_token: str
+    refresh_token: str
+    expires_in: str
+    expires_at: int
