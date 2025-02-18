@@ -1,12 +1,8 @@
 import asyncio
 from contextlib import asynccontextmanager, contextmanager
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self, cast
+from typing import Any, ClassVar, Optional, Self, cast
 
-if TYPE_CHECKING:
-    from google.cloud import firestore_v1
-
-else:
-    firestore_v1 = None
+from google.cloud import firestore_v1
 
 from ormy.document._abc import DocumentABC
 from ormy.exceptions import Conflict, NotFound

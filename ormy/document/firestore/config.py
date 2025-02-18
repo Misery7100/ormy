@@ -1,11 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-if TYPE_CHECKING:
-    import firebase_admin  # type: ignore
-
-else:
-    firebase_admin = None
-
+import firebase_admin  # type: ignore
 from pydantic import ConfigDict
 
 from ormy._abc import ConfigABC
