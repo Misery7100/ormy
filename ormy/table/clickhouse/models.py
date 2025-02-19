@@ -2,13 +2,19 @@ from copy import copy
 from math import ceil
 from typing import Any, List
 
-from infi.clickhouse_orm import (  # type: ignore[import-untyped]
-    database,
-    fields,
-    models,
-    query,
-    utils,
-)
+from ormy.exceptions import ModuleNotFound
+
+try:
+    from infi.clickhouse_orm import (  # type: ignore[import-untyped]
+        database,
+        fields,
+        models,
+        query,
+        utils,
+    )
+except ImportError as e:
+    raise ModuleNotFound(extra="clickhouse", packages=["infi-clickhouse-orm"]) from e
+
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 

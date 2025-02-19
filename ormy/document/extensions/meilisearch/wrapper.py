@@ -3,9 +3,30 @@ from typing import Any, Callable, ClassVar, Optional, Self, Type, TypeVar
 
 from ormy.base.typing import AsyncCallable
 from ormy.document._abc import DocumentExtensionABC
+from ormy.exceptions import ModuleNotFound
+
+try:
+    from meilisearch_python_sdk import AsyncClient, Client
+    from meilisearch_python_sdk.errors import MeilisearchApiError
+    from meilisearch_python_sdk.models.settings import MeilisearchSettings
+    from meilisearch_python_sdk.types import JsonDict
+except ImportError as e:
+    raise ModuleNotFound(
+        extra="meilisearch", packages=["meilisearch-python-sdk"]
+    ) from e
 
 from .config import MeilisearchConfig
-from .schema import MeilisearchReferenceV2, SearchRequest, SearchResponse
+from .schema import (
+    AnyFilter,
+    ArrayFilter,
+    BooleanFilter,
+    DatetimeFilter,
+    MeilisearchReferenceV2,
+    NumberFilter,
+    SearchRequest,
+    SearchResponse,
+    SortField,
+)
 
 # ----------------------- #
 
@@ -45,17 +66,6 @@ class MeilisearchExtension(DocumentExtensionABC):
         Returns:
             schema (MeilisearchReferenceV2): The Meilisearch reference for the model schema
         """
-
-        from .config import MeilisearchConfig
-        from .schema import (
-            AnyFilter,
-            ArrayFilter,
-            BooleanFilter,
-            DatetimeFilter,
-            MeilisearchReferenceV2,
-            NumberFilter,
-            SortField,
-        )
 
         full_schema = cls.model_flat_schema()
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
@@ -135,8 +145,6 @@ class MeilisearchExtension(DocumentExtensionABC):
     def __meili_abstract_client(cls):
         """Abstract client"""
 
-        from meilisearch_python_sdk import Client
-
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
         url = cfg.url()
         key = cfg.credentials.master_key
@@ -158,8 +166,6 @@ class MeilisearchExtension(DocumentExtensionABC):
     @classmethod
     def __ameili_abstract_client(cls):
         """Abstract async client"""
-
-        from meilisearch_python_sdk import AsyncClient
 
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
         url = cfg.url()
@@ -247,10 +253,6 @@ class MeilisearchExtension(DocumentExtensionABC):
         If the index exists and settings were updated, index will be updated.
         """
 
-        from meilisearch_python_sdk import Client
-        from meilisearch_python_sdk.errors import MeilisearchApiError
-        from meilisearch_python_sdk.models.settings import MeilisearchSettings
-
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
         def _task(c: Client):
@@ -307,8 +309,6 @@ class MeilisearchExtension(DocumentExtensionABC):
     def _meili_health(cls) -> bool:
         """Check Meilisearch health"""
 
-        from meilisearch_python_sdk import Client
-
         def _task(c: Client):
             try:
                 h = c.health()
@@ -326,8 +326,6 @@ class MeilisearchExtension(DocumentExtensionABC):
     @classmethod
     async def _ameili_health(cls) -> bool:
         """Check Meilisearch health"""
-
-        from meilisearch_python_sdk import AsyncClient
 
         async def _task(c: AsyncClient):
             try:
@@ -347,8 +345,6 @@ class MeilisearchExtension(DocumentExtensionABC):
     def _meili_index(cls):
         """Get associated Meilisearch index"""
 
-        from meilisearch_python_sdk import Client
-
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
         def _task(c: Client):
@@ -361,8 +357,6 @@ class MeilisearchExtension(DocumentExtensionABC):
     @classmethod
     async def _ameili_index(cls):
         """Get associated Meilisearch index in asyncronous mode"""
-
-        from meilisearch_python_sdk import AsyncClient
 
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
 
@@ -588,8 +582,6 @@ class MeilisearchExtension(DocumentExtensionABC):
             documents (List[JsonDict]): The list of documents
         """
 
-        from meilisearch_python_sdk.types import JsonDict
-
         ix = cls._meili_index()
         res: list[JsonDict] = []
         offset = 0
@@ -610,8 +602,6 @@ class MeilisearchExtension(DocumentExtensionABC):
         Returns:
             documents (List[JsonDict]): The list of documents
         """
-
-        from meilisearch_python_sdk.types import JsonDict
 
         ix = await cls._ameili_index()
         res: list[JsonDict] = []

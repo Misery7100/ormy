@@ -6,7 +6,13 @@ from uuid import UUID
 from pydantic import BaseModel
 from pydantic.fields import ComputedFieldInfo, FieldInfo
 
-from ormy.exceptions import Conflict, InternalError, NotFound
+from ormy.exceptions import Conflict, InternalError, ModuleNotFound, NotFound
+
+try:
+    from google.cloud import bigquery, exceptions
+except ImportError as e:
+    raise ModuleNotFound(extra="bigquery", packages=["google-cloud-bigquery"]) from e
+
 from ormy.table._abc import TableABC
 
 from .config import BigQueryConfig
@@ -38,8 +44,6 @@ class BigQueryBase(TableABC):
     def _get_dataset(cls):
         """Get BigQuery dataset"""
 
-        from google.cloud import exceptions
-
         client = cls.config.client()
 
         if client is None:
@@ -62,8 +66,6 @@ class BigQueryBase(TableABC):
     @classmethod
     def _get_table(cls):
         """Get BigQuery table"""
-
-        from google.cloud import bigquery, exceptions
 
         client = cls.config.client()
 
@@ -96,8 +98,6 @@ class BigQueryBase(TableABC):
         Returns:
             type_ (google.cloud.bigquery.enums.SqlTypeNames): BigQuery schema field type
         """
-
-        from google.cloud import bigquery
 
         if isinstance(field, FieldInfo):
             annot = field.annotation
@@ -204,8 +204,6 @@ class BigQueryBase(TableABC):
             field (google.cloud.bigquery.SchemaField): BigQuery schema field
         """
 
-        from google.cloud import bigquery
-
         schema_type = cls.__get_schema_field_type(field)
         schema_mode = cls.__get_schema_field_mode(field)
         inner_fields = cls.__get_schema_inner_fields(field)
@@ -230,8 +228,6 @@ class BigQueryBase(TableABC):
         Returns:
             inner_fields (list[google.cloud.bigquery.SchemaField]): BigQuery schema inner fields
         """
-
-        from google.cloud import bigquery
 
         fields: list[bigquery.SchemaField] = []
 
@@ -293,8 +289,6 @@ class BigQueryBase(TableABC):
             exists_ok (bool): Whether to allow existing table
         """
 
-        from google.cloud import bigquery, exceptions
-
         client = cls.config.client()
 
         if client is None:
@@ -346,8 +340,6 @@ class BigQueryBase(TableABC):
         """
         Insert data into BigQuery table
         """
-
-        from google.cloud import exceptions
 
         client = cls.config.client()
 

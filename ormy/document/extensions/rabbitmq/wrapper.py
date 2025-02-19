@@ -3,6 +3,13 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Optional
 
 from ormy.document._abc import DocumentExtensionABC
+from ormy.exceptions import ModuleNotFound
+
+try:
+    import aio_pika  # noqa: F401
+    import pika  # type: ignore[import-untyped]
+except ImportError as e:
+    raise ModuleNotFound(extra="rabbitmq", packages=["pika", "aio-pika"]) from e
 
 from .config import RabbitMQConfig
 
@@ -21,9 +28,6 @@ class RabbitMQExtension(DocumentExtensionABC):
 
     def __init_subclass__(cls, **kwargs):
         """Initialize subclass"""
-
-        import aio_pika  # noqa: F401
-        import pika  # type: ignore[import-untyped]  # noqa: F401
 
         super().__init_subclass__(**kwargs)
 
@@ -55,8 +59,6 @@ class RabbitMQExtension(DocumentExtensionABC):
             connection (pika.BlockingConnection): RabbitMQ connection
         """
 
-        import pika  # type: ignore[import-untyped]
-
         cfg = cls.get_extension_config(type_=RabbitMQConfig)
         url = cfg.url()
         conn = pika.BlockingConnection(pika.URLParameters(url))
@@ -79,8 +81,6 @@ class RabbitMQExtension(DocumentExtensionABC):
         Returns:
             connection (aio_pika.abc.AbstractRobustConnection): async RabbitMQ connection
         """
-
-        import aio_pika  # noqa: F401
 
         cfg = cls.get_extension_config(type_=RabbitMQConfig)
         url = cfg.url()
@@ -157,8 +157,6 @@ class RabbitMQExtension(DocumentExtensionABC):
             delivery_mode (int): Delivery mode (2 for persistent)
         """
 
-        import pika  # type: ignore[import-untyped]
-
         with cls.__rmq_channel() as channel:
             channel.basic_publish(
                 exchange="",
@@ -190,8 +188,6 @@ class RabbitMQExtension(DocumentExtensionABC):
             headers (Dict[str, Any]): Headers to publish
             delivery_mode (int): Delivery mode (2 for persistent)
         """
-
-        import aio_pika
 
         async with cls.__armq_channel() as channel:
             await channel.default_exchange.publish(

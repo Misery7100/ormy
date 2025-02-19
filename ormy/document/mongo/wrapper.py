@@ -1,8 +1,17 @@
 from typing import Any, ClassVar, Literal, Optional, Self
 
+from ormy.exceptions import BadRequest, Conflict, ModuleNotFound, NotFound
+
+try:
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from pymongo import InsertOne, MongoClient
+    from pymongo.errors import BulkWriteError
+
+except ImportError as e:
+    raise ModuleNotFound(extra="mongo", packages=["pymongo", "motor"]) from e
+
 from ormy.base.generic import TabularData
 from ormy.document._abc import DocumentABC
-from ormy.exceptions import BadRequest, Conflict, NotFound
 
 from .config import MongoConfig
 
@@ -14,8 +23,8 @@ class MongoBase(DocumentABC):
 
     config: ClassVar[MongoConfig] = MongoConfig()
 
-    __static: ClassVar[Optional[Any]] = None
-    __astatic: ClassVar[Optional[Any]] = None
+    __static: ClassVar[Optional[MongoClient]] = None
+    __astatic: ClassVar[Optional[AsyncIOMotorClient]] = None
 
     # ....................... #
 
@@ -37,8 +46,6 @@ class MongoBase(DocumentABC):
             client (pymongo.MongoClient): Syncronous MongoDB client
         """
 
-        from pymongo import MongoClient
-
         if cls.__static is None:
             creds = cls.config.credentials.model_dump_with_secrets()
             cls.__static = MongoClient(**creds)
@@ -55,8 +62,6 @@ class MongoBase(DocumentABC):
         Returns:
             client (motor.motor_asyncio.AsyncIOMotorClient): Asyncronous MongoDB client
         """
-
-        from motor.motor_asyncio import AsyncIOMotorClient
 
         if cls.__astatic is None:
             creds = cls.config.credentials.model_dump_with_secrets()
@@ -236,9 +241,6 @@ class MongoBase(DocumentABC):
     def create_many(cls, data: list[Self], ordered: bool = False):
         """Create multiple documents in the collection"""
 
-        from pymongo import InsertOne
-        from pymongo.errors import BulkWriteError
-
         collection = cls._get_collection()
 
         _data = [item.model_dump() for item in data]
@@ -265,9 +267,6 @@ class MongoBase(DocumentABC):
     @classmethod
     async def acreate_many(cls, data: list[Self], ordered: bool = False):
         """Create multiple documents in the collection in asyncronous mode"""
-
-        from pymongo import InsertOne
-        from pymongo.errors import BulkWriteError
 
         collection = await cls._aget_collection()
 

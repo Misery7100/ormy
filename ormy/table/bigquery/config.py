@@ -1,6 +1,12 @@
 from typing import Optional
 
-from google.cloud import bigquery
+from ormy.exceptions import ModuleNotFound
+
+try:
+    from google.cloud.bigquery import Client
+except ImportError as e:
+    raise ModuleNotFound(extra="bigquery", packages=["google-cloud-bigquery"]) from e
+
 from pydantic import ConfigDict
 
 from ormy._abc import ConfigABC
@@ -16,7 +22,7 @@ class BigQueryCredentials(Base):
     # ....................... #
 
     project_id: Optional[str] = None
-    client: Optional[bigquery.Client] = None
+    client: Optional[Client] = None
 
 
 # ....................... #

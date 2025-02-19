@@ -4,29 +4,20 @@ from pydantic import SecretStr, model_validator
 
 from ormy._abc import ConfigABC
 from ormy.base.pydantic import Base
-from ormy.exceptions import InternalError
+from ormy.exceptions import InternalError, ModuleNotFound
+
+try:
+    from meilisearch_python_sdk.models.settings import MeilisearchSettings as MsSettings
+except ImportError as e:
+    raise ModuleNotFound(
+        extra="meilisearch", packages=["meilisearch-python-sdk"]
+    ) from e
 
 # ----------------------- #
 
 
-def _get_meilisearch_settings():
-    """Dynamically import MeilisearchSettings only when needed."""
-    try:
-        from meilisearch_python_sdk.models.settings import (
-            MeilisearchSettings as MsSettings,
-        )
-    except ImportError:
-        raise ImportError(
-            "Meilisearch dependency is missing. Install with `pip install ormy[meilisearch]`."
-        )
-    return MsSettings
-
-
-# ....................... #
-
-
 # TODO: merge settings option ?
-class MeilisearchSettings(_get_meilisearch_settings()):  # type: ignore[misc]
+class MeilisearchSettings(MsSettings):  # type: ignore[misc]
     """
     Meilisearch extension settings
 

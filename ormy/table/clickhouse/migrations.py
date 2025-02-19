@@ -1,6 +1,11 @@
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
-from infi.clickhouse_orm import migrations  # type: ignore[import-untyped]
+from ormy.exceptions import ModuleNotFound
+
+try:
+    from infi.clickhouse_orm import migrations  # type: ignore[import-untyped]
+except ImportError as e:
+    raise ModuleNotFound(extra="clickhouse", packages=["infi-clickhouse-orm"]) from e
 
 from .models import ClickHouseModel as ClickHouseModelNew
 from .wrapper import ClickHouseBase, ClickHouseModel

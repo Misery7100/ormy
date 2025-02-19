@@ -1,10 +1,14 @@
 import inspect
 from typing import Any, ClassVar, Optional, Self
 
-from infi.clickhouse_orm import engines, fields  # type: ignore[import-untyped]
+from ormy.exceptions import InternalError, ModuleNotFound
+
+try:
+    from infi.clickhouse_orm import engines, fields  # type: ignore[import-untyped]
+except ImportError as e:
+    raise ModuleNotFound(extra="clickhouse", packages=["infi-clickhouse-orm"]) from e
 
 from ormy._abc import AbstractABC
-from ormy.exceptions import InternalError
 
 from .config import ClickHouseConfig
 from .func import get_clickhouse_db

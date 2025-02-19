@@ -1,8 +1,19 @@
 from math import ceil
 from typing import Any
 
-import httpx
-from infi.clickhouse_orm import database, models, utils  # type: ignore[import-untyped]
+from ormy.exceptions import ModuleNotFound
+
+try:
+    import httpx
+    from infi.clickhouse_orm import (  # type: ignore[import-untyped]
+        database,
+        models,
+        utils,
+    )
+except ImportError as e:
+    raise ModuleNotFound(
+        extra="clickhouse", packages=["httpx", "infi-clickhouse-orm"]
+    ) from e
 
 # ----------------------- #
 

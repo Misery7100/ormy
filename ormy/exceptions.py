@@ -74,3 +74,20 @@ class Conflict(OrmyError):
 
     def __init__(self, detail: str = "Conflict occurred"):
         super().__init__(detail, status_code=409)
+
+
+# ....................... #
+
+
+class ModuleNotFound(ModuleNotFoundError):
+    """Exception raised when a module is not found."""
+
+    def __init__(self, extra: str, packages: list[str]):
+        p = ", ".join(f"`{p}`" for p in packages)
+
+        super().__init__(
+            f"""
+            {p} is part of `{extra}` extra.
+            Install is using `pip install ormy[{extra}]`
+            """
+        )

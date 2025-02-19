@@ -1,6 +1,12 @@
 from typing import Optional
 
-import firebase_admin  # type: ignore
+from ormy.exceptions import ModuleNotFound
+
+try:
+    from firebase_admin import _DEFAULT_APP_NAME, App, get_app  # type: ignore
+except ImportError as e:
+    raise ModuleNotFound(extra="firestore", packages=["firebase-admin"]) from e
+
 from pydantic import ConfigDict
 
 from ormy._abc import ConfigABC
@@ -24,7 +30,7 @@ class FirestoreCredentials(Base):
     # ....................... #
 
     project_id: Optional[str] = None
-    app: Optional["firebase_admin.App"] = None
+    app: Optional[App] = None
     app_name: Optional[str] = None
 
     # ....................... #
@@ -32,12 +38,8 @@ class FirestoreCredentials(Base):
     def validate_app(self):
         """Validate Firebase app"""
 
-        import firebase_admin  # type: ignore
-
         if self.app is None:
-            self.app = firebase_admin.get_app(
-                name=self.app_name or firebase_admin._DEFAULT_APP_NAME
-            )
+            self.app = get_app(name=self.app_name or _DEFAULT_APP_NAME)
 
         elif self.project_id is None:
             self.project_id = self.app.project_id

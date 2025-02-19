@@ -2,10 +2,15 @@ import asyncio
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Optional, Self, cast
 
-from google.cloud import firestore_v1
+from ormy.exceptions import Conflict, ModuleNotFound, NotFound
+
+try:
+    import firebase_admin  # type: ignore
+    from google.cloud import firestore_v1
+except ImportError as e:
+    raise ModuleNotFound(extra="firestore", packages=["firebase-admin"]) from e
 
 from ormy.document._abc import DocumentABC
-from ormy.exceptions import Conflict, NotFound
 
 from .config import FirestoreConfig
 
@@ -17,8 +22,8 @@ class FirestoreBase(DocumentABC):
 
     config: ClassVar[FirestoreConfig] = FirestoreConfig()
 
-    __static: ClassVar[Optional["firestore_v1.Client"]] = None
-    __astatic: ClassVar[Optional["firestore_v1.AsyncClient"]] = None
+    __static: ClassVar[Optional[firestore_v1.Client]] = None
+    __astatic: ClassVar[Optional[firestore_v1.AsyncClient]] = None
 
     # ....................... #
 
@@ -40,13 +45,11 @@ class FirestoreBase(DocumentABC):
             client: Syncronous Firestore client
         """
 
-        from firebase_admin import firestore  # type: ignore
-
         project_id = cls.config.credentials.project_id
         app = cls.config.credentials.app
         database = cls.config.database
 
-        client = firestore.client(app)
+        client = firebase_admin.firestore.client(app)
         client._database_string_internal = f"projects/{project_id}/databases/{database}"
 
         return client
@@ -62,13 +65,11 @@ class FirestoreBase(DocumentABC):
             client: Asyncronous Firestore client
         """
 
-        from firebase_admin import firestore_async  # type: ignore
-
         project_id = cls.config.credentials.project_id
         app = cls.config.credentials.app
         database = cls.config.database
 
-        client = firestore_async.client(app)
+        client = firebase_admin.firestore_async.client(app)
         client._database_string_internal = f"projects/{project_id}/databases/{database}"
 
         return client
@@ -472,7 +473,7 @@ class FirestoreBase(DocumentABC):
     @classmethod
     def find_many(
         cls,
-        filters: list["firestore_v1.FieldFilter"] = [],
+        filters: list[firestore_v1.FieldFilter] = [],
         limit: int = 100,
         offset: int = 0,
     ):
@@ -488,10 +489,8 @@ class FirestoreBase(DocumentABC):
             documents (List[FirestoreBase]): Found documents
         """
 
-        from google.cloud.firestore_v1 import Query
-
         collection = cls._get_collection()
-        query = cast(Query, collection)
+        query = cast(firestore_v1.Query, collection)
 
         if filters:
             for f in filters:
@@ -507,7 +506,7 @@ class FirestoreBase(DocumentABC):
     @classmethod
     async def afind_many(
         cls,
-        filters: list["firestore_v1.FieldFilter"] = [],
+        filters: list[firestore_v1.FieldFilter] = [],
         limit: int = 100,
         offset: int = 0,
     ):
@@ -523,10 +522,8 @@ class FirestoreBase(DocumentABC):
             documents (List[FirestoreBase]): Found documents
         """
 
-        from google.cloud.firestore_v1 import AsyncQuery
-
         collection = cls._aget_collection()
-        query = cast(AsyncQuery, collection)
+        query = cast(firestore_v1.AsyncQuery, collection)
 
         if filters:
             for f in filters:
@@ -540,7 +537,7 @@ class FirestoreBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    def count(cls, filters: list["firestore_v1.FieldFilter"] = []):
+    def count(cls, filters: list[firestore_v1.FieldFilter] = []):
         """
         Count the number of documents in the collection
 
@@ -551,18 +548,15 @@ class FirestoreBase(DocumentABC):
             count (int): Number of documents in the collection
         """
 
-        from google.cloud.firestore_v1 import Query
-        from google.cloud.firestore_v1.aggregation import AggregationQuery
-
         collection = cls._get_collection()
-        query = cast(Query, collection)
+        query = cast(firestore_v1.Query, collection)
 
         if filters:
             for f in filters:
                 query = query.where(filter=f)
 
         aq = query.count()
-        aq = cast(AggregationQuery, aq)  # type: ignore[assignment]
+        aq = cast(firestore_v1.aggregation.AggregationQuery, aq)  # type: ignore[assignment]
         res = aq.get()  # type: ignore[call-arg]
         number = int(res[0][0].value)  # type: ignore
 
@@ -571,7 +565,7 @@ class FirestoreBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    async def acount(cls, filters: list["firestore_v1.FieldFilter"] = []):
+    async def acount(cls, filters: list[firestore_v1.FieldFilter] = []):
         """
         Count the number of documents in the collection
 
@@ -582,18 +576,15 @@ class FirestoreBase(DocumentABC):
             count (int): Number of documents in the collection
         """
 
-        from google.cloud.firestore_v1 import AsyncQuery
-        from google.cloud.firestore_v1.async_aggregation import AsyncAggregationQuery
-
         collection = cls._aget_collection()
-        query = cast(AsyncQuery, collection)
+        query = cast(firestore_v1.AsyncQuery, collection)
 
         if filters:
             for f in filters:
                 query = query.where(filter=f)
 
         aq = query.count()
-        aq = cast(AsyncAggregationQuery, aq)  # type: ignore[assignment]
+        aq = cast(firestore_v1.async_aggregation.AsyncAggregationQuery, aq)  # type: ignore[assignment]
         res = await aq.get()  # type: ignore[call-arg]
         number = int(res[0][0].value)  # type: ignore
 
@@ -604,7 +595,7 @@ class FirestoreBase(DocumentABC):
     @classmethod
     def find_all(
         cls,
-        filters: list["firestore_v1.FieldFilter"] = [],
+        filters: list[firestore_v1.FieldFilter] = [],
         batch_size: int = 100,
     ):
         """
@@ -632,7 +623,7 @@ class FirestoreBase(DocumentABC):
     @classmethod
     async def afind_all(
         cls,
-        filters: list["firestore_v1.FieldFilter"] = [],
+        filters: list[firestore_v1.FieldFilter] = [],
         batch_size: int = 100,
     ):
         """
@@ -658,7 +649,7 @@ class FirestoreBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    def stream(cls, filters: list["firestore_v1.FieldFilter"] = []):
+    def stream(cls, filters: list[firestore_v1.FieldFilter] = []):
         """
         Stream documents in the collection
 
@@ -669,10 +660,8 @@ class FirestoreBase(DocumentABC):
             stream: ...
         """
 
-        from google.cloud.firestore_v1 import Query
-
         collection = cls._get_collection()
-        query = cast(Query, collection)
+        query = cast(firestore_v1.Query, collection)
 
         if filters:
             for f in filters:
@@ -683,7 +672,7 @@ class FirestoreBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    async def astream(cls, filters: list["firestore_v1.FieldFilter"] = []):
+    async def astream(cls, filters: list[firestore_v1.FieldFilter] = []):
         """
         Stream documents in the collection
 
@@ -694,10 +683,8 @@ class FirestoreBase(DocumentABC):
             stream: ...
         """
 
-        from google.cloud.firestore_v1 import AsyncQuery
-
         collection = cls._aget_collection()
-        query = cast(AsyncQuery, collection)
+        query = cast(firestore_v1.AsyncQuery, collection)
 
         if filters:
             for f in filters:

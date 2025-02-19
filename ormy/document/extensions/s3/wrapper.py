@@ -5,7 +5,13 @@ from typing import Any, ClassVar
 from ormy.base.generic import TabularData
 from ormy.base.pydantic import TableResponse
 from ormy.document._abc import DocumentExtensionABC
-from ormy.exceptions import BadRequest, Conflict
+from ormy.exceptions import BadRequest, Conflict, ModuleNotFound
+
+try:
+    import boto3  # type: ignore[import-untyped]
+    from botocore.client import Config  # type: ignore[import-untyped]
+except ImportError as e:
+    raise ModuleNotFound(extra="s3", packages=["boto3"]) from e
 
 from .config import S3Config
 from .schema import S3File
@@ -84,9 +90,6 @@ class S3Extension(DocumentExtensionABC):
     @contextmanager
     def __s3_client(cls):
         """Get syncronous S3 client"""
-
-        import boto3  # type: ignore[import-untyped]
-        from botocore.client import Config  # type: ignore[import-untyped]
 
         cfg = cls.get_extension_config(type_=S3Config)
         credentials = cfg.credentials

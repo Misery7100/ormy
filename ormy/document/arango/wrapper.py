@@ -1,8 +1,15 @@
 from typing import Any, ClassVar, Literal, Optional, Self, Sequence, cast
 
+from ormy.exceptions import BadRequest, Conflict, ModuleNotFound, NotFound
+
+try:
+    from arango.client import ArangoClient
+    from arango.cursor import Cursor
+except ImportError as e:
+    raise ModuleNotFound(extra="arango", packages=["python-arango"]) from e
+
 from ormy.base.generic import TabularData
 from ormy.document._abc import DocumentABC
-from ormy.exceptions import BadRequest, Conflict, NotFound
 
 from .config import ArangoConfig
 
@@ -14,7 +21,7 @@ class ArangoBase(DocumentABC):
 
     config: ClassVar[ArangoConfig] = ArangoConfig()
 
-    __static: ClassVar[Optional[Any]] = None
+    __static: ClassVar[Optional[ArangoClient]] = None
 
     # ....................... #
 
@@ -35,8 +42,6 @@ class ArangoBase(DocumentABC):
         Returns:
             client (arango.ArangoClient): Syncronous ArangoDB client
         """
-
-        from arango.client import ArangoClient
 
         if cls.__static is None:
             cls.__static = ArangoClient(hosts=cls.config.url())
@@ -236,8 +241,6 @@ class ArangoBase(DocumentABC):
         Returns:
             res (int): Number of documents
         """
-
-        from arango.cursor import Cursor
 
         if query is None:
             collection = cls._get_collection()

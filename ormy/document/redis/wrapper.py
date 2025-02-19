@@ -1,10 +1,19 @@
 import json
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, Callable, ClassVar, Optional, Self, TypeVar, cast
+from typing import Any, Callable, ClassVar, Optional, Self, TypeVar
+
+from ormy.exceptions import Conflict, ModuleNotFound, NotFound
+
+try:
+    from redis import Redis
+    from redis import asyncio as aioredis
+    from redis.asyncio.client import Pipeline as Apipeline
+    from redis.client import Pipeline
+except ImportError as e:
+    raise ModuleNotFound(extra="redis", packages=["redis"]) from e
 
 from ormy.base.typing import AsyncCallable
 from ormy.document._abc import DocumentABC
-from ormy.exceptions import Conflict, NotFound
 
 from .config import RedisConfig
 
@@ -20,8 +29,8 @@ class RedisBase(DocumentABC):
 
     config: ClassVar[RedisConfig] = RedisConfig()
 
-    __static: ClassVar[Optional[Any]] = None
-    __astatic: ClassVar[Optional[Any]] = None
+    __static: ClassVar[Optional[Redis]] = None
+    __astatic: ClassVar[Optional[aioredis.Redis]] = None
 
     # ....................... #
 
@@ -51,8 +60,6 @@ class RedisBase(DocumentABC):
             client (redis.Redis): Static Redis client
         """
 
-        from redis import Redis
-
         if cls.__static is None:
             url = cls.config.url()
             cls.__static = Redis.from_url(
@@ -73,8 +80,6 @@ class RedisBase(DocumentABC):
             client (redis.asyncio.Redis): Static async Redis client
         """
 
-        from redis import asyncio as aioredis
-
         if cls.__astatic is None:
             url = cls.config.url()
             cls.__astatic = aioredis.from_url(
@@ -91,8 +96,6 @@ class RedisBase(DocumentABC):
     def __client(cls):
         """Get syncronous Redis client"""
 
-        from redis import Redis
-
         url = cls.config.url()
         r = Redis.from_url(url, decode_responses=True)
 
@@ -108,8 +111,6 @@ class RedisBase(DocumentABC):
     @asynccontextmanager
     async def __aclient(cls):
         """Get asyncronous Redis client"""
-
-        from redis import asyncio as aioredis
 
         url = cls.config.url()
         r = aioredis.from_url(url, decode_responses=True)
@@ -173,8 +174,6 @@ class RedisBase(DocumentABC):
             _ (ormy.exceptions.Conflict): Document already exists
         """
 
-        from redis import Redis
-
         document = data.model_dump(mode="json")
 
         _id = document["id"]
@@ -211,8 +210,6 @@ class RedisBase(DocumentABC):
             _ (ormy.exceptions.Conflict): Document already exists
         """
 
-        from redis import asyncio as aioredis
-
         document = data.model_dump(mode="json")
 
         _id = document["id"]
@@ -239,8 +236,6 @@ class RedisBase(DocumentABC):
     def pipe(cls, **kwargs):
         """Get syncronous Redis pipeline"""
 
-        from redis import Redis
-
         def _task(c: Redis):
             p = c.pipeline(**kwargs)
             return p
@@ -258,8 +253,6 @@ class RedisBase(DocumentABC):
     async def apipe(cls, **kwargs):
         """Get asyncronous Redis pipeline"""
 
-        from redis import asyncio as aioredis
-
         async def _atask(c: aioredis.Redis):
             p = c.pipeline(**kwargs)
             return p
@@ -272,7 +265,7 @@ class RedisBase(DocumentABC):
 
     # ....................... #
 
-    def watch(self: Self, pipe: Any):
+    def watch(self: Self, pipe: Pipeline):
         """
         Watch for changes in the Redis key
 
@@ -280,16 +273,12 @@ class RedisBase(DocumentABC):
             pipe (redis.Pipeline): Redis pipeline
         """
 
-        from redis.client import Pipeline
-
-        pipe = cast(Pipeline, pipe)
-
         key = self._build_key(self.id)
         pipe.watch(key)
 
     # ....................... #
 
-    async def awatch(self: Self, pipe: Any):
+    async def awatch(self: Self, pipe: Apipeline):
         """
         Watch for changes in the Redis key
 
@@ -297,24 +286,18 @@ class RedisBase(DocumentABC):
             pipe (redis.asyncio.Pipeline): Redis pipeline
         """
 
-        from redis.asyncio.client import Pipeline as Apipeline
-
-        pipe = cast(Apipeline, pipe)
-
         key = self._build_key(self.id)
         await pipe.watch(key)
 
     # ....................... #
 
-    def save(self: Self, pipe: Optional[Any] = None):
+    def save(self: Self, pipe: Optional[Pipeline] = None):
         """
         Save document to Redis
+
+        Args:
+            pipe (redis.Pipeline, optional): Redis pipeline
         """
-
-        from redis import Redis
-        from redis.client import Pipeline
-
-        pipe = cast(Pipeline, pipe)
 
         document = self.model_dump()
         key = self._build_key(self.id)
@@ -334,15 +317,13 @@ class RedisBase(DocumentABC):
 
     # ....................... #
 
-    async def asave(self: Self, pipe: Optional[Any] = None):
+    async def asave(self: Self, pipe: Optional[Apipeline] = None):
         """
         Save document to Redis
+
+        Args:
+            pipe (redis.asyncio.Pipeline, optional): Redis pipeline
         """
-
-        from redis import asyncio as aioredis
-        from redis.asyncio.client import Pipeline as Apipeline
-
-        pipe = cast(Apipeline, pipe)
 
         document = self.model_dump()
         key = self._build_key(self.id)
@@ -377,8 +358,6 @@ class RedisBase(DocumentABC):
             _ (ormy.exceptions.NotFound): Document not found
         """
 
-        from redis import Redis
-
         key = cls._build_key(id_)
 
         def _task(c: Redis):
@@ -407,8 +386,6 @@ class RedisBase(DocumentABC):
         Raises:
             _ (ormy.exceptions.NotFound): Document not found
         """
-
-        from redis import asyncio as aioredis
 
         key = cls._build_key(id_)
 
