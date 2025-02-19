@@ -83,11 +83,10 @@ class ModuleNotFound(ModuleNotFoundError):
     """Exception raised when a module is not found."""
 
     def __init__(self, extra: str, packages: list[str]):
+        name = "Package" if len(packages) == 1 else "Packages"
+        art = "is" if len(packages) == 1 else "are"
         p = ", ".join(f"`{p}`" for p in packages)
 
         super().__init__(
-            f"""
-            {p} is part of `{extra}` extra.
-            Install is using `pip install ormy[{extra}]`
-            """
+            f"{name} {p} {art} part of the `{extra}` extra. Install it using `pip install ormy[{extra}]`."
         )

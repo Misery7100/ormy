@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ormy"
-version = "0.1.5-pre.4+4d87973"
+version = "0.1.5-pre.5+312715e"
 description = "Python ORM wrappers"
 authors = ["Lev Litvinov <misery7100@gmail.com>"]
 license = "MIT"
