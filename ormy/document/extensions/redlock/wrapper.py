@@ -29,8 +29,8 @@ class RedlockExtension(DocumentExtensionABC):
 
     extension_configs: ClassVar[list[Any]] = [RedlockConfig()]
 
-    __redlock_static: ClassVar[Optional[Any]] = None
-    __aredlock_static: ClassVar[Optional[Any]] = None
+    __redlock_static: ClassVar[Optional[Redis]] = None
+    __aredlock_static: ClassVar[Optional[aioredis.Redis]] = None
 
     # ....................... #
 

@@ -6,7 +6,9 @@ from ormy.exceptions import Conflict, ModuleNotFound, NotFound
 
 try:
     import firebase_admin  # type: ignore
-    from google.cloud import firestore_v1
+    import firebase_admin.firestore  # type: ignore
+    import firebase_admin.firestore_async  # type: ignore
+    from google.cloud import firestore_v1  # type: ignore
 except ImportError as e:
     raise ModuleNotFound(extra="firestore", packages=["firebase-admin"]) from e
 
@@ -50,6 +52,7 @@ class FirestoreBase(DocumentABC):
         database = cls.config.database
 
         client = firebase_admin.firestore.client(app)
+        client = cast(firestore_v1.Client, client)
         client._database_string_internal = f"projects/{project_id}/databases/{database}"
 
         return client
@@ -70,6 +73,7 @@ class FirestoreBase(DocumentABC):
         database = cls.config.database
 
         client = firebase_admin.firestore_async.client(app)
+        client = cast(firestore_v1.AsyncClient, client)
         client._database_string_internal = f"projects/{project_id}/databases/{database}"
 
         return client

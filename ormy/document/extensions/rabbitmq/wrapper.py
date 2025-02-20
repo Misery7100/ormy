@@ -21,9 +21,6 @@ class RabbitMQExtension(DocumentExtensionABC):
 
     extension_configs: ClassVar[list[Any]] = [RabbitMQConfig()]
 
-    __rmq: ClassVar[Optional[Any]] = None
-    __armq: ClassVar[Optional[Any]] = None
-
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):

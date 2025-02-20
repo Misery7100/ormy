@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Self
+from typing import ClassVar, Self
 
 from pydantic import ConfigDict
 
@@ -18,7 +18,7 @@ class ConfigABC(Base, ABC):
         arbitrary_types_allowed=True,
         validate_assignment=True,
     )
-    log_level: LogLevel = LogLevel.INFO
+    log_level: ClassVar[LogLevel] = LogLevel.INFO
 
     # ....................... #
 

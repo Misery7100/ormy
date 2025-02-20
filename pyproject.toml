@@ -1,10 +1,17 @@
-[tool.poetry]
+[project]
 name = "ormy"
-version = "0.1.5-pre.5+312715e"
 description = "Python ORM wrappers"
-authors = ["Lev Litvinov <misery7100@gmail.com>"]
-license = "MIT"
+dynamic = []
+authors = [
+  { name = "Lev Litvinov", email = "misery7100@gmail.com"}
+]
 readme = "README.md"
+license = "MIT"
+requires-python = ">3.10,<3.12"
+version = "0.1.5-pre.6+c67bc6f"
+
+[tool.poetry]
+requires-poetry = '>=2.0.0,<3.0.0'
 
 [tool.poetry.dependencies]
 python = ">3.10,<3.12"
@@ -58,20 +65,15 @@ pytest-xdist = {extras = ["psutil"], version = "^3.6.1"}
 types-pyyaml = "^6.0.12.20240808"
 types-pytz = "^2024.1.0.20240417"
 
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
 style = "semver"
 latest-tag = true
 bump = "auto"
-
-[tool.poetry-dynamic-versioning.files."ormy/__version__.py"]
-persistent-substitution = true
-initial-content = """
-  # These version placeholders will be replaced later during substitution.
-  __version__ = "0.0.0"
-  __version_tuple__ = (0, 0, 0)
-"""
 
 [build-system]
 requires = ["poetry-core", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]

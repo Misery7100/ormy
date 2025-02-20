@@ -40,8 +40,8 @@ class MeilisearchExtension(DocumentExtensionABC):
 
     extension_configs: ClassVar[list[Any]] = [MeilisearchConfig()]
 
-    __meili_static: ClassVar[Optional[Any]] = None
-    __ameili_static: ClassVar[Optional[Any]] = None
+    __meili_static: ClassVar[Optional[Client]] = None
+    __ameili_static: ClassVar[Optional[AsyncClient]] = None
 
     # ....................... #
 
@@ -59,7 +59,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod  # TODO: remove ? or simplify somehow
-    def meili_model_reference(cls) -> MeilisearchReferenceV2:
+    def meili_model_reference(cls):
         """
         Generate a Meilisearch reference for the model schema with filters and sort fields
 
@@ -133,7 +133,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod
-    def __get_exclude_mask(cls) -> Optional[dict[str, str | list[str]]]:
+    def __get_exclude_mask(cls):
         """Get exclude mask"""
 
         cfg = cls.get_extension_config(type_=MeilisearchConfig)
