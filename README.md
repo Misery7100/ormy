@@ -7,24 +7,10 @@
 
 Pydantic-compatible ORM (and ORM-like) wrappers of various kinds.
 
-## Features
-
-Services:
-
-- MongoDB;
-- Firestore;
-- Redis;
-- Clickhouse;
-- BigQuery (partial implementation).
-
-Extensions:
-
-- MeiliSearch;
-- S3;
-- Redlock (custom implementation).
-
 ## TO DO
 
+- [ ] !Refactor ABC;
+- [ ] !Refactor tests;
 - [ ] Add indexing support for mongodb service;
 - [ ] Add indexing support for firestore service;
 - [ ] Add indexing support for clickhouse service;
