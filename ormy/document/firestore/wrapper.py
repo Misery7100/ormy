@@ -695,3 +695,31 @@ class FirestoreBase(DocumentABC):
                 query = query.where(filter=f)
 
         return query.stream()
+
+    # ....................... #
+
+    def atomic_update(self: Self, updates: dict[str, Any]):
+        """
+        Atomic update of the document
+
+        Args:
+            updates (dict[str, Any]): Updates to apply to the document
+        """
+
+        update_filtered = {k: v for k, v in updates.items() if hasattr(self, k)}
+        ref = self._ref(self.id)
+        ref.update(update_filtered)
+
+    # ....................... #
+
+    async def aatomic_update(self: Self, updates: dict[str, Any]):
+        """
+        Atomic update of the document
+
+        Args:
+            updates (dict[str, Any]): Updates to apply to the document
+        """
+
+        update_filtered = {k: v for k, v in updates.items() if hasattr(self, k)}
+        ref = self._aref(self.id)
+        await ref.update(update_filtered)

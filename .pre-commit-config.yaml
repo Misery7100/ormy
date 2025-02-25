@@ -8,3 +8,6 @@ repos:
         pass_filenames: false
         always_run: true
         verbose: true
+        exclude_types:
+          - markdown
+          - image
