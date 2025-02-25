@@ -69,7 +69,7 @@ class RedlockExtension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod
-    def __redlock_static_client(cls):
+    def _redlock_static_client(cls):
         """
         Get static Redis client for lock purposes
 
@@ -90,7 +90,7 @@ class RedlockExtension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod
-    async def __aredlock_static_client(cls):
+    async def _aredlock_static_client(cls):
         """
         Get static async Redis client for lock purposes
 
@@ -112,7 +112,7 @@ class RedlockExtension(DocumentExtensionABC):
 
     @classmethod
     @contextmanager
-    def __redlock_client(cls):
+    def _redlock_client(cls):
         """Get syncronous Redis client for lock purposes"""
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
@@ -129,7 +129,7 @@ class RedlockExtension(DocumentExtensionABC):
 
     @classmethod
     @asynccontextmanager
-    async def __aredlock_client(cls):
+    async def _aredlock_client(cls):
         """Get asyncronous Redis client for lock purposes"""
 
         cfg = cls.get_extension_config(type_=RedlockConfig)
@@ -149,11 +149,11 @@ class RedlockExtension(DocumentExtensionABC):
         """Execute task"""
 
         if cls.__is_static_redlock():
-            c = cls.__redlock_static_client()
+            c = cls._redlock_static_client()
             return task(c)
 
         else:
-            with cls.__redlock_client() as c:
+            with cls._redlock_client() as c:
                 return task(c)
 
     # ....................... #
@@ -163,11 +163,11 @@ class RedlockExtension(DocumentExtensionABC):
         """Execute async task"""
 
         if cls.__is_static_redlock():
-            c = await cls.__aredlock_static_client()
+            c = await cls._aredlock_static_client()
             return await task(c)
 
         else:
-            async with cls.__aredlock_client() as c:
+            async with cls._aredlock_client() as c:
                 return await task(c)
 
     # ....................... #

@@ -186,7 +186,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod
-    def __meili_static_client(cls):
+    def _meili_static_client(cls):
         """
         Get static Meilisearch client
 
@@ -202,7 +202,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod
-    def __ameili_static_client(cls):
+    def _ameili_static_client(cls):
         """
         Get static async Meilisearch client
 
@@ -222,11 +222,11 @@ class MeilisearchExtension(DocumentExtensionABC):
         """Execute task"""
 
         if cls.__is_static_meili():
-            c = cls.__meili_static_client()
+            c = cls._meili_static_client()
             return task(c)
 
         else:
-            with cls.__meili_client() as c:
+            with cls._meili_client() as c:
                 return task(c)
 
     # ....................... #
@@ -236,11 +236,11 @@ class MeilisearchExtension(DocumentExtensionABC):
         """Execute async task"""
 
         if cls.__is_static_meili():
-            c = cls.__ameili_static_client()
+            c = cls._ameili_static_client()
             return await task(c)
 
         else:
-            async with cls.__ameili_client() as c:
+            async with cls._ameili_client() as c:
                 return await task(c)
 
     # ....................... #
@@ -281,7 +281,7 @@ class MeilisearchExtension(DocumentExtensionABC):
 
     @classmethod  # TODO: move above
     @contextmanager
-    def __meili_client(cls):
+    def _meili_client(cls):
         """Get syncronous Meilisearch client"""
 
         try:
@@ -294,7 +294,7 @@ class MeilisearchExtension(DocumentExtensionABC):
 
     @classmethod  # TODO: move above
     @asynccontextmanager
-    async def __ameili_client(cls):
+    async def _ameili_client(cls):
         """Get asyncronous Meilisearch client"""
 
         try:

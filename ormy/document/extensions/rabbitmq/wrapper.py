@@ -48,7 +48,7 @@ class RabbitMQExtension(DocumentExtensionABC):
 
     @classmethod
     @contextmanager
-    def __rmq_connection(cls):
+    def _rmq_connection(cls):
         """
         Get RabbitMQ connection
 
@@ -71,7 +71,7 @@ class RabbitMQExtension(DocumentExtensionABC):
 
     @classmethod
     @asynccontextmanager
-    async def __armq_connection(cls):
+    async def _armq_connection(cls):
         """
         Get async RabbitMQ connection
 
@@ -94,7 +94,7 @@ class RabbitMQExtension(DocumentExtensionABC):
 
     @classmethod
     @contextmanager
-    def __rmq_channel(cls):
+    def _rmq_channel(cls):
         """
         Get syncronous RabbitMQ channel
 
@@ -102,7 +102,7 @@ class RabbitMQExtension(DocumentExtensionABC):
             channel (pika.BlockingConnection): RabbitMQ channel
         """
 
-        with cls.__rmq_connection() as connection:
+        with cls._rmq_connection() as connection:
             channel = connection.channel()
 
             try:
@@ -116,7 +116,7 @@ class RabbitMQExtension(DocumentExtensionABC):
 
     @classmethod
     @asynccontextmanager
-    async def __armq_channel(cls):
+    async def _armq_channel(cls):
         """
         Get asyncronous RabbitMQ channel
 
@@ -124,7 +124,7 @@ class RabbitMQExtension(DocumentExtensionABC):
             channel (aio_pika.abc.AbstractRobustConnection): async RabbitMQ channel
         """
 
-        async with cls.__armq_connection() as connection:
+        async with cls._armq_connection() as connection:
             channel = await connection.channel()
 
             try:
@@ -154,7 +154,7 @@ class RabbitMQExtension(DocumentExtensionABC):
             delivery_mode (int): Delivery mode (2 for persistent)
         """
 
-        with cls.__rmq_channel() as channel:
+        with cls._rmq_channel() as channel:
             channel.basic_publish(
                 exchange="",
                 routing_key=queue,
@@ -186,7 +186,7 @@ class RabbitMQExtension(DocumentExtensionABC):
             delivery_mode (int): Delivery mode (2 for persistent)
         """
 
-        async with cls.__armq_channel() as channel:
+        async with cls._armq_channel() as channel:
             await channel.default_exchange.publish(
                 message=aio_pika.Message(
                     body=json.dumps(message).encode(),

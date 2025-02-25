@@ -35,7 +35,7 @@ class S3Extension(DocumentExtensionABC):
             config=S3Config,
             discriminator="bucket",
         )
-        cls.__s3_create_bucket()
+        cls._s3_create_bucket()
 
     # ....................... #
 
@@ -49,7 +49,7 @@ class S3Extension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod
-    def __s3_create_bucket(cls):
+    def _s3_create_bucket(cls):
         """Create a bucket"""
 
         cfg = cls.get_extension_config(type_=S3Config)
@@ -88,7 +88,7 @@ class S3Extension(DocumentExtensionABC):
 
     @classmethod
     @contextmanager
-    def __s3_client(cls):
+    def _s3_client(cls):
         """Get syncronous S3 client"""
 
         cfg = cls.get_extension_config(type_=S3Config)

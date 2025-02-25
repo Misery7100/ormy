@@ -35,7 +35,7 @@ class ArangoBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    def __client(cls):
+    def _client(cls):
         """
         Get syncronous ArangoDB client
 
@@ -59,7 +59,7 @@ class ArangoBase(DocumentABC):
             database (arango.Database): Assigned ArangoDB database
         """
 
-        client = cls.__client()
+        client = cls._client()
         username = cls.config.credentials.username.get_secret_value()
         password = cls.config.credentials.password.get_secret_value()
         database = cls.config.database

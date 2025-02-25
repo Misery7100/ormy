@@ -38,7 +38,7 @@ class MongoBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    def __client(cls):
+    def _client(cls):
         """
         Get syncronous MongoDB client
 
@@ -55,7 +55,7 @@ class MongoBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    async def __aclient(cls):
+    async def _aclient(cls):
         """
         Get asyncronous MongoDB client
 
@@ -80,7 +80,7 @@ class MongoBase(DocumentABC):
             database (pymongo.database.Database): Syncronous MongoDB database
         """
 
-        client = cls.__client()
+        client = cls._client()
 
         return client.get_database(cls.config.database)
 
@@ -95,7 +95,7 @@ class MongoBase(DocumentABC):
             database (motor.motor_asyncio.AsyncIOMotorDatabase): Asyncronous MongoDB database
         """
 
-        client = await cls.__aclient()
+        client = await cls._aclient()
 
         return client.get_database(cls.config.database)
 

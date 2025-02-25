@@ -82,7 +82,7 @@ class FirestoreBase(DocumentABC):
 
     @classmethod
     @contextmanager
-    def __context_client(cls):
+    def _context_client(cls):
         """Context manager for Firestore client"""
 
         client = cls.__abstract_client()
@@ -97,7 +97,7 @@ class FirestoreBase(DocumentABC):
 
     @classmethod
     @asynccontextmanager
-    async def __acontext_client(cls):
+    async def _acontext_client(cls):
         """Async context manager for Firestore client"""
 
         client = cls.__aabstract_client()
@@ -111,7 +111,7 @@ class FirestoreBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    def __client(cls):
+    def _client(cls):
         """Get Firestore client"""
 
         if cls.__static is None:
@@ -122,7 +122,7 @@ class FirestoreBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    def __aclient(cls):
+    def _aclient(cls):
         """Get Firestore client"""
 
         if cls.__astatic is None:
@@ -140,7 +140,7 @@ class FirestoreBase(DocumentABC):
     def _get_collection(cls):
         """Get Firestore collection"""
 
-        client = cls.__client()
+        client = cls._client()
 
         return client.collection(cls.config.collection)
 
@@ -150,7 +150,7 @@ class FirestoreBase(DocumentABC):
     def _aget_collection(cls):
         """Get Firestore collection"""
 
-        client = cls.__aclient()
+        client = cls._aclient()
 
         return client.collection(cls.config.collection)
 
@@ -199,7 +199,7 @@ class FirestoreBase(DocumentABC):
     def batch(cls):
         """Get Firestore batch"""
 
-        batch = cls.__client().batch()
+        batch = cls._client().batch()
 
         try:
             yield batch
@@ -214,7 +214,7 @@ class FirestoreBase(DocumentABC):
     async def abatch(cls):
         """Async context manager for Firestore batch"""
 
-        batch = cls.__aclient().batch()
+        batch = cls._aclient().batch()
 
         try:
             yield batch
@@ -229,7 +229,7 @@ class FirestoreBase(DocumentABC):
     def transaction(cls):
         """Context manager for Firestore transaction"""
 
-        transaction = cls.__client().transaction()
+        transaction = cls._client().transaction()
 
         try:
             transaction._begin()
@@ -246,7 +246,7 @@ class FirestoreBase(DocumentABC):
     async def atransaction(cls):
         """Async context manager for Firestore transaction"""
 
-        transaction = cls.__aclient().transaction()
+        transaction = cls._aclient().transaction()
 
         try:
             await transaction._begin()

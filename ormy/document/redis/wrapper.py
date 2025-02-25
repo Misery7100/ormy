@@ -52,7 +52,7 @@ class RedisBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    def __static_client(cls):
+    def _static_client(cls):
         """
         Get static Redis client
 
@@ -72,7 +72,7 @@ class RedisBase(DocumentABC):
     # ....................... #
 
     @classmethod
-    async def __astatic_client(cls):
+    async def _astatic_client(cls):
         """
         Get static async Redis client
 
@@ -93,7 +93,7 @@ class RedisBase(DocumentABC):
 
     @classmethod
     @contextmanager
-    def __client(cls):
+    def _client(cls):
         """Get syncronous Redis client"""
 
         url = cls.config.url()
@@ -109,7 +109,7 @@ class RedisBase(DocumentABC):
 
     @classmethod
     @asynccontextmanager
-    async def __aclient(cls):
+    async def _aclient(cls):
         """Get asyncronous Redis client"""
 
         url = cls.config.url()
@@ -128,11 +128,11 @@ class RedisBase(DocumentABC):
         """Execute task"""
 
         if cls.__is_static_redis():
-            c = cls.__static_client()
+            c = cls._static_client()
             return task(c)
 
         else:
-            with cls.__client() as c:
+            with cls._client() as c:
                 return task(c)
 
     # ....................... #
@@ -142,11 +142,11 @@ class RedisBase(DocumentABC):
         """Execute async task"""
 
         if cls.__is_static_redis():
-            c = await cls.__astatic_client()
+            c = await cls._astatic_client()
             return await task(c)
 
         else:
-            async with cls.__aclient() as c:
+            async with cls._aclient() as c:
                 return await task(c)
 
     # ....................... #
