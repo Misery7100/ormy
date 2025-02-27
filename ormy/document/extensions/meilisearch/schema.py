@@ -165,7 +165,7 @@ class ArrayFilter(FilterABC):
 
     Attributes:
         key (str): Key of the filter
-        value (List[Any]): The filter value
+        value (list[Any]): The filter value
     """
 
     value: list[Any] = []
@@ -243,8 +243,8 @@ class MeilisearchReferenceV2(BaseModel):
     Meilisearch Reference V2 model
 
     Attributes:
-        sort (List[ormy.extension.meilisearch.schema.SortField]): The sort fields
-        filters (List[ormy.extension.meilisearch.schema.AnyFilter]): The filters
+        sort (list[ormy.extension.meilisearch.schema.SortField]): The sort fields
+        filters (list[ormy.extension.meilisearch.schema.AnyFilter]): The filters
     """
 
     sort: list[SortField] = []

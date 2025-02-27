@@ -1,7 +1,7 @@
-from typing import Any, Dict
+from typing import Any
 
 from pydantic import BaseModel
 
 # ----------------------- #
 
-AbstractData = BaseModel | Dict[str, Any]
+AbstractData = BaseModel | dict[str, Any]

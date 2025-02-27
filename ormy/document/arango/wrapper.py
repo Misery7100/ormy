@@ -168,10 +168,10 @@ class ArangoBase(DocumentABC):
         Create multiple documents in the collection
 
         Args:
-            data (List[ArangoBase]): List of data models to be created
+            data (list[ArangoBase]): List of data models to be created
 
         Returns:
-            res (List[ArangoBase]): List of created data models
+            res (list[ArangoBase]): List of created data models
         """
 
         collection = cls._get_collection()

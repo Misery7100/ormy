@@ -16,7 +16,7 @@ class S3File(Base):
         size_bytes (int): The size of the file in bytes.
         path (str): The path of the file.
         last_modified (int): The last modified timestamp of the file.
-        tags (Dict[str, str]): The tags of the file.
+        tags (dict[str, str]): The tags of the file.
         size_kb (float, computed): The size of the file in kilobytes.
         size_mb (float, computed): The size of the file in megabytes.
         file_type (str, computed): The type of the file.
@@ -54,7 +54,7 @@ class S3File(Base):
 
         Args:
             obj (dict): The S3 object.
-            tags (Dict[str, str]): The tags of the file.
+            tags (dict[str, str]): The tags of the file.
 
         Returns:
             result (S3File): The new S3File instance.

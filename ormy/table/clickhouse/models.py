@@ -1,6 +1,6 @@
 from copy import copy
 from math import ceil
-from typing import Any, List
+from typing import Any
 
 from ormy.exceptions import ModuleNotFound
 
@@ -57,8 +57,8 @@ class ClickHousePage:
     def __init__(
         self,
         model_cls: "ClickHouseModel",
-        fields: List[str],
-        objects: List["ClickHouseModel"],
+        fields: list[str],
+        objects: list["ClickHouseModel"],
         number_of_objects: int,
         pages_total: int,
         number: int,
@@ -79,7 +79,7 @@ class ClickHousePage:
     def from_infi_page(
         cls,
         model_cls: "ClickHouseModel",
-        fields: List[str],
+        fields: list[str],
         p: database.Page,
     ):
         return cls(

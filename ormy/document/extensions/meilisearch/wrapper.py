@@ -469,8 +469,8 @@ class MeilisearchExtension(DocumentExtensionABC):
             request (SearchRequest): The search request
             page (int, optional): The page number
             size (int, optional): The number of hits per page
-            include (List[str], optional): The fields to include in the search
-            exclude (List[str], optional): The fields to exclude from the search
+            include (list[str], optional): The fields to include in the search
+            exclude (list[str], optional): The fields to exclude from the search
 
         Returns:
             response (SearchResponse): The search response
@@ -511,8 +511,8 @@ class MeilisearchExtension(DocumentExtensionABC):
             request (SearchRequest): The search request
             page (int, optional): The page number
             size (int, optional): The number of hits per page
-            include (List[str], optional): The fields to include in the search
-            exclude (List[str], optional): The fields to exclude from the search
+            include (list[str], optional): The fields to include in the search
+            exclude (list[str], optional): The fields to exclude from the search
 
         Returns:
             response (SearchResponse): The search response
@@ -543,7 +543,7 @@ class MeilisearchExtension(DocumentExtensionABC):
         Delete documents from Meilisearch
 
         Args:
-            ids (str | List[str]): The document IDs
+            ids (str | list[str]): The document IDs
         """
 
         ix = cls._meili_index()
@@ -561,7 +561,7 @@ class MeilisearchExtension(DocumentExtensionABC):
         Delete documents from Meilisearch in asyncronous mode
 
         Args:
-            ids (str | List[str]): The document IDs
+            ids (str | list[str]): The document IDs
         """
 
         ix = await cls._ameili_index()
@@ -579,7 +579,7 @@ class MeilisearchExtension(DocumentExtensionABC):
         Get all documents from Meilisearch
 
         Returns:
-            documents (List[JsonDict]): The list of documents
+            documents (list[JsonDict]): The list of documents
         """
 
         ix = cls._meili_index()
@@ -600,7 +600,7 @@ class MeilisearchExtension(DocumentExtensionABC):
         Get all documents from Meilisearch in asyncronous mode
 
         Returns:
-            documents (List[JsonDict]): The list of documents
+            documents (list[JsonDict]): The list of documents
         """
 
         ix = await cls._ameili_index()
@@ -621,7 +621,7 @@ class MeilisearchExtension(DocumentExtensionABC):
         Update documents in Meilisearch
 
         Args:
-            docs (M | List[M]): The documents to update
+            docs (M | list[M]): The documents to update
         """
 
         ix = cls._meili_index()
@@ -663,7 +663,7 @@ class MeilisearchExtension(DocumentExtensionABC):
         Update documents in Meilisearch in asyncronous mode
 
         Args:
-            docs (M | List[M]): The documents to update
+            docs (M | list[M]): The documents to update
         """
 
         ix = await cls._ameili_index()

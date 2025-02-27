@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from ormy.exceptions import ModuleNotFound
 
@@ -26,8 +26,8 @@ class RunSQLWithSettings(migrations.RunSQL):
 
     def __init__(
         self,
-        sql: str | List[str],
-        settings: Optional[Dict[str, Any]] = None,
+        sql: str | list[str],
+        settings: Optional[dict[str, Any]] = None,
     ):
         """
         Initializer. The given sql argument must be a valid SQL statement or

@@ -55,7 +55,7 @@ class S3Extension(DocumentExtensionABC):
         cfg = cls.get_extension_config(type_=S3Config)
 
         if not cfg.is_default() and not cls._s3_bucket_exists():
-            with cls.__s3_client() as client:  # type: ignore
+            with cls._s3_client() as client:
                 client.create_bucket(Bucket=cls._s3_get_bucket())
 
     # ....................... #
@@ -72,7 +72,7 @@ class S3Extension(DocumentExtensionABC):
             result (bool): Whether the bucket exists
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             try:
                 client.head_bucket(Bucket=cls._s3_get_bucket())
                 return True
@@ -117,7 +117,7 @@ class S3Extension(DocumentExtensionABC):
     def s3_list_buckets(cls):
         """List all buckets"""
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             return client.list_buckets()
 
     # ....................... #
@@ -134,7 +134,7 @@ class S3Extension(DocumentExtensionABC):
             result (bool): Whether the file exists
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             try:
                 client.head_object(
                     Bucket=cls._s3_get_bucket(),
@@ -163,7 +163,7 @@ class S3Extension(DocumentExtensionABC):
             tags (dict): File tags
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             tagging = client.get_object_tagging(
                 Bucket=cls._s3_get_bucket(),
                 Key=key,
@@ -183,7 +183,7 @@ class S3Extension(DocumentExtensionABC):
             tags (dict): File tags
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             existing_tags = cls.s3_get_file_tags(key)
             merged_tags = {**existing_tags, **tags}
             new_tags = [{"Key": k, "Value": v} for k, v in merged_tags.items()]
@@ -206,7 +206,7 @@ class S3Extension(DocumentExtensionABC):
             tags (list): File tags
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             existing_tags = cls.s3_get_file_tags(key)
             merged_tags = {k: v for k, v in existing_tags.items() if k not in tags}
             new_tags = [{"Key": k, "Value": v} for k, v in merged_tags.items()]
@@ -233,7 +233,7 @@ class S3Extension(DocumentExtensionABC):
             response (TableResponse): Response
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             paginator = client.get_paginator("list_objects_v2")
             iterator = paginator.paginate(
                 Bucket=cls._s3_get_bucket(),
@@ -282,7 +282,7 @@ class S3Extension(DocumentExtensionABC):
             key (str): File key
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             if cls.s3_file_exists(key):
                 if avoid_duplicates:
                     key_ = key.split(".")
@@ -332,7 +332,7 @@ class S3Extension(DocumentExtensionABC):
             file (bytes): File content
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             return client.get_object(
                 Bucket=cls._s3_get_bucket(),
                 Key=key,
@@ -349,7 +349,7 @@ class S3Extension(DocumentExtensionABC):
             key (str): File key
         """
 
-        with cls.__s3_client() as client:  # type: ignore
+        with cls._s3_client() as client:
             return client.delete_object(
                 Bucket=cls._s3_get_bucket(),
                 Key=key,

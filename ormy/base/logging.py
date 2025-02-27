@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 from threading import Lock
-from typing import Dict, Optional
+from typing import Optional
 
 # ----------------------- #
 
@@ -20,7 +20,7 @@ class LogLevel(Enum):
 class LogManager:
     """Manager for loggers."""
 
-    _loggers: Dict[str, logging.Logger] = {}
+    _loggers: dict[str, logging.Logger] = {}
     _lock = Lock()
     _global_log_level: LogLevel = LogLevel.INFO
 

@@ -150,7 +150,7 @@ class RabbitMQExtension(DocumentExtensionABC):
         Args:
             queue (str): Queue to publish to
             message (Any): Message to publish (JSON serializable)
-            headers (Dict[str, Any]): Headers to publish
+            headers (dict[str, Any]): Headers to publish
             delivery_mode (int): Delivery mode (2 for persistent)
         """
 
@@ -182,7 +182,7 @@ class RabbitMQExtension(DocumentExtensionABC):
         Args:
             queue (str): Queue to publish to
             message (Any): Message to publish (JSON serializable)
-            headers (Dict[str, Any]): Headers to publish
+            headers (dict[str, Any]): Headers to publish
             delivery_mode (int): Delivery mode (2 for persistent)
         """
 
@@ -211,7 +211,7 @@ class RabbitMQExtension(DocumentExtensionABC):
 
         Args:
             message (Any): Message to publish (JSON serializable)
-            headers (Dict[str, Any]): Headers to publish
+            headers (dict[str, Any]): Headers to publish
             delivery_mode (int): Delivery mode (2 for persistent)
         """
 
@@ -237,7 +237,7 @@ class RabbitMQExtension(DocumentExtensionABC):
 
         Args:
             message (Any): Message to publish (JSON serializable)
-            headers (Dict[str, Any]): Headers to publish
+            headers (dict[str, Any]): Headers to publish
             delivery_mode (int): Delivery mode (2 for persistent)
         """
 

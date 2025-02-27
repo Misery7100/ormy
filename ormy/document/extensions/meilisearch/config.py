@@ -24,23 +24,23 @@ class MeilisearchSettings(MsSettings):  # type: ignore[misc]
     Attributes:
         default_sort (str, optional): Default sort field
         synonyms (JsonDict, optional): Synonyms
-        stop_words (List[str], optional): Stop words
-        ranking_rules (List[str], optional): Ranking rules
-        filterable_attributes (List[str], optional): Filterable attributes
+        stop_words (list[str], optional): Stop words
+        ranking_rules (list[str], optional): Ranking rules
+        filterable_attributes (list[str], optional): Filterable attributes
         distinct_attribute (str, optional): Distinct attribute
-        searchable_attributes (List[str], optional): Searchable attributes
-        displayed_attributes (List[str], optional): Displayed attributes
-        sortable_attributes (List[str], optional): Sortable attributes
+        searchable_attributes (list[str], optional): Searchable attributes
+        displayed_attributes (list[str], optional): Displayed attributes
+        sortable_attributes (list[str], optional): Sortable attributes
         typo_tolerance (TypoTolerance, optional): Typo tolerance
         faceting (Faceting, optional): Faceting
         pagination (Pagination, optional): Pagination
         proximity_precision (ProximityPrecision, optional): Proximity precision
-        separator_tokens (List[str], optional): Separator tokens
-        non_separator_tokens (List[str], optional): Non separator tokens
+        separator_tokens (list[str], optional): Separator tokens
+        non_separator_tokens (list[str], optional): Non separator tokens
         search_cutoff_ms (int, optional): Search cutoff ms
-        dictionary (List[str], optional): Dictionary
-        embedders (Dict[str, OpenAiEmbedder | HuggingFaceEmbedder | OllamaEmbedder | RestEmbedder | UserProvidedEmbedder], optional): Embedders
-        localized_attributes (List[LocalizedAttributes], optional): Localized attributes
+        dictionary (list[str], optional): Dictionary
+        embedders (dict[str, OpenAiEmbedder | HuggingFaceEmbedder | OllamaEmbedder | RestEmbedder | UserProvidedEmbedder], optional): Embedders
+        localized_attributes (list[LocalizedAttributes], optional): Localized attributes
     """
 
     default_sort: Optional[str] = None

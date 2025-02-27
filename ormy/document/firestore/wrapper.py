@@ -322,10 +322,10 @@ class FirestoreBase(DocumentABC):
         Create multiple documents in the collection
 
         Args:
-            data (List[FirestoreBase]): Data models to be created
+            data (list[FirestoreBase]): Data models to be created
 
         Returns:
-            created (List[FirestoreBase]): Created data models
+            created (list[FirestoreBase]): Created data models
         """
 
         error_idx: list[int] = []
@@ -353,10 +353,10 @@ class FirestoreBase(DocumentABC):
         Create multiple documents in the collection
 
         Args:
-            data (List[FirestoreBase]): Data models to be created
+            data (list[FirestoreBase]): Data models to be created
 
         Returns:
-            created (List[FirestoreBase]): Created data models
+            created (list[FirestoreBase]): Created data models
         """
 
         error_idx: list[int] = []
@@ -490,7 +490,7 @@ class FirestoreBase(DocumentABC):
             offset (int): Number of documents to skip
 
         Returns:
-            documents (List[FirestoreBase]): Found documents
+            documents (list[FirestoreBase]): Found documents
         """
 
         collection = cls._get_collection()
@@ -523,7 +523,7 @@ class FirestoreBase(DocumentABC):
             offset (int): Number of documents to skip
 
         Returns:
-            documents (List[FirestoreBase]): Found documents
+            documents (list[FirestoreBase]): Found documents
         """
 
         collection = cls._aget_collection()
@@ -610,7 +610,7 @@ class FirestoreBase(DocumentABC):
             batch_size (int): Maximum number of documents to return in each batch
 
         Returns:
-            documents (List[FirestoreBase]): Found documents
+            documents (list[FirestoreBase]): Found documents
         """
 
         cnt = cls.count(filters=filters)
@@ -638,7 +638,7 @@ class FirestoreBase(DocumentABC):
             batch_size (int): Maximum number of documents to return in each batch
 
         Returns:
-            documents (List[FirestoreBase]): Found documents
+            documents (list[FirestoreBase]): Found documents
         """
 
         cnt = await cls.acount(filters=filters)

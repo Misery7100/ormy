@@ -35,7 +35,7 @@ class Registry:
         Check if the item exists in the registry
 
         Args:
-            discriminator (str | List[str]): Discriminator
+            discriminator (str | list[str]): Discriminator
             config (ConfigABC): Configuration
             logger (logging.Logger): Logger
 
@@ -86,7 +86,7 @@ class Registry:
         Register a subclass
 
         Args:
-            discriminator (str | List[str]): Discriminator
+            discriminator (str | list[str]): Discriminator
             value (Any): Value
             config (ConfigABC): Configuration
             logger (logging.Logger): Logger
