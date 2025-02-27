@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional
 
 from ormy.exceptions import ModuleNotFound
 
@@ -7,14 +7,7 @@ try:
 except ImportError as e:
     raise ModuleNotFound(extra="clickhouse", packages=["infi-clickhouse-orm"]) from e
 
-from .models import ClickHouseModel as ClickHouseModelNew
-from .wrapper import ClickHouseBase, ClickHouseModel
-
-# ----------------------- #
-
-ChB = TypeVar("ChB", bound=ClickHouseBase)
-ChM = TypeVar("ChM", bound=ClickHouseModel)
-ChMNew = TypeVar("ChMNew", bound=ClickHouseModelNew)
+from .wrapper import ClickHouseBase
 
 # ----------------------- #
 
@@ -54,7 +47,7 @@ class RunSQLWithSettings(migrations.RunSQL):
 
 
 class ModelOperation(migrations.ModelOperation):
-    def __init__(self, model_class: Type[ChM] | Type[ChB] | Type[ChMNew]):
+    def __init__(self, model_class: Any):
         if issubclass(model_class, (ClickHouseBase)):
             model_class = model_class._model  # type: ignore
 

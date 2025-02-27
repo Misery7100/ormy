@@ -3880,4 +3880,4 @@ s3 = ["boto3", "boto3-stubs", "botocore-stubs"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "6bc283938b5accb51f4233e39eed0ea52d8e5bca17e53ae69a893aec994df674"
+content-hash = "2b228967ca1341b35f0454c884ae20627867452d2450d532ce42b601c0712e88"

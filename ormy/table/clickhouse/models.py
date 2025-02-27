@@ -44,9 +44,9 @@ class ClickHouseFieldInfo(FieldInfo):
 def ClickHouseField(
     default: Any = PydanticUndefined,
     *,
-    clickhouse: fields.Field = fields.StringField(),
+    clickhouse: fields.Field,
     **kwargs: Any,
-) -> ClickHouseFieldInfo:
+) -> Any:
     return ClickHouseFieldInfo(default, clickhouse=clickhouse, **kwargs)
 
 
