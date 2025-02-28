@@ -21,7 +21,7 @@ from .schema import (
     ArrayFilter,
     BooleanFilter,
     DatetimeFilter,
-    MeilisearchReferenceV2,
+    MeilisearchReference,
     NumberFilter,
     SearchRequest,
     SearchResponse,
@@ -109,7 +109,7 @@ class MeilisearchExtension(DocumentExtensionABC):
                     sort_key = SortField(**field, default=s == default_sort)
                     sort.append(sort_key)
 
-        return MeilisearchReferenceV2(
+        return MeilisearchReference(
             filters=filters,
             sort=sort,
         )

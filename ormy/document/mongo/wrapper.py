@@ -11,6 +11,7 @@ except ImportError as e:
     raise ModuleNotFound(extra="mongo", packages=["pymongo", "motor"]) from e
 
 from ormy.base.generic import TabularData
+from ormy.base.pydantic import TrimDocMixin
 from ormy.document._abc import DocumentABC
 
 from .config import MongoConfig
@@ -18,7 +19,7 @@ from .config import MongoConfig
 # ----------------------- #
 
 
-class MongoBase(DocumentABC):
+class MongoBase(DocumentABC, TrimDocMixin):
     """MongoDB base class"""
 
     config: ClassVar[MongoConfig] = MongoConfig()

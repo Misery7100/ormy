@@ -9,6 +9,7 @@ except ImportError as e:
     raise ModuleNotFound(extra="clickhouse", packages=["infi-clickhouse-orm"]) from e
 
 from ormy._abc import AbstractABC
+from ormy.base.mixin import TrimDocMixin
 
 from .config import ClickHouseConfig
 from .func import get_clickhouse_db
@@ -17,7 +18,7 @@ from .models import ClickHouseFieldInfo, ClickHouseModel, ClickHouseQuerySet
 # ----------------------- #
 
 
-class ClickHouseBase(AbstractABC):
+class ClickHouseBase(AbstractABC, TrimDocMixin):
     """ClickHouse base class"""
 
     config: ClassVar[ClickHouseConfig] = ClickHouseConfig()

@@ -13,6 +13,7 @@ try:
 except ImportError as e:
     raise ModuleNotFound(extra="bigquery", packages=["google-cloud-bigquery"]) from e
 
+from ormy.base.mixin import TrimDocMixin
 from ormy.table._abc import TableABC
 
 from .config import BigQueryConfig
@@ -21,7 +22,7 @@ from .exceptions import BigQueryBackendInsertError, BigQueryInsertError
 # ----------------------- #
 
 
-class BigQueryBase(TableABC):
+class BigQueryBase(TableABC, TrimDocMixin):
     """BigQuery base class"""
 
     config: ClassVar[BigQueryConfig] = BigQueryConfig()

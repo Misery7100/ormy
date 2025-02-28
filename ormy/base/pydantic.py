@@ -11,6 +11,7 @@ from pydantic import (
 from pydantic_core import core_schema
 
 from .generic import TabularData
+from .mixin import TrimDocMixin
 
 # ----------------------- #
 
@@ -80,7 +81,7 @@ class TypeWithIgnore(Generic[G]):
 # ....................... #
 
 
-class BaseWithIgnore(BaseModel):
+class BaseWithIgnore(TrimDocMixin, BaseModel):
     """Base class for all Pydantic models within the package with ignore placeholder"""
 
     model_config = ConfigDict(ignored_types=(IgnorePlaceholder,))
@@ -141,7 +142,7 @@ class BaseWithIgnore(BaseModel):
 # ....................... #
 
 
-class Base(BaseModel):
+class Base(TrimDocMixin, BaseModel):
     """Base class for all Pydantic models within the package"""
 
     model_config = ConfigDict(
@@ -457,7 +458,7 @@ class BaseReference(BaseModel):
 # ....................... #
 
 
-class TableResponse(BaseModel):
+class TableResponse(TrimDocMixin, BaseModel):
     """
     Response for a table query
 

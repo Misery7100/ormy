@@ -9,6 +9,7 @@ except ImportError as e:
     raise ModuleNotFound(extra="arango", packages=["python-arango"]) from e
 
 from ormy.base.generic import TabularData
+from ormy.base.pydantic import TrimDocMixin
 from ormy.document._abc import DocumentABC
 
 from .config import ArangoConfig
@@ -16,7 +17,7 @@ from .config import ArangoConfig
 # ----------------------- #
 
 
-class ArangoBase(DocumentABC):
+class ArangoBase(DocumentABC, TrimDocMixin):
     """ArangoDB base class"""
 
     config: ClassVar[ArangoConfig] = ArangoConfig()

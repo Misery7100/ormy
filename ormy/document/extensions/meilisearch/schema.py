@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import Annotated, Any, Literal, Optional, Type, TypeVar
+from typing import Annotated, Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
 from ormy.base.generic import TabularData
-from ormy.base.pydantic import BaseReference, TableResponse
+from ormy.base.pydantic import TableResponse, TrimDocMixin
 
 # ----------------------- #
 
 
-class SortOrder(StrEnum):
+class SortOrder(TrimDocMixin, StrEnum):
     """
-    Sort Order Enum
+    Order of the sort
 
     Attributes:
         asc (str): Ascending Order
@@ -26,7 +26,7 @@ class SortOrder(StrEnum):
 # ....................... #
 
 
-class SortField(BaseModel):
+class SortField(TrimDocMixin, BaseModel):
     """
     Sort field model
 
@@ -37,17 +37,14 @@ class SortField(BaseModel):
     """
 
     key: str
-    # title: str  # TODO: remove title
     default: bool = False
 
 
 # ----------------------- #
 # TODO: add filter operators (mb use a separate uniform interface)
 
-F = TypeVar("F", bound="FilterABC")
 
-
-class FilterABC(ABC, BaseModel):
+class FilterABC(ABC, BaseModel, TrimDocMixin):
     """
     Abstract Base Class for Search Filters
 
@@ -58,7 +55,6 @@ class FilterABC(ABC, BaseModel):
     """
 
     key: str
-    # title: Optional[str] = None  # TODO: remove title
     value: Optional[Any] = None
     type: str = "abc"
 
@@ -73,7 +69,7 @@ class FilterABC(ABC, BaseModel):
 
 class BooleanFilter(FilterABC):
     """
-    Boolean Filter Model
+    Boolean filter
 
     Attributes:
         key (str): Key of the filter
@@ -97,7 +93,7 @@ class BooleanFilter(FilterABC):
 
 class NumberFilter(FilterABC):
     """
-    Number Filter Model
+    Numeric filter
 
     Attributes:
         key (str): Key of the filter
@@ -129,7 +125,7 @@ class NumberFilter(FilterABC):
 
 class DatetimeFilter(FilterABC):
     """
-    Datetime Filter Model
+    Datetime filter
 
     Attributes:
         key (str): Key of the filter
@@ -161,7 +157,7 @@ class DatetimeFilter(FilterABC):
 
 class ArrayFilter(FilterABC):
     """
-    Array Filter Model
+    Array filter
 
     Attributes:
         key (str): Key of the filter
@@ -190,7 +186,7 @@ AnyFilter = Annotated[
 # ----------------------- #
 
 
-class SearchRequest(BaseModel):
+class SearchRequest(TrimDocMixin, BaseModel):
     query: str = ""
     sort: Optional[str] = None
     order: SortOrder = SortOrder.desc
@@ -199,18 +195,11 @@ class SearchRequest(BaseModel):
 
 # ----------------------- #
 
-S = TypeVar("S", bound="SearchResponse")
-
 
 class SearchResponse(TableResponse):
     @classmethod
-    def from_search_results(
-        cls: Type[S],
-        res: Any,
-    ) -> S:
-        """
-        ...
-        """
+    def from_search_results(cls, res: Any):
+        """Create a SearchResponse from a search results"""
 
         # TODO: Replace with ormy errors
 
@@ -230,17 +219,9 @@ class SearchResponse(TableResponse):
 # ....................... #
 
 
-class MeilisearchReference(BaseReference):
-    sort: list[SortField] = []
-    filters: list[AnyFilter] = []
-
-
-# ....................... #
-
-
-class MeilisearchReferenceV2(BaseModel):
+class MeilisearchReference(TrimDocMixin, BaseModel):
     """
-    Meilisearch Reference V2 model
+    Meilisearch reference model
 
     Attributes:
         sort (list[ormy.extension.meilisearch.schema.SortField]): The sort fields
