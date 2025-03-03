@@ -5,12 +5,13 @@ from typing import Annotated, Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 from ormy.base.generic import TabularData
-from ormy.base.pydantic import TableResponse, TrimDocMixin
+from ormy.base.mixin import NoDocMixin
+from ormy.base.pydantic import TableResponse
 
 # ----------------------- #
 
 
-class SortOrder(TrimDocMixin, StrEnum):
+class SortOrder(NoDocMixin, StrEnum):
     """
     Order of the sort
 
@@ -26,7 +27,7 @@ class SortOrder(TrimDocMixin, StrEnum):
 # ....................... #
 
 
-class SortField(TrimDocMixin, BaseModel):
+class SortField(NoDocMixin, BaseModel):
     """
     Sort field model
 
@@ -44,7 +45,7 @@ class SortField(TrimDocMixin, BaseModel):
 # TODO: add filter operators (mb use a separate uniform interface)
 
 
-class FilterABC(ABC, BaseModel, TrimDocMixin):
+class FilterABC(ABC, BaseModel):
     """
     Abstract Base Class for Search Filters
 
@@ -67,7 +68,7 @@ class FilterABC(ABC, BaseModel, TrimDocMixin):
 # ....................... #
 
 
-class BooleanFilter(FilterABC):
+class BooleanFilter(NoDocMixin, FilterABC):
     """
     Boolean filter
 
@@ -91,7 +92,7 @@ class BooleanFilter(FilterABC):
 # ....................... #
 
 
-class NumberFilter(FilterABC):
+class NumberFilter(NoDocMixin, FilterABC):
     """
     Numeric filter
 
@@ -123,7 +124,7 @@ class NumberFilter(FilterABC):
 # ....................... #
 
 
-class DatetimeFilter(FilterABC):
+class DatetimeFilter(NoDocMixin, FilterABC):
     """
     Datetime filter
 
@@ -155,7 +156,7 @@ class DatetimeFilter(FilterABC):
 # ....................... #
 
 
-class ArrayFilter(FilterABC):
+class ArrayFilter(NoDocMixin, FilterABC):
     """
     Array filter
 
@@ -186,7 +187,7 @@ AnyFilter = Annotated[
 # ----------------------- #
 
 
-class SearchRequest(TrimDocMixin, BaseModel):
+class SearchRequest(BaseModel):
     query: str = ""
     sort: Optional[str] = None
     order: SortOrder = SortOrder.desc
@@ -219,7 +220,7 @@ class SearchResponse(TableResponse):
 # ....................... #
 
 
-class MeilisearchReference(TrimDocMixin, BaseModel):
+class MeilisearchReference(NoDocMixin, BaseModel):
     """
     Meilisearch reference model
 

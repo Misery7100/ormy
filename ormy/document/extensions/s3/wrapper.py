@@ -102,7 +102,9 @@ class S3Extension(DocumentExtensionABC):
             endpoint_url=credentials.url(),
             aws_access_key_id=credentials.username.get_secret_value(),
             aws_secret_access_key=credentials.password.get_secret_value(),
-            config=Config(signature_version="s3v4"),
+            config=Config(
+                signature_version="s3v4", proxies={}
+            ),  # Disable proxy explicitly
         )
 
         try:
