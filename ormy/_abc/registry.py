@@ -1,5 +1,5 @@
 from threading import Lock
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from ormy.exceptions import InternalError
 
@@ -30,11 +30,11 @@ class Registry:
     # ....................... #
 
     @classmethod
-    def get_by_config(cls, config: Any):
+    def get_by_config(cls, config: Type[C]):
         """Get registry items by config"""
 
         with cls._lock:
-            entries = cls._registry.get(type(config).__name__, {})
+            entries = cls._registry.get(config.__name__, {})
 
             if entries:
                 return cls.get_deepest_values(entries)
