@@ -30,6 +30,37 @@ class Registry:
     # ....................... #
 
     @classmethod
+    def get_by_config(cls, config: Any):
+        """Get registry items by config"""
+
+        with cls._lock:
+            entries = cls._registry.get(type(config).__name__, {})
+
+            if entries:
+                return cls.get_deepest_values(entries)
+
+            return []
+
+    # ....................... #
+
+    @classmethod
+    def get_deepest_values(cls, d: Any):
+        """Get deepest values from a dictionary"""
+
+        if isinstance(d, dict):
+            if all(not isinstance(v, dict) for v in d.values()):
+                return list(d.values())  # Return values if no nested dicts exist
+            else:
+                result = []
+                for value in d.values():
+                    result.extend(cls.get_deepest_values(value))
+                return result
+
+        return [d]
+
+    # ....................... #
+
+    @classmethod
     def exists(cls, discriminator: str | list[str], config: Optional[C] = None):
         """
         Check if the item exists in the registry

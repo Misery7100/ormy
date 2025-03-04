@@ -9,6 +9,7 @@ except ImportError as e:
     raise ModuleNotFound(extra="clickhouse", packages=["infi-clickhouse-orm"]) from e
 
 from ormy._abc import AbstractABC
+from ormy._abc.registry import Registry
 from ormy.base.mixin import TrimDocMixin
 
 from .config import ClickHouseConfig
@@ -34,6 +35,12 @@ class ClickHouseBase(AbstractABC, TrimDocMixin):
 
         cls._register_subclass_helper(discriminator=["database", "table"])
         cls.__construct_model()
+
+    # ....................... #
+
+    @classmethod
+    def set_database(cls):
+        """Set ClickHouse database"""
 
         cls._model.set_database(cls, cls._get_adatabase())  # type: ignore
 
@@ -223,3 +230,14 @@ class ClickHouseBase(AbstractABC, TrimDocMixin):
             model_instances=model_records,
             batch_size=batch_size,
         )
+
+    # ....................... #
+
+    @staticmethod
+    def registry_helper_set_databases():
+        """Set databases for all defined ClickHouse models"""
+
+        entries: list[ClickHouseBase] = Registry.get_by_config(ClickHouseConfig)
+
+        for x in entries:
+            x.set_database()

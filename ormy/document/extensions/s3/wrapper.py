@@ -5,6 +5,7 @@ from typing import Any, ClassVar
 from ormy.base.generic import TabularData
 from ormy.base.pydantic import TableResponse
 from ormy.document._abc import DocumentExtensionABC
+from ormy._abc.registry import Registry
 from ormy.exceptions import BadRequest, Conflict, ModuleNotFound
 
 try:
@@ -35,7 +36,6 @@ class S3Extension(DocumentExtensionABC):
             config=S3Config,
             discriminator="bucket",
         )
-        cls._s3_create_bucket()
 
     # ....................... #
 
@@ -49,7 +49,7 @@ class S3Extension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod
-    def _s3_create_bucket(cls):
+    def s3_create_bucket(cls):
         """Create a bucket"""
 
         cfg = cls.get_extension_config(type_=S3Config)
@@ -356,3 +356,14 @@ class S3Extension(DocumentExtensionABC):
                 Bucket=cls._s3_get_bucket(),
                 Key=key,
             )
+
+    # ....................... #
+
+    @staticmethod
+    def registry_helper_create_buckets():
+        """Create buckets for all defined S3 models"""
+
+        entries: list[S3Extension] = Registry.get_by_config(S3Config)
+
+        for x in entries:
+            x.s3_create_bucket()

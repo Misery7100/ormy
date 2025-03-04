@@ -1,6 +1,8 @@
+import asyncio
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, Callable, ClassVar, Optional, Self, Type, TypeVar
 
+from ormy._abc.registry import Registry
 from ormy.base.typing import AsyncCallable
 from ormy.document._abc import DocumentExtensionABC
 from ormy.exceptions import ModuleNotFound
@@ -54,7 +56,6 @@ class MeilisearchExtension(DocumentExtensionABC):
             config=MeilisearchConfig,
             discriminator="index",
         )
-        cls.__meili_safe_create_or_update()
 
     # ....................... #
 
@@ -246,7 +247,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     # ....................... #
 
     @classmethod
-    def __meili_safe_create_or_update(cls):
+    def meili_safe_create_or_update(cls):
         """
         Safely create or update the Meilisearch index.
         If the index does not exist, it will be created.
@@ -262,7 +263,7 @@ class MeilisearchExtension(DocumentExtensionABC):
                 settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
 
                 if ix.get_settings() != settings:
-                    cls._meili_update_index(settings)
+                    ix.update_settings(settings)
                     cls._logger().debug(f"Update of index `{cfg.index}` is started")
 
             except MeilisearchApiError:
@@ -276,6 +277,40 @@ class MeilisearchExtension(DocumentExtensionABC):
 
         if not cfg.is_default():
             cls.__meili_execute_task(_task)
+
+    # ....................... #
+
+    @classmethod
+    async def ameili_safe_create_or_update(cls):
+        """
+        Safely create or update the Meilisearch index.
+        If the index does not exist, it will be created.
+        If the index exists and settings were updated, index will be updated.
+        """
+
+        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+
+        async def _task(c: AsyncClient):
+            try:
+                ix = await c.get_index(cfg.index)
+                cls._logger().debug(f"Index `{cfg.index}` already exists")
+                settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
+
+                if (await ix.get_settings()) != settings:
+                    await ix.update_settings(settings)
+                    cls._logger().debug(f"Update of index `{cfg.index}` is started")
+
+            except MeilisearchApiError:
+                settings = MeilisearchSettings.model_validate(cfg.settings.model_dump())
+                await c.create_index(
+                    cfg.index,
+                    primary_key=cfg.primary_key,
+                    settings=settings,
+                )
+                cls._logger().debug(f"Index `{cfg.index}` is created")
+
+        if not cfg.is_default():
+            await cls.__ameili_execute_task(_task)
 
     # ....................... #
 
@@ -364,23 +399,6 @@ class MeilisearchExtension(DocumentExtensionABC):
             return await c.get_index(cfg.index)
 
         return await cls.__ameili_execute_task(_task)
-
-    # ....................... #
-
-    @classmethod
-    def _meili_update_index(cls, settings: Any):
-        """
-        Update Meilisearch index settings
-
-        Args:
-            settings (MeilisearchSettings): The settings to update
-        """
-
-        ix = cls._meili_index()
-        available_settings = ix.get_settings()
-
-        if settings != available_settings:
-            ix.update_settings(settings)
 
     # ....................... #
 
@@ -734,3 +752,26 @@ class MeilisearchExtension(DocumentExtensionABC):
             return int(dt.timestamp())
 
         return None
+
+    # ....................... #
+
+    @staticmethod
+    def registry_helper_safe_create_or_update_indexes():
+        """Safe create or update indexes"""
+
+        entries: list[MeilisearchExtension] = Registry.get_by_config(MeilisearchConfig)
+
+        for x in entries:
+            x.meili_safe_create_or_update()
+
+    # ....................... #
+
+    @staticmethod
+    async def aregistry_helper_safe_create_or_update_indexes():
+        """Safe create or update indexes"""
+
+        entries: list[MeilisearchExtension] = Registry.get_by_config(MeilisearchConfig)
+        tasks = [x.ameili_safe_create_or_update() for x in entries]
+
+        if tasks:
+            await asyncio.gather(*tasks)
