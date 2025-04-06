@@ -53,6 +53,13 @@ class ExtendedEnum(Enum):
 
 # ----------------------- #
 
+
+class Row(dict):
+    pass
+
+
+# ....................... #
+
 # TODO:
 # - add `apply` method
 

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, ClassVar, Mapping, Optional, Self, TypeVar, cast
+from typing import Any, ClassVar, Mapping, Self, TypeVar, cast
 
 from pydantic import Field
 
@@ -87,7 +87,29 @@ class DocumentABC(AbstractABC):
 
     @classmethod
     @abstractmethod
-    async def afind(cls, id_: str) -> Optional[Self | Any]: ...
+    async def afind(cls, id_: str) -> Self: ...
+
+    # ....................... #
+
+    @abstractmethod
+    def kill(self: Self) -> None: ...
+
+    # ....................... #
+
+    @abstractmethod
+    async def akill(self: Self) -> None: ...
+
+    # ....................... #
+
+    @classmethod
+    @abstractmethod
+    def kill_many(cls, *args: Any, **kwargs: Any) -> None: ...
+
+    # ....................... #
+
+    @classmethod
+    @abstractmethod
+    async def akill_many(cls, *args: Any, **kwargs: Any) -> None: ...
 
     # ....................... #
 

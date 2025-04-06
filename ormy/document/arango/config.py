@@ -61,3 +61,28 @@ class ArangoConfig(ConfigABC):
         """Get the ArangoDB connection URL"""
 
         return self.credentials.url()
+
+
+# ....................... #
+
+
+class ArangoGraphConfig(ConfigABC):
+    """ArangoDB graph configuration"""
+
+    database: str = "default"
+    name: str = "default"
+    credentials: ArangoCredentials = ArangoCredentials()
+
+    # ....................... #
+
+    def is_default(self) -> bool:
+        """Validate if the config is default"""
+
+        return self._default_helper("database", "name")
+
+    # ....................... #
+
+    def url(self) -> str:
+        """Get the ArangoDB connection URL"""
+
+        return self.credentials.url()

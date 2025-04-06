@@ -399,3 +399,67 @@ class RedisBase(DocumentABC, TrimDocMixin):
             raise NotFound("Document not found")
 
         return await cls.__aexecute_task(_atask)
+
+    # ....................... #
+
+    def kill(self: Self):
+        """
+        Hard delete a document from Redis
+        """
+
+        key = self._build_key(self.id)
+
+        def _task(c: Redis):
+            c.delete(key)
+
+        self.__execute_task(_task)
+
+    # ....................... #
+
+    async def akill(self: Self):
+        """
+        Hard delete a document from Redis in asyncronous mode
+        """
+
+        key = self._build_key(self.id)
+
+        async def _atask(c: aioredis.Redis):
+            await c.delete(key)
+
+        await self.__aexecute_task(_atask)
+
+    # ....................... #
+
+    @classmethod
+    def kill_many(cls, ids: list[str]):
+        """
+        Hard delete multiple documents from Redis
+
+        Args:
+            ids (list[str]): List of document IDs
+        """
+
+        keys = [cls._build_key(id_) for id_ in ids]
+
+        def _task(c: Redis):
+            c.delete(*keys)
+
+        cls.__execute_task(_task)
+
+    # ....................... #
+
+    @classmethod
+    async def akill_many(cls, ids: list[str]):
+        """
+        Hard delete multiple documents from Redis in asyncronous mode
+
+        Args:
+            ids (list[str]): List of document IDs
+        """
+
+        keys = [cls._build_key(id_) for id_ in ids]
+
+        async def _atask(c: aioredis.Redis):
+            await c.delete(*keys)
+
+        await cls.__aexecute_task(_atask)

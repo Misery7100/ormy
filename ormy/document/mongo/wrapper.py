@@ -510,6 +510,54 @@ class MongoBase(DocumentABC, TrimDocMixin):
 
     # ....................... #
 
+    def kill(self):
+        """
+        Hard delete a document from the collection
+        """
+
+        collection = self._get_collection()
+        collection.delete_one({"_id": self.id})
+
+    # ....................... #
+
+    async def akill(self):
+        """
+        Hard delete a document from the collection in asyncronous mode
+        """
+
+        collection = await self._aget_collection()
+        await collection.delete_one({"_id": self.id})
+
+    # ....................... #
+
+    @classmethod
+    def kill_many(cls, request: dict[str, Any] = {}):
+        """
+        Hard delete multiple documents from the collection
+
+        Args:
+            request (MongoRequest, optional): Request to delete the documents
+        """
+
+        collection = cls._get_collection()
+        collection.delete_many(request)
+
+    # ....................... #
+
+    @classmethod
+    async def akill_many(cls, request: dict[str, Any] = {}):
+        """
+        Hard delete multiple documents from the collection in asyncronous mode
+
+        Args:
+            request (MongoRequest, optional): Request to delete the documents
+        """
+
+        collection = await cls._aget_collection()
+        await collection.delete_many(request)
+
+    # ....................... #
+
     @classmethod
     def patch(
         cls,
