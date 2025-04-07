@@ -23,7 +23,7 @@ C = TypeVar("C", bound=ConfigABC)
 # ....................... #
 
 
-class DocumentABC(AbstractABC):
+class _BaseDocumentABC(AbstractABC):
     """Abstract Base Class for Document-Oriented ORM"""
 
     id: str = Field(default_factory=hex_uuid4)
@@ -56,7 +56,12 @@ class DocumentABC(AbstractABC):
 
         cls.semi_frozen_fields = new
 
-    # ....................... #
+
+# ....................... #
+
+
+class SyncDocumentABC(_BaseDocumentABC):
+    """Abstract Base Class for Document-Oriented ORM (Sync)"""
 
     @classmethod
     @abstractmethod
@@ -64,19 +69,8 @@ class DocumentABC(AbstractABC):
 
     # ....................... #
 
-    @classmethod
-    @abstractmethod
-    async def acreate(cls, data: Self) -> Self: ...
-
-    # ....................... #
-
     @abstractmethod
     def save(self: Self) -> Self: ...
-
-    # ....................... #
-
-    @abstractmethod
-    async def asave(self: Self) -> Self: ...
 
     # ....................... #
 
@@ -86,31 +80,14 @@ class DocumentABC(AbstractABC):
 
     # ....................... #
 
-    @classmethod
-    @abstractmethod
-    async def afind(cls, id_: str) -> Self: ...
-
-    # ....................... #
-
     @abstractmethod
     def kill(self: Self) -> None: ...
-
-    # ....................... #
-
-    @abstractmethod
-    async def akill(self: Self) -> None: ...
 
     # ....................... #
 
     @classmethod
     @abstractmethod
     def kill_many(cls, *args: Any, **kwargs: Any) -> None: ...
-
-    # ....................... #
-
-    @classmethod
-    @abstractmethod
-    async def akill_many(cls, *args: Any, **kwargs: Any) -> None: ...
 
     # ....................... #
 
@@ -169,6 +146,39 @@ class DocumentABC(AbstractABC):
 
         return self
 
+
+# ....................... #
+
+
+class AsyncDocumentABC(_BaseDocumentABC):
+    """Abstract Base Class for Document-Oriented ORM (Async)"""
+
+    @classmethod
+    @abstractmethod
+    async def acreate(cls, data: Self) -> Self: ...
+
+    # ....................... #
+
+    @abstractmethod
+    async def asave(self: Self) -> Self: ...
+
+    # ....................... #
+
+    @classmethod
+    @abstractmethod
+    async def afind(cls, id_: str) -> Self: ...
+
+    # ....................... #
+
+    @abstractmethod
+    async def akill(self: Self) -> None: ...
+
+    # ....................... #
+
+    @classmethod
+    @abstractmethod
+    async def akill_many(cls, *args: Any, **kwargs: Any) -> None: ...
+
     # ....................... #
 
     async def aupdate(
@@ -225,6 +235,13 @@ class DocumentABC(AbstractABC):
             return await self.asave()
 
         return self
+
+
+# ....................... #
+
+
+class DocumentABC(SyncDocumentABC, AsyncDocumentABC):
+    """Document ABC Base Class with sync and async methods"""
 
 
 # ....................... #

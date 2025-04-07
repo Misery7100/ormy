@@ -14,14 +14,14 @@ from ormy._abc import AbstractABC
 from ormy._abc.registry import Registry
 from ormy.base.generic import TabularData
 from ormy.base.pydantic import TrimDocMixin
-from ormy.document._abc import DocumentABC
+from ormy.document._abc import SyncDocumentABC
 
 from .config import ArangoConfig, ArangoGraphConfig
 
 # ----------------------- #
 
 
-class ArangoBase(DocumentABC, TrimDocMixin):
+class ArangoBase(SyncDocumentABC, TrimDocMixin):
     """ArangoDB base class"""
 
     config: ClassVar[ArangoConfig] = ArangoConfig()

@@ -70,24 +70,26 @@ class AbstractABCMeta(_model_construction.ModelMetaclass, ABCMeta):
             try:
                 cfg = cls.get_mixin_config(type_=config_type)
 
-                if cls.config is not None and not cls.config.is_default():
-                    assert hasattr(
-                        cfg, field
-                    ), f"Field `{field}` not found in `{config_type.__name__}`"
+            except InternalError:
+                cfg = config_type()
 
-                    setattr(cfg, field, compute_fn(cls))
+            other_ext_configs = [x for x in cls.mixin_configs if x not in [cfg]]
 
-            except InternalError as e:
-                cls._logger().warning(
-                    f"Failed to patch {field} for {config_type.__name__} in {cls.__name__}: {e}"
-                )
+            if cls.config is not None and not cls.config.is_default():
+                assert hasattr(
+                    cfg, field
+                ), f"Field `{field}` not found in `{config_type.__name__}`"
+
+                setattr(cfg, field, compute_fn(cls))
+
+            cls.mixin_configs = [cfg] + other_ext_configs
 
         cls._pending_config_patches = []
 
         # Run deferred mixin registrations
         for fn, args in getattr(cls, "_pending_mixin_registrations", []):
             try:
-                fn(cls=cls, **args)
+                fn(**args)
             except InternalError as e:
                 cls._logger().warning(
                     f"Skipped registration for `{args['config'].__name__}` in `{cls.__name__}`: {e}"
