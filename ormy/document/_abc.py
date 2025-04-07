@@ -23,7 +23,7 @@ C = TypeVar("C", bound=ConfigABC)
 # ....................... #
 
 
-class _BaseDocumentABC(AbstractABC):
+class BaseDocumentABC(AbstractABC):
     """Abstract Base Class for Document-Oriented ORM"""
 
     id: str = Field(default_factory=hex_uuid4)
@@ -60,7 +60,7 @@ class _BaseDocumentABC(AbstractABC):
 # ....................... #
 
 
-class SyncDocumentABC(_BaseDocumentABC):
+class SyncDocumentABC(BaseDocumentABC):
     """Abstract Base Class for Document-Oriented ORM (Sync)"""
 
     @classmethod
@@ -150,7 +150,7 @@ class SyncDocumentABC(_BaseDocumentABC):
 # ....................... #
 
 
-class AsyncDocumentABC(_BaseDocumentABC):
+class AsyncDocumentABC(BaseDocumentABC):
     """Abstract Base Class for Document-Oriented ORM (Async)"""
 
     @classmethod

@@ -13,7 +13,6 @@ except ImportError as e:
 from ormy._abc import AbstractABC
 from ormy._abc.registry import Registry
 from ormy.base.generic import TabularData
-from ormy.base.pydantic import TrimDocMixin
 from ormy.document._abc import SyncDocumentABC
 
 from .config import ArangoConfig, ArangoGraphConfig
@@ -21,7 +20,7 @@ from .config import ArangoConfig, ArangoGraphConfig
 # ----------------------- #
 
 
-class ArangoBase(SyncDocumentABC, TrimDocMixin):
+class ArangoBase(SyncDocumentABC):
     """ArangoDB base class"""
 
     config: ClassVar[ArangoConfig] = ArangoConfig()
@@ -488,8 +487,8 @@ class ArangoBase(SyncDocumentABC, TrimDocMixin):
     # ....................... #
 
     @staticmethod
-    def registry_helper_safe_create_collections():
-        """Safe create or update collections"""
+    def safe_create_collections():
+        """Safe create collections"""
 
         entries: list[ArangoBase] = Registry.get_by_config(ArangoConfig)
 
@@ -813,8 +812,8 @@ class ArangoGraph(AbstractABC):
     # ....................... #
 
     @staticmethod
-    def registry_helper_safe_create_graphs():
-        """Safe create or update graphs"""
+    def safe_create_graphs():
+        """Safe create graphs"""
 
         entries: list[ArangoGraph] = Registry.get_by_config(ArangoGraphConfig)
 

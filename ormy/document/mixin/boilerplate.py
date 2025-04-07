@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Optional, Self
 
-from ormy.document._abc import DocumentABC
+from ormy.document._abc import BaseDocumentABC
 
 from .meilisearch import MeilisearchConfig, MeilisearchMixin
 from .rabbitmq import RabbitMQConfig, RabbitMQMixin
@@ -41,7 +41,7 @@ from .s3 import S3Config, S3Mixin
 # ----------------------- #
 
 
-class _Meilisearch(DocumentABC, MeilisearchMixin):
+class _Meilisearch(BaseDocumentABC, MeilisearchMixin):
     mixin_configs: ClassVar[list[Any]] = [MeilisearchConfig()]
 
     # ....................... #
@@ -61,7 +61,7 @@ class _Meilisearch(DocumentABC, MeilisearchMixin):
 # ....................... #
 
 
-class _S3(DocumentABC, S3Mixin):
+class _S3(BaseDocumentABC, S3Mixin):
     mixin_configs: ClassVar[list[Any]] = [S3Config()]
 
     # ....................... #
@@ -195,7 +195,7 @@ class _S3(DocumentABC, S3Mixin):
 # ....................... #
 
 
-class _Redlock(DocumentABC, RedlockMixin):
+class _Redlock(BaseDocumentABC, RedlockMixin):
     mixin_configs: ClassVar[list[Any]] = [RedlockConfig()]
 
     # ....................... #
@@ -281,7 +281,7 @@ class _Redlock(DocumentABC, RedlockMixin):
 # ....................... #
 
 
-class _RabbitMQ(DocumentABC, RabbitMQMixin):
+class _RabbitMQ(BaseDocumentABC, RabbitMQMixin):
     mixin_configs: ClassVar[list[Any]] = [RabbitMQConfig()]
 
     # ....................... #
