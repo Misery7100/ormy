@@ -16,7 +16,7 @@ except ImportError as e:
 
 
 # TODO: use Mergeable ?
-class MeilisearchSettings(MsSettings):  # type: ignore[misc]
+class MeilisearchSettings(MsSettings, Mergeable):  # type: ignore[misc]
     """
     Meilisearch extension settings
 

@@ -484,7 +484,7 @@ class AbstractMixinABC(Base, ABC):
 
         deduplicated = dict()
 
-        for c in cls.mixin_configs:
+        for c in cfgs + cls.mixin_configs:
             type_ = type(c)
 
             if type_ not in deduplicated:
