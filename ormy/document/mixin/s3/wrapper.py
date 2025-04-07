@@ -2,10 +2,10 @@ import re
 from contextlib import contextmanager
 from typing import Any, ClassVar
 
+from ormy._abc.registry import Registry
 from ormy.base.generic import TabularData
 from ormy.base.pydantic import TableResponse
-from ormy.document._abc import DocumentExtensionABC
-from ormy._abc.registry import Registry
+from ormy.document._abc import DocumentMixinABC
 from ormy.exceptions import BadRequest, Conflict, ModuleNotFound
 
 try:
@@ -20,10 +20,10 @@ from .schema import S3File
 # ----------------------- #
 
 
-class S3Extension(DocumentExtensionABC):
-    """S3 extension"""
+class S3Mixin(DocumentMixinABC):
+    """S3 mixin"""
 
-    extension_configs: ClassVar[list[Any]] = [S3Config()]
+    mixin_configs: ClassVar[list[Any]] = [S3Config()]
 
     # ....................... #
 
@@ -32,7 +32,7 @@ class S3Extension(DocumentExtensionABC):
 
         super().__init_subclass__(**kwargs)
 
-        cls._register_extension_subclass_helper(
+        cls.defer_mixin_registration(
             config=S3Config,
             discriminator="bucket",
         )
@@ -43,16 +43,16 @@ class S3Extension(DocumentExtensionABC):
     def _s3_get_bucket(cls) -> str:
         """Get bucket name"""
 
-        cfg = cls.get_extension_config(type_=S3Config)
+        cfg = cls.get_mixin_config(type_=S3Config)
         return cfg.bucket
 
     # ....................... #
 
     @classmethod
-    def s3_create_bucket(cls):
+    def _s3_create_bucket(cls):
         """Create a bucket"""
 
-        cfg = cls.get_extension_config(type_=S3Config)
+        cfg = cls.get_mixin_config(type_=S3Config)
 
         if not cfg.is_default() and not cls._s3_bucket_exists():
             with cls._s3_client() as client:
@@ -91,7 +91,7 @@ class S3Extension(DocumentExtensionABC):
     def _s3_client(cls):
         """Get syncronous S3 client"""
 
-        cfg = cls.get_extension_config(type_=S3Config)
+        cfg = cls.get_mixin_config(type_=S3Config)
         credentials = cfg.credentials
 
         if credentials.username is None or credentials.password is None:
@@ -360,10 +360,10 @@ class S3Extension(DocumentExtensionABC):
     # ....................... #
 
     @staticmethod
-    def registry_helper_create_buckets():
+    def s3_create_buckets():
         """Create buckets for all defined S3 models"""
 
-        entries: list[S3Extension] = Registry.get_by_config(S3Config)
+        entries: list[S3Mixin] = Registry.get_by_config(S3Config)
 
         for x in entries:
-            x.s3_create_bucket()
+            x._s3_create_bucket()

@@ -27,15 +27,7 @@ class FirestoreBase(DocumentABC, TrimDocMixin):
 
     __static: ClassVar[Optional[firestore_v1.Client]] = None
     __astatic: ClassVar[Optional[firestore_v1.AsyncClient]] = None
-
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
-
-        super().__init_subclass__(**kwargs)
-
-        cls._register_subclass_helper(discriminator=["database", "collection"])
+    __discriminator__ = ["database", "collection"]
 
     # ....................... #
 

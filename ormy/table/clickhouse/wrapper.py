@@ -26,14 +26,14 @@ class ClickHouseBase(AbstractABC, TrimDocMixin):
     engine: ClassVar[Optional[Any]] = None
     _model: ClassVar[Optional[Any]] = None  # type: ignore[assignment]
 
+    __discriminator__ = ["database", "table"]
+
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):
         """Initialize subclass"""
 
         super().__init_subclass__(**kwargs)
-
-        cls._register_subclass_helper(discriminator=["database", "table"])
         cls.__construct_model()
 
     # ....................... #

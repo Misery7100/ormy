@@ -1,7 +1,8 @@
 import inspect
-from abc import ABC
+from abc import ABC, ABCMeta
 from typing import (
     Any,
+    Callable,
     ClassVar,
     Literal,
     Optional,
@@ -13,6 +14,7 @@ from typing import (
 )
 
 from pydantic import BaseModel, model_validator
+from pydantic._internal import _model_construction
 
 from ormy.base.logging import LogLevel, LogManager
 from ormy.base.pydantic import IGNORE, Base
@@ -28,23 +30,91 @@ C = TypeVar("C", bound=ConfigABC)
 # ----------------------- #
 
 
-class AbstractABC(Base, ABC):
-    """Abstract ABC Base Class"""
-
-    config: ClassVar[Optional[Any]] = None
+class AbstractABCMeta(_model_construction.ModelMetaclass, ABCMeta):
+    def __init__(cls, name, bases, namespace, **kwargs):
+        super().__init__(name, bases, namespace, **kwargs)  # type: ignore[call-arg]
+        AbstractABCMeta._init(cls)
 
     # ....................... #
 
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
+    @staticmethod
+    def _init(cls: Any):
+        # AbstractABC
+        if callable(getattr(cls, "_update_ignored_types", None)):
+            cls._update_ignored_types()
 
-        super().__init_subclass__(**kwargs)
+        if callable(getattr(cls, "_merge_configs", None)):
+            cls._merge_configs()
 
-        cls.__update_ignored_types()
-        cls.__merge_configs()
+        # AbstractMixinABC
+        if callable(getattr(cls, "_update_ignored_types_mixin", None)):
+            cls._update_ignored_types_mixin()
 
-        if cls.config is not None:
-            cls._set_log_level(cls.config.log_level)
+        if callable(getattr(cls, "_merge_mixin_configs", None)):
+            cls._merge_mixin_configs()
+
+        # Run subclass registration
+        if hasattr(cls, "__discriminator__"):
+            if callable(getattr(cls, "_register_subclass", None)):
+                if not cls.config.is_default() and cls.__discriminator__:
+                    cls._register_subclass(discriminator=cls.__discriminator__)
+
+        # Run deferred mixin config patches
+        for config_type, field, compute_fn in getattr(
+            cls, "_pending_config_patches", []
+        ):
+            try:
+                cfg = cls.get_mixin_config(type_=config_type)
+
+                if not cls.config.is_default():
+                    assert hasattr(
+                        cfg, field
+                    ), f"Field `{field}` not found in `{config_type.__name__}`"
+
+                    setattr(cfg, field, compute_fn(cls))
+
+            except InternalError as e:
+                cls._logger().warning(
+                    f"Failed to patch {field} for {config_type.__name__} in {cls.__name__}: {e}"
+                )
+
+        cls._pending_config_patches = []
+
+        # Run deferred mixin registrations
+        for fn, args in getattr(cls, "_pending_mixin_registrations", []):
+            try:
+                fn(cls=cls, **args)
+            except InternalError as e:
+                cls._logger().warning(
+                    f"Skipped registration for `{args['config'].__name__}` in `{cls.__name__}`: {e}"
+                )
+
+        cls._pending_mixin_registrations = []
+
+        # Logging
+        if getattr(cls, "config", None) is not None:
+            if callable(getattr(cls, "_set_log_level", None)):
+                cls._set_log_level(cls.config.log_level)
+
+        elif hasattr(cls, "mixin_configs"):  #! Actually redundant more or less
+            min_level = LogLevel.CRITICAL
+
+            for x in cls.mixin_configs:
+                if x is not None and x.log_level.value < min_level.value:
+                    min_level = x.log_level
+
+            if callable(getattr(cls, "_set_log_level", None)):
+                cls._set_log_level(min_level)
+
+
+# ....................... #
+
+
+class AbstractABC(Base, ABC, metaclass=AbstractABCMeta):
+    """Abstract ABC Base Class"""
+
+    config: ClassVar[Optional[Any]] = None
+    __discriminator__: ClassVar[list[str]] = []
 
     # ....................... #
 
@@ -70,7 +140,7 @@ class AbstractABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def __update_ignored_types(cls):
+    def _update_ignored_types(cls):
         """Update ignored types for the model configuration"""
 
         ignored_types = cls.model_config.get("ignored_types", tuple())
@@ -84,7 +154,7 @@ class AbstractABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def __merge_configs(cls):
+    def _merge_configs(cls):
         """Merge configurations for the subclass"""
 
         parents = inspect.getmro(cls)[1:]
@@ -117,7 +187,7 @@ class AbstractABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def _register_subclass_helper(cls, discriminator: str | list[str]):
+    def _register_subclass(cls, discriminator: str | list[str]):
         """
         Register subclass in the registry
 
@@ -183,16 +253,16 @@ class ContextItem(BaseModel):
             return False
 
         if self.operator in get_args(ValueOperator):
-            return self.__evaluate_value_operator(model_value)
+            return self._evaluate_value_operator(model_value)
 
         elif self.operator in get_args(ArrayOperator):
-            return self.__evaluate_array_operator(model_value)
+            return self._evaluate_array_operator(model_value)
 
         return False
 
     # ....................... #
 
-    def __evaluate_value_operator(self: Self, model_value: Any) -> bool:
+    def _evaluate_value_operator(self: Self, model_value: Any) -> bool:
         """
         Evaluate value operator
 
@@ -215,7 +285,7 @@ class ContextItem(BaseModel):
 
     # ....................... #
 
-    def __evaluate_array_operator(self: Self, model_value: Any) -> bool:
+    def _evaluate_array_operator(self: Self, model_value: Any) -> bool:
         """
         Evaluate array operator
 
@@ -288,29 +358,13 @@ class SemiFrozenField(BaseModel):
 # ....................... #
 
 
-class AbstractExtensionABC(Base, ABC):
-    """Abstract Extension ABC Base Class"""
+class AbstractMixinABC(Base, ABC):
+    """Abstract Mixin ABC Base Class"""
 
-    extension_configs: ClassVar[list[Any]] = []
+    mixin_configs: ClassVar[list[Any]] = []
 
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
-
-        super().__init_subclass__(**kwargs)
-
-        cls._update_ignored_types_extension()
-        cls._merge_extension_configs()
-
-        min_level = LogLevel.CRITICAL
-
-        for x in cls.extension_configs:
-            if x is not None:
-                if x.log_level.value < min_level.value:
-                    min_level = x.log_level
-
-        cls.set_log_level(min_level)
+    _pending_mixin_registrations: ClassVar[list[Any]] = []
+    _pending_config_patches: ClassVar[list[Any]] = []
 
     # ....................... #
 
@@ -323,7 +377,7 @@ class AbstractExtensionABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def set_log_level(cls, level: LogLevel) -> None:
+    def _set_log_level(cls, level: LogLevel) -> None:
         """
         Set the log level for the logger
 
@@ -336,7 +390,7 @@ class AbstractExtensionABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def get_extension_config(cls, type_: Type[C]) -> C:
+    def get_mixin_config(cls, type_: Type[C]) -> C:
         """
         Get configuration for the given type
 
@@ -347,7 +401,7 @@ class AbstractExtensionABC(Base, ABC):
             config (ConfigABC): Configuration
         """
 
-        cfg = next((c for c in cls.extension_configs if type(c) is type_), None)
+        cfg = next((c for c in cls.mixin_configs if type(c) is type_), None)
 
         if cfg is None:
             raise InternalError(
@@ -359,12 +413,40 @@ class AbstractExtensionABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def _update_ignored_types_extension(cls):
+    def defer_mixin_registration(cls, config: Type[C], discriminator: str | list[str]):
+        cls._pending_mixin_registrations.append(
+            (
+                cls._register_mixin_subclass,
+                {"config": config, "discriminator": discriminator},
+            )
+        )
+
+    # ....................... #
+
+    @classmethod
+    def defer_config_patch(
+        cls,
+        config_type: Type[C],
+        dynamic_field: str,
+        compute_fn: Callable,
+    ):
+        cls._pending_config_patches.append(
+            (
+                config_type,
+                dynamic_field,
+                compute_fn,
+            )
+        )
+
+    # ....................... #
+
+    @classmethod
+    def _update_ignored_types_mixin(cls):
         """Update ignored types for the model configuration"""
 
         ignored_types = cls.model_config.get("ignored_types", tuple())
 
-        for x in cls.extension_configs:
+        for x in cls.mixin_configs:
             if (tx := type(x)) not in ignored_types:
                 ignored_types += (tx,)
 
@@ -375,7 +457,7 @@ class AbstractExtensionABC(Base, ABC):
     # ....................... #
 
     @classmethod
-    def _merge_extension_configs(cls):
+    def _merge_mixin_configs(cls):
         """Merge configurations for the subclass"""
 
         parents = inspect.getmro(cls)[1:]
@@ -383,10 +465,10 @@ class AbstractExtensionABC(Base, ABC):
         parent_selected = None
 
         for p in parents:
-            if hasattr(p, "extension_configs") and all(
-                issubclass(type(x), ConfigABC) for x in p.extension_configs
+            if hasattr(p, "mixin_configs") and all(
+                issubclass(type(x), ConfigABC) for x in p.mixin_configs
             ):
-                cfgs = p.extension_configs
+                cfgs = p.mixin_configs
                 parent_selected = p
                 break
 
@@ -396,7 +478,7 @@ class AbstractExtensionABC(Base, ABC):
 
         deduplicated = dict()
 
-        for c in cls.extension_configs:
+        for c in cls.mixin_configs:
             type_ = type(c)
 
             if type_ not in deduplicated:
@@ -418,12 +500,12 @@ class AbstractExtensionABC(Base, ABC):
                 merge = c
                 merged.append(c)
 
-        cls.extension_configs = merged
+        cls.mixin_configs = merged
 
     # ....................... #
 
     @classmethod
-    def _register_extension_subclass_helper(
+    def _register_mixin_subclass(
         cls,
         config: Type[C],
         discriminator: str | list[str],
@@ -436,6 +518,6 @@ class AbstractExtensionABC(Base, ABC):
             discriminator (str): Discriminator
         """
 
-        cfg = cls.get_extension_config(type_=config)
+        cfg = cls.get_mixin_config(type_=config)
 
         Registry.register(discriminator=discriminator, value=cls, config=cfg)

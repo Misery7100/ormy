@@ -32,15 +32,7 @@ class RedisBase(DocumentABC, TrimDocMixin):
 
     __static: ClassVar[Optional[Redis]] = None
     __astatic: ClassVar[Optional[aioredis.Redis]] = None
-
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
-
-        super().__init_subclass__(**kwargs)
-
-        cls._register_subclass_helper(discriminator=["database", "collection"])
+    __discriminator__ = ["database", "collection"]
 
     # ....................... #
 

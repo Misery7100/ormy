@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, Callable, ClassVar, Optional, TypeVar
 
 from ormy.base.typing import AsyncCallable
-from ormy.document._abc import DocumentExtensionABC
+from ormy.document._abc import DocumentMixinABC
 from ormy.exceptions import Conflict, InternalError, ModuleNotFound
 
 try:
@@ -24,10 +24,10 @@ T = TypeVar("T")
 # ----------------------- #
 
 
-class RedlockExtension(DocumentExtensionABC):
-    """Redlock extension"""
+class RedlockMixin(DocumentMixinABC):
+    """Redlock mixin"""
 
-    extension_configs: ClassVar[list[Any]] = [RedlockConfig()]
+    mixin_configs: ClassVar[list[Any]] = [RedlockConfig()]
 
     __redlock_static: ClassVar[Optional[Redis]] = None
     __aredlock_static: ClassVar[Optional[aioredis.Redis]] = None
@@ -39,7 +39,7 @@ class RedlockExtension(DocumentExtensionABC):
 
         super().__init_subclass__(**kwargs)
 
-        cls._register_extension_subclass_helper(
+        cls.defer_mixin_registration(
             config=RedlockConfig,
             discriminator=["database", "collection"],
         )
@@ -50,7 +50,7 @@ class RedlockExtension(DocumentExtensionABC):
     def _get_redlock_collection(cls):
         """Get collection"""
 
-        cfg = cls.get_extension_config(type_=RedlockConfig)
+        cfg = cls.get_mixin_config(type_=RedlockConfig)
         col = cfg.collection
 
         return col
@@ -61,7 +61,7 @@ class RedlockExtension(DocumentExtensionABC):
     def __is_static_redlock(cls):
         """Check if static Redis client is used"""
 
-        cfg = cls.get_extension_config(type_=RedlockConfig)
+        cfg = cls.get_mixin_config(type_=RedlockConfig)
         use_static = not cfg.context_client
 
         return use_static
@@ -78,7 +78,7 @@ class RedlockExtension(DocumentExtensionABC):
         """
 
         if cls.__redlock_static is None:
-            cfg = cls.get_extension_config(type_=RedlockConfig)
+            cfg = cls.get_mixin_config(type_=RedlockConfig)
             url = cfg.url()
             cls.__redlock_static = Redis.from_url(
                 url,
@@ -99,7 +99,7 @@ class RedlockExtension(DocumentExtensionABC):
         """
 
         if cls.__aredlock_static is None:
-            cfg = cls.get_extension_config(type_=RedlockConfig)
+            cfg = cls.get_mixin_config(type_=RedlockConfig)
             url = cfg.url()
             cls.__aredlock_static = aioredis.from_url(
                 url,
@@ -115,7 +115,7 @@ class RedlockExtension(DocumentExtensionABC):
     def _redlock_client(cls):
         """Get syncronous Redis client for lock purposes"""
 
-        cfg = cls.get_extension_config(type_=RedlockConfig)
+        cfg = cls.get_mixin_config(type_=RedlockConfig)
         url = cfg.url()
         r = Redis.from_url(url, decode_responses=True)
 
@@ -132,7 +132,7 @@ class RedlockExtension(DocumentExtensionABC):
     async def _aredlock_client(cls):
         """Get asyncronous Redis client for lock purposes"""
 
-        cfg = cls.get_extension_config(type_=RedlockConfig)
+        cfg = cls.get_mixin_config(type_=RedlockConfig)
         url = cfg.url()
         r = aioredis.from_url(url, decode_responses=True)
 

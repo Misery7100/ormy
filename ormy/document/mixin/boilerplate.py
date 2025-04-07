@@ -1,88 +1,81 @@
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, ClassVar, Optional, Self, Type, TypeVar
+from typing import Any, ClassVar, Optional, Self
 
-from ormy._abc import ConfigABC
-from ormy.document._abc import DocumentABC, DocumentExtensionABC
-from ormy.exceptions import InternalError
+from ormy.document._abc import DocumentABC
 
-from .meilisearch import MeilisearchConfig, MeilisearchExtension
-from .rabbitmq import RabbitMQConfig, RabbitMQExtension
-from .redlock import RedlockConfig, RedlockExtension
-from .s3 import S3Config, S3Extension
+from .meilisearch import MeilisearchConfig, MeilisearchMixin
+from .rabbitmq import RabbitMQConfig, RabbitMQMixin
+from .redlock import RedlockConfig, RedlockMixin
+from .s3 import S3Config, S3Mixin
 
 # ----------------------- #
 
-C = TypeVar("C", bound=ConfigABC)
+# def __init_subclass_helper__(
+#     cls,
+#     config_type: Type[C],
+#     dynamic_field: str,
+#     **kwargs,
+# ):
+#     """Initialize subclass helper"""
 
-# ----------------------- #
+#     assert issubclass(cls, DocumentABC)
+#     assert issubclass(cls, DocumentMixinABC)
+#     assert cls.config is not None
 
+#     try:
+#         cfg = cls.get_mixin_config(type_=config_type)
 
-def __init_subclass_helper__(
-    cls,
-    config_type: Type[C],
-    dynamic_field: str,
-    **kwargs,
-):
-    """Initialize subclass helper"""
+#     except InternalError:
+#         cfg = config_type()
 
-    assert issubclass(cls, DocumentABC)
-    assert issubclass(cls, DocumentExtensionABC)
-    assert cls.config is not None
+#     other_ext_configs = [x for x in cls.mixin_configs if x not in [cfg]]
 
-    try:
-        cfg = cls.get_extension_config(type_=config_type)
+#     if not cls.config.is_default():
+#         assert hasattr(cfg, dynamic_field)
 
-    except InternalError:
-        cfg = config_type()
+#         setattr(cfg, dynamic_field, f"{cls.config.database}-{cls.config.collection}")
 
-    other_ext_configs = [x for x in cls.extension_configs if x not in [cfg]]
-
-    if not cls.config.is_default():
-        assert hasattr(cfg, dynamic_field)
-
-        setattr(cfg, dynamic_field, f"{cls.config.database}-{cls.config.collection}")
-
-    cls.extension_configs = [cfg] + other_ext_configs
+#     cls.mixin_configs = [cfg] + other_ext_configs
 
 
 # ----------------------- #
 
 
-class _Meilisearch(DocumentABC, MeilisearchExtension):
-    extension_configs: ClassVar[list[Any]] = [MeilisearchConfig()]
+class _Meilisearch(DocumentABC, MeilisearchMixin):
+    mixin_configs: ClassVar[list[Any]] = [MeilisearchConfig()]
 
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):
         """Initialize subclass"""
 
-        __init_subclass_helper__(
-            cls,
+        super().__init_subclass__(**kwargs)
+
+        cls.defer_config_patch(
             config_type=MeilisearchConfig,
             dynamic_field="index",
+            compute_fn=lambda cls: f"{cls.config.database}-{cls.config.collection}",
         )
-
-        super().__init_subclass__(**kwargs)
 
 
 # ....................... #
 
 
-class _S3(DocumentABC, S3Extension):
-    extension_configs: ClassVar[list[Any]] = [S3Config()]
+class _S3(DocumentABC, S3Mixin):
+    mixin_configs: ClassVar[list[Any]] = [S3Config()]
 
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):
         """Initialize subclass"""
 
-        __init_subclass_helper__(
-            cls,
+        super().__init_subclass__(**kwargs)
+
+        cls.defer_config_patch(
             config_type=S3Config,
             dynamic_field="bucket",
+            compute_fn=lambda cls: f"{cls.config.database}-{cls.config.collection}",
         )
-
-        super().__init_subclass__(**kwargs)
 
     # ....................... #
 
@@ -202,21 +195,21 @@ class _S3(DocumentABC, S3Extension):
 # ....................... #
 
 
-class _Redlock(DocumentABC, RedlockExtension):
-    extension_configs: ClassVar[list[Any]] = [RedlockConfig()]
+class _Redlock(DocumentABC, RedlockMixin):
+    mixin_configs: ClassVar[list[Any]] = [RedlockConfig()]
 
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):
         """Initialize subclass"""
 
-        __init_subclass_helper__(
-            cls,
+        super().__init_subclass__(**kwargs)
+
+        cls.defer_config_patch(
             config_type=RedlockConfig,
             dynamic_field="collection",
+            compute_fn=lambda cls: f"{cls.config.database}-{cls.config.collection}",
         )
-
-        super().__init_subclass__(**kwargs)
 
     # ....................... #
 
@@ -288,18 +281,18 @@ class _Redlock(DocumentABC, RedlockExtension):
 # ....................... #
 
 
-class _RabbitMQ(DocumentABC, RabbitMQExtension):
-    extension_configs: ClassVar[list[Any]] = [RabbitMQConfig()]
+class _RabbitMQ(DocumentABC, RabbitMQMixin):
+    mixin_configs: ClassVar[list[Any]] = [RabbitMQConfig()]
 
     # ....................... #
 
     def __init_subclass__(cls, **kwargs):
         """Initialize subclass"""
 
-        __init_subclass_helper__(
-            cls,
+        super().__init_subclass__(**kwargs)
+
+        cls.defer_config_patch(
             config_type=RabbitMQConfig,
             dynamic_field="queue",
+            compute_fn=lambda cls: f"{cls.config.database}-{cls.config.collection}",
         )
-
-        super().__init_subclass__(**kwargs)

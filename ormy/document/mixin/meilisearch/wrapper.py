@@ -4,7 +4,7 @@ from typing import Any, Callable, ClassVar, Optional, Self, Type, TypeVar
 
 from ormy._abc.registry import Registry
 from ormy.base.typing import AsyncCallable
-from ormy.document._abc import DocumentExtensionABC
+from ormy.document._abc import DocumentMixinABC
 from ormy.exceptions import ModuleNotFound
 
 try:
@@ -37,10 +37,10 @@ T = TypeVar("T")
 # ----------------------- #
 
 
-class MeilisearchExtension(DocumentExtensionABC):
-    """Meilisearch extension"""
+class MeilisearchMixin(DocumentMixinABC):
+    """Meilisearch mixin"""
 
-    extension_configs: ClassVar[list[Any]] = [MeilisearchConfig()]
+    mixin_configs: ClassVar[list[Any]] = [MeilisearchConfig()]
 
     __meili_static: ClassVar[Optional[Client]] = None
     __ameili_static: ClassVar[Optional[AsyncClient]] = None
@@ -52,7 +52,7 @@ class MeilisearchExtension(DocumentExtensionABC):
 
         super().__init_subclass__(**kwargs)
 
-        cls._register_extension_subclass_helper(
+        cls.defer_mixin_registration(
             config=MeilisearchConfig,
             discriminator="index",
         )
@@ -65,11 +65,11 @@ class MeilisearchExtension(DocumentExtensionABC):
         Generate a Meilisearch reference for the model schema with filters and sort fields
 
         Returns:
-            schema (MeilisearchReferenceV2): The Meilisearch reference for the model schema
+            schema (MeilisearchReference): The Meilisearch reference for the model schema
         """
 
         full_schema = cls.model_flat_schema()
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
 
         sort = []
         filters = []
@@ -126,7 +126,7 @@ class MeilisearchExtension(DocumentExtensionABC):
             use_static (bool): Whether to use static Meilisearch client
         """
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
         use_static = not cfg.context_client
 
         return use_static
@@ -137,7 +137,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     def __get_exclude_mask(cls):
         """Get exclude mask"""
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
         return cfg.settings.exclude_mask
 
     # ....................... #
@@ -146,7 +146,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     def __meili_abstract_client(cls):
         """Abstract client"""
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
         url = cfg.url()
         key = cfg.credentials.master_key
 
@@ -168,7 +168,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     def __ameili_abstract_client(cls):
         """Abstract async client"""
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
         url = cfg.url()
         key = cfg.credentials.master_key
 
@@ -254,7 +254,7 @@ class MeilisearchExtension(DocumentExtensionABC):
         If the index exists and settings were updated, index will be updated.
         """
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
 
         def _task(c: Client):
             try:
@@ -288,7 +288,7 @@ class MeilisearchExtension(DocumentExtensionABC):
         If the index exists and settings were updated, index will be updated.
         """
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
 
         async def _task(c: AsyncClient):
             try:
@@ -380,7 +380,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     def _meili_index(cls):
         """Get associated Meilisearch index"""
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
 
         def _task(c: Client):
             return c.get_index(cfg.index)
@@ -393,7 +393,7 @@ class MeilisearchExtension(DocumentExtensionABC):
     async def _ameili_index(cls):
         """Get associated Meilisearch index in asyncronous mode"""
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
 
         async def _task(c: AsyncClient):
             return await c.get_index(cfg.index)
@@ -421,7 +421,7 @@ class MeilisearchExtension(DocumentExtensionABC):
             request (dict): The prepared search request
         """
 
-        cfg = cls.get_extension_config(type_=MeilisearchConfig)
+        cfg = cls.get_mixin_config(type_=MeilisearchConfig)
         sortable = cfg.settings.sortable_attributes
         filterable = cfg.settings.filterable_attributes
 
@@ -756,10 +756,10 @@ class MeilisearchExtension(DocumentExtensionABC):
     # ....................... #
 
     @staticmethod
-    def registry_helper_safe_create_or_update_indexes():
+    def meili_safe_create_or_update_indexes():
         """Safe create or update indexes"""
 
-        entries: list[MeilisearchExtension] = Registry.get_by_config(MeilisearchConfig)
+        entries: list[MeilisearchMixin] = Registry.get_by_config(MeilisearchConfig)
 
         for x in entries:
             x.meili_safe_create_or_update()
@@ -767,10 +767,10 @@ class MeilisearchExtension(DocumentExtensionABC):
     # ....................... #
 
     @staticmethod
-    async def aregistry_helper_safe_create_or_update_indexes():
+    async def ameili_safe_create_or_update_indexes():
         """Safe create or update indexes"""
 
-        entries: list[MeilisearchExtension] = Registry.get_by_config(MeilisearchConfig)
+        entries: list[MeilisearchMixin] = Registry.get_by_config(MeilisearchConfig)
         tasks = [x.ameili_safe_create_or_update() for x in entries]
 
         if tasks:

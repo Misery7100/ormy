@@ -26,15 +26,7 @@ class MongoBase(DocumentABC, TrimDocMixin):
 
     __static: ClassVar[Optional[MongoClient]] = None
     __astatic: ClassVar[Optional[AsyncIOMotorClient]] = None
-
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
-
-        super().__init_subclass__(**kwargs)
-
-        cls._register_subclass_helper(discriminator=["database", "collection"])
+    __discriminator__ = ["database", "collection"]
 
     # ....................... #
 

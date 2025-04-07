@@ -6,7 +6,7 @@ from pydantic import Field
 from ormy._abc import (
     AbstractABC,
     AbstractData,
-    AbstractExtensionABC,
+    AbstractMixinABC,
     ConfigABC,
     SemiFrozenField,
 )
@@ -24,11 +24,12 @@ C = TypeVar("C", bound=ConfigABC)
 
 
 class DocumentABC(AbstractABC):
-    """Abstract Base Class for Document-Oriented Object-Relational Mapping"""
+    """Abstract Base Class for Document-Oriented ORM"""
 
     id: str = Field(default_factory=hex_uuid4)
 
     semi_frozen_fields: ClassVar[Mapping[str, SemiFrozenField | dict[str, Any]]] = {}
+    __discriminator__: ClassVar[list[str]] = []
 
     # ....................... #
 
@@ -229,5 +230,5 @@ class DocumentABC(AbstractABC):
 # ....................... #
 
 
-class DocumentExtensionABC(AbstractExtensionABC):
-    """Document Extension ABC Base Class"""
+class DocumentMixinABC(AbstractMixinABC):
+    """Document Mixin ABC Base Class"""

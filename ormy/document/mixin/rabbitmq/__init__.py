@@ -1,10 +1,10 @@
 from .config import RabbitMQConfig, RabbitMQCredentials
-from .wrapper import RabbitMQExtension
+from .wrapper import RabbitMQMixin
 
 # ----------------------- #
 
 __all__ = [
-    "RabbitMQExtension",
+    "RabbitMQMixin",
     "RabbitMQConfig",
     "RabbitMQCredentials",
 ]

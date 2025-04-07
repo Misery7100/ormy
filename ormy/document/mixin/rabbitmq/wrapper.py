@@ -2,7 +2,7 @@ import json
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, ClassVar, Optional
 
-from ormy.document._abc import DocumentExtensionABC
+from ormy.document._abc import DocumentMixinABC
 from ormy.exceptions import ModuleNotFound
 
 try:
@@ -16,10 +16,10 @@ from .config import RabbitMQConfig
 # ----------------------- #
 
 
-class RabbitMQExtension(DocumentExtensionABC):
-    """RabbitMQ extension"""
+class RabbitMQMixin(DocumentMixinABC):
+    """RabbitMQ mixin"""
 
-    extension_configs: ClassVar[list[Any]] = [RabbitMQConfig()]
+    mixin_configs: ClassVar[list[Any]] = [RabbitMQConfig()]
 
     # ....................... #
 
@@ -28,9 +28,9 @@ class RabbitMQExtension(DocumentExtensionABC):
 
         super().__init_subclass__(**kwargs)
 
-        cls._register_extension_subclass_helper(
+        cls.defer_mixin_registration(
             config=RabbitMQConfig,
-            discriminator=["queue"],
+            discriminator="queue",
         )
 
     # ....................... #
@@ -39,7 +39,7 @@ class RabbitMQExtension(DocumentExtensionABC):
     def _get_rmq_queue(cls):
         """Get queue"""
 
-        cfg = cls.get_extension_config(type_=RabbitMQConfig)
+        cfg = cls.get_mixin_config(type_=RabbitMQConfig)
         queue = cfg.queue
 
         return queue
@@ -56,7 +56,7 @@ class RabbitMQExtension(DocumentExtensionABC):
             connection (pika.BlockingConnection): RabbitMQ connection
         """
 
-        cfg = cls.get_extension_config(type_=RabbitMQConfig)
+        cfg = cls.get_mixin_config(type_=RabbitMQConfig)
         url = cfg.url()
         conn = pika.BlockingConnection(pika.URLParameters(url))
 
@@ -79,7 +79,7 @@ class RabbitMQExtension(DocumentExtensionABC):
             connection (aio_pika.abc.AbstractRobustConnection): async RabbitMQ connection
         """
 
-        cfg = cls.get_extension_config(type_=RabbitMQConfig)
+        cfg = cls.get_mixin_config(type_=RabbitMQConfig)
         url = cfg.url()
         conn = await aio_pika.connect_robust(url)
 

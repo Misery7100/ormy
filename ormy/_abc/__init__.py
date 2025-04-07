@@ -1,4 +1,4 @@
-from .abstract import AbstractABC, AbstractExtensionABC, SemiFrozenField
+from .abstract import AbstractABC, AbstractMixinABC, SemiFrozenField
 from .config import ConfigABC
 from .typing import AbstractData
 
@@ -7,7 +7,7 @@ from .typing import AbstractData
 __all__ = [
     "ConfigABC",
     "AbstractABC",
-    "AbstractExtensionABC",
+    "AbstractMixinABC",
     "SemiFrozenField",
     "AbstractData",
 ]

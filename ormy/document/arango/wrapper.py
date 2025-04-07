@@ -26,15 +26,7 @@ class ArangoBase(DocumentABC, TrimDocMixin):
 
     config: ClassVar[ArangoConfig] = ArangoConfig()
     _static: ClassVar[Optional[ArangoClient]] = None
-
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
-
-        super().__init_subclass__(**kwargs)
-
-        cls._register_subclass_helper(discriminator=["database", "collection"])
+    __discriminator__ = ["database", "collection"]
 
     # ....................... #
 
@@ -513,6 +505,7 @@ class ArangoBaseEdge(ArangoBase):
 
     from_: Optional[str] = None
     to_: Optional[str] = None
+    __discriminator__ = ["database", "collection"]
 
     # ....................... #
 
@@ -682,7 +675,7 @@ class ArangoBaseEdge(ArangoBase):
         if not document:
             raise NotFound(f"Edge {from_} -> {to_} not found")
 
-        return cls(**document, from_=from_, to_=to_)
+        return cls(**cls._deserialize(document))
 
     # ....................... #
 
@@ -714,15 +707,7 @@ class ArangoGraph(AbstractABC):
 
     config: ClassVar[ArangoGraphConfig] = ArangoGraphConfig()
     _static: ClassVar[Optional[ArangoClient]] = None
-
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
-
-        super().__init_subclass__(**kwargs)
-
-        cls._register_subclass_helper(discriminator=["database", "name"])
+    __discriminator__ = ["database", "name"]
 
     # ....................... #
 

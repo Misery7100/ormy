@@ -1,10 +1,10 @@
 from .config import RedlockConfig, RedlockCredentials
-from .wrapper import RedlockExtension
+from .wrapper import RedlockMixin
 
 # ----------------------- #
 
 __all__ = [
-    "RedlockExtension",
+    "RedlockMixin",
     "RedlockConfig",
     "RedlockCredentials",
 ]

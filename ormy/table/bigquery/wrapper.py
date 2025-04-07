@@ -30,14 +30,7 @@ class BigQueryBase(TableABC, TrimDocMixin):
     __PARTITION_FIELD__: ClassVar[Optional[str]] = None
     __CLUSTERING_FIELDS__: ClassVar[list[str]] = []
 
-    # ....................... #
-
-    def __init_subclass__(cls, **kwargs):
-        """Initialize subclass"""
-
-        super().__init_subclass__(**kwargs)
-
-        cls._register_subclass_helper(discriminator=["dataset", "table"])
+    __discriminator__: ClassVar[list[str]] = ["dataset", "table"]
 
     # ....................... #
 
