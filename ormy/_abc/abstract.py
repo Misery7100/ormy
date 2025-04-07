@@ -56,7 +56,11 @@ class AbstractABCMeta(_model_construction.ModelMetaclass, ABCMeta):
         # Run subclass registration
         if hasattr(cls, "__discriminator__"):
             if callable(getattr(cls, "_register_subclass", None)):
-                if not cls.config.is_default() and cls.__discriminator__:
+                if (
+                    cls.config is not None
+                    and not cls.config.is_default()
+                    and cls.__discriminator__
+                ):
                     cls._register_subclass(discriminator=cls.__discriminator__)
 
         # Run deferred mixin config patches
@@ -66,7 +70,7 @@ class AbstractABCMeta(_model_construction.ModelMetaclass, ABCMeta):
             try:
                 cfg = cls.get_mixin_config(type_=config_type)
 
-                if not cls.config.is_default():
+                if cls.config is not None and not cls.config.is_default():
                     assert hasattr(
                         cfg, field
                     ), f"Field `{field}` not found in `{config_type.__name__}`"
