@@ -3,13 +3,12 @@ from typing import Optional
 
 from pydantic import SecretStr, field_validator
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 
 # ----------------------- #
 
 
-class S3Credentials(Base):
+class S3Credentials(Mergeable):
     """
     S3 connect credentials
 

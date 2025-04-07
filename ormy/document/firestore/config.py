@@ -9,13 +9,12 @@ except ImportError as e:
 
 from pydantic import ConfigDict
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 
 # ----------------------- #
 
 
-class FirestoreCredentials(Base):
+class FirestoreCredentials(Mergeable):
     """
     Firestore connect credentials
 
@@ -59,8 +58,8 @@ class FirestoreConfig(ConfigABC):
     """
 
     # Local configuration
-    database: str = "(default)"
-    collection: str = "default"
+    database: str = "_default_"
+    collection: str = "_default_"
 
     # Global configuration
     credentials: FirestoreCredentials = FirestoreCredentials()

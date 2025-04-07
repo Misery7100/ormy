@@ -2,13 +2,12 @@ from typing import Optional
 
 from pydantic import SecretStr
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 
 # ----------------------- #
 
 
-class ArangoCredentials(Base):
+class ArangoCredentials(Mergeable):
     """
     ArangoDB connect credentials
 
@@ -44,8 +43,8 @@ class ArangoCredentials(Base):
 class ArangoConfig(ConfigABC):
     """ArangoDB configuration"""
 
-    database: str = "default"
-    collection: str = "default"
+    database: str = "_default_"
+    collection: str = "_default_"
     credentials: ArangoCredentials = ArangoCredentials()
 
     # ....................... #

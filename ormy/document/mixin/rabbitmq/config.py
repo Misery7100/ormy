@@ -2,13 +2,12 @@ from typing import Optional
 
 from pydantic import SecretStr
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 
 # ----------------------- #
 
 
-class RabbitMQCredentials(Base):
+class RabbitMQCredentials(Mergeable):
     """
     RabbitMQ connect credentials
 
@@ -60,7 +59,7 @@ class RabbitMQConfig(ConfigABC):
         credentials (RabbitMQCredentials): RabbitMQ connect credentials
     """
 
-    queue: str = "default"
+    queue: str = "_default_"
     credentials: RabbitMQCredentials = RabbitMQCredentials()
 
     # ....................... #

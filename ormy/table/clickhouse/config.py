@@ -2,13 +2,12 @@ from typing import Optional
 
 from pydantic import SecretStr
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 
 # ----------------------- #
 
 
-class ClickHouseCredentials(Base):
+class ClickHouseCredentials(Mergeable):
     """
     ClickHouse connect credentials
 
@@ -52,8 +51,8 @@ class ClickHouseConfig(ConfigABC):
         credentials (ClickHouseCredentials): ClickHouse connection credentials
     """
 
-    database: str = "default"
-    table: str = "default"
+    database: str = "_default_"
+    table: str = "_default_"
 
     credentials: ClickHouseCredentials = ClickHouseCredentials()
 

@@ -2,13 +2,12 @@ from typing import Optional
 
 from pydantic import SecretStr
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 
 # ----------------------- #
 
 
-class RedisCredentials(Base):
+class RedisCredentials(Mergeable):
     """
     Redis connect credentials
 
@@ -66,7 +65,7 @@ class RedisConfig(ConfigABC):
 
     # Local configuration
     database: int = 0
-    collection: str = "default"
+    collection: str = "_default_"
 
     # Global configuration
     credentials: RedisCredentials = RedisCredentials()

@@ -43,8 +43,8 @@ class AbstractABCMeta(_model_construction.ModelMetaclass, ABCMeta):
         if callable(getattr(cls, "_update_ignored_types", None)):
             cls._update_ignored_types()
 
-        if callable(getattr(cls, "_merge_configs", None)):
-            cls._merge_configs()
+        if callable(getattr(cls, "_merge_config", None)):
+            cls._merge_config()
 
         # AbstractMixinABC
         if callable(getattr(cls, "_update_ignored_types_mixin", None)):
@@ -160,7 +160,7 @@ class AbstractABC(Base, ABC, metaclass=AbstractABCMeta):
     # ....................... #
 
     @classmethod
-    def _merge_configs(cls):
+    def _merge_config(cls):
         """Merge configurations for the subclass"""
 
         parents = inspect.getmro(cls)[1:]

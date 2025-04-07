@@ -2,8 +2,7 @@ from typing import Optional
 
 from pydantic import SecretStr, model_validator
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 from ormy.exceptions import InternalError, ModuleNotFound
 
 try:
@@ -16,7 +15,7 @@ except ImportError as e:
 # ----------------------- #
 
 
-# TODO: merge settings option ?
+# TODO: use Mergeable ?
 class MeilisearchSettings(MsSettings):  # type: ignore[misc]
     """
     Meilisearch extension settings
@@ -60,7 +59,7 @@ class MeilisearchSettings(MsSettings):  # type: ignore[misc]
 # ....................... #
 
 
-class MeilisearchCredentials(Base):
+class MeilisearchCredentials(Mergeable):
     """
     Meilisearch connect credentials
 

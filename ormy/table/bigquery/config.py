@@ -9,13 +9,12 @@ except ImportError as e:
 
 from pydantic import ConfigDict
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 
 # ----------------------- #
 
 
-class BigQueryCredentials(Base):
+class BigQueryCredentials(Mergeable):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -40,8 +39,8 @@ class BigQueryConfig(ConfigABC):
         max_batch_size (int, optional): Maximum batch size for the query
     """
 
-    dataset: str = "default"
-    table: str = "default"
+    dataset: str = "_default_"
+    table: str = "_default_"
 
     credentials: BigQueryCredentials = BigQueryCredentials()
     timeout: int = 300

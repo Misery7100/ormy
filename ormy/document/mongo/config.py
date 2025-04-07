@@ -3,13 +3,12 @@ from urllib.parse import quote_plus
 
 from pydantic import SecretStr
 
-from ormy._abc import ConfigABC
-from ormy.base.pydantic import Base
+from ormy._abc import ConfigABC, Mergeable
 
 # ----------------------- #
 
 
-class MongoCredentials(Base):
+class MongoCredentials(Mergeable):
     """
     MongoDB connect credentials
 
@@ -58,8 +57,8 @@ class MongoConfig(ConfigABC):
     """
 
     # Local configuration
-    database: str = "default"
-    collection: str = "default"
+    database: str = "_default_"
+    collection: str = "_default_"
 
     # Global configuration
     credentials: MongoCredentials = MongoCredentials()
