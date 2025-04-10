@@ -765,7 +765,7 @@ class MeilisearchMixin(DocumentMixinABC):
         Safe create or update indexes
 
         Args:
-            entries (MeilisearchMixin | list[MeilisearchMixin]): The entries to initialize
+            entries (tuple[MeilisearchMixin]): The entries to initialize
         """
 
         if not entries:
@@ -782,7 +782,7 @@ class MeilisearchMixin(DocumentMixinABC):
         Safe create or update indexes in asyncronous mode
 
         Args:
-            entries (MeilisearchMixin | list[MeilisearchMixin]): The entries to initialize
+            entries (tuple[MeilisearchMixin]): The entries to initialize
         """
 
         if not entries:

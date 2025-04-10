@@ -487,12 +487,12 @@ class ArangoBase(SyncDocumentABC):
     # ....................... #
 
     @staticmethod
-    def safe_init(*entries: "ArangoBase" | "ArangoBaseEdge"):
+    def safe_init(*entries: "ArangoBase | ArangoBaseEdge"):
         """
         Safe create collections
 
         Args:
-            entries (ArangoBase | ArangoBaseEdge | list[ArangoBase | ArangoBaseEdge]): The entries to initialize
+            entries (tuple[ArangoBase | ArangoBaseEdge]): The entries to initialize
         """
 
         if not entries:
@@ -825,7 +825,7 @@ class ArangoGraph(AbstractABC):
         Safe create graphs
 
         Args:
-            entries (ArangoGraph | list[ArangoGraph]): The entries to initialize
+            entries (tuple[ArangoGraph]): The entries to initialize
         """
 
         if not entries:

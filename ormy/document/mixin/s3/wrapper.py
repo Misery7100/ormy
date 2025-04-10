@@ -365,7 +365,7 @@ class S3Mixin(DocumentMixinABC):
         Safe create buckets for all defined S3 models
 
         Args:
-            entries (S3Mixin | list[S3Mixin]): The entries to initialize
+            entries (tuple[S3Mixin]): The entries to initialize
         """
 
         if not entries:
