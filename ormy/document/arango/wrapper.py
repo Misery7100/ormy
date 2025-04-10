@@ -705,7 +705,7 @@ class ArangoEdgeDefinition(BaseModel):
 # ....................... #
 
 
-class ArangoGraph(AbstractABC):
+class ArangoBaseGraph(AbstractABC):
     """ArangoDB graph class"""
 
     edge_definitions: ClassVar[list[ArangoEdgeDefinition]] = []
@@ -820,7 +820,7 @@ class ArangoGraph(AbstractABC):
     # ....................... #
 
     @staticmethod
-    def safe_init(*entries: "ArangoGraph"):
+    def safe_init(*entries: "ArangoBaseGraph"):
         """
         Safe create graphs
 
@@ -829,7 +829,7 @@ class ArangoGraph(AbstractABC):
         """
 
         if not entries:
-            entries: list[ArangoGraph] = Registry.get_by_config(ArangoGraphConfig)  # type: ignore[no-redef]
+            entries: list[ArangoBaseGraph] = Registry.get_by_config(ArangoGraphConfig)  # type: ignore[no-redef]
 
         for x in entries:
             x._get_graph()

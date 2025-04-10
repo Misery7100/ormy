@@ -1,5 +1,5 @@
 from .config import ArangoConfig, ArangoCredentials, ArangoGraphConfig
-from .wrapper import ArangoBase, ArangoBaseEdge, ArangoGraph
+from .wrapper import ArangoBase, ArangoBaseEdge, ArangoBaseGraph
 
 # ----------------------- #
 
@@ -9,5 +9,5 @@ __all__ = [
     "ArangoGraphConfig",
     "ArangoBase",
     "ArangoBaseEdge",
-    "ArangoGraph",
+    "ArangoBaseGraph",
 ]

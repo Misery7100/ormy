@@ -11,6 +11,7 @@ from .schema import (
     MeilisearchReference,
     NumberFilter,
     SearchRequest,
+    SearchRequestDict,
     SearchResponse,
     SortOrder,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "MeilisearchMixin",
     "SortOrder",
     "SearchRequest",
+    "SearchRequestDict",
     "SearchResponse",
     "AnyFilter",
     "MeilisearchReference",
