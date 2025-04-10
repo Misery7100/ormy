@@ -697,9 +697,9 @@ class ArangoBaseEdge(ArangoBase):
 class ArangoEdgeDefinition(BaseModel):
     """ArangoDB edge definition"""
 
-    edge_collection: ClassVar[type[ArangoBaseEdge]]
-    from_nodes: ClassVar[list[type[ArangoBase]]]
-    to_nodes: ClassVar[list[type[ArangoBase]]]
+    edge_collection: type[ArangoBaseEdge]
+    from_nodes: list[type[ArangoBase]]
+    to_nodes: list[type[ArangoBase]]
 
 
 # ....................... #
