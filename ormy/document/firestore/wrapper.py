@@ -12,7 +12,6 @@ try:
 except ImportError as e:
     raise ModuleNotFound(extra="firestore", packages=["firebase-admin"]) from e
 
-from ormy.base.pydantic import TrimDocMixin
 from ormy.document._abc import DocumentABC
 
 from .config import FirestoreConfig
@@ -20,7 +19,7 @@ from .config import FirestoreConfig
 # ----------------------- #
 
 
-class FirestoreBase(DocumentABC, TrimDocMixin):
+class FirestoreBase(DocumentABC):
     """Firestore base class"""
 
     config: ClassVar[FirestoreConfig] = FirestoreConfig()

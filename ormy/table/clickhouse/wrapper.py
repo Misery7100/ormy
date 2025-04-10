@@ -10,7 +10,6 @@ except ImportError as e:
 
 from ormy._abc import AbstractABC
 from ormy._abc.registry import Registry
-from ormy.base.mixin import TrimDocMixin
 
 from .config import ClickHouseConfig
 from .func import get_clickhouse_db
@@ -19,7 +18,7 @@ from .models import ClickHouseFieldInfo, ClickHouseModel, ClickHouseQuerySet
 # ----------------------- #
 
 
-class ClickHouseBase(AbstractABC, TrimDocMixin):
+class ClickHouseBase(AbstractABC):
     """ClickHouse base class"""
 
     config: ClassVar[ClickHouseConfig] = ClickHouseConfig()

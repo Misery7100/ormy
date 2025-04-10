@@ -487,10 +487,18 @@ class ArangoBase(SyncDocumentABC):
     # ....................... #
 
     @staticmethod
-    def safe_create_collections():
-        """Safe create collections"""
+    def safe_init(*entries: "ArangoBase" | "ArangoBaseEdge"):
+        """
+        Safe create collections
 
-        entries: list[ArangoBase] = Registry.get_by_config(ArangoConfig)
+        Args:
+            entries (ArangoBase | ArangoBaseEdge | list[ArangoBase | ArangoBaseEdge]): The entries to initialize
+        """
+
+        if not entries:
+            entries: list[ArangoBase | ArangoBaseEdge] = Registry.get_by_config(  # type: ignore[no-redef]
+                ArangoConfig
+            )
 
         for x in entries:
             x._get_collection()
@@ -812,10 +820,16 @@ class ArangoGraph(AbstractABC):
     # ....................... #
 
     @staticmethod
-    def safe_create_graphs():
-        """Safe create graphs"""
+    def safe_init(*entries: "ArangoGraph"):
+        """
+        Safe create graphs
 
-        entries: list[ArangoGraph] = Registry.get_by_config(ArangoGraphConfig)
+        Args:
+            entries (ArangoGraph | list[ArangoGraph]): The entries to initialize
+        """
+
+        if not entries:
+            entries: list[ArangoGraph] = Registry.get_by_config(ArangoGraphConfig)  # type: ignore[no-redef]
 
         for x in entries:
             x._get_graph()

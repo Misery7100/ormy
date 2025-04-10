@@ -12,7 +12,6 @@ try:
 except ImportError as e:
     raise ModuleNotFound(extra="redis", packages=["redis"]) from e
 
-from ormy.base.pydantic import TrimDocMixin
 from ormy.base.typing import AsyncCallable
 from ormy.document._abc import DocumentABC
 
@@ -25,7 +24,7 @@ T = TypeVar("T")
 # ----------------------- #
 
 
-class RedisBase(DocumentABC, TrimDocMixin):
+class RedisBase(DocumentABC):
     """MongoDB base class"""
 
     config: ClassVar[RedisConfig] = RedisConfig()

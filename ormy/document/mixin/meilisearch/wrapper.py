@@ -26,6 +26,7 @@ from .schema import (
     MeilisearchReference,
     NumberFilter,
     SearchRequest,
+    SearchRequestDict,
     SearchResponse,
     SortField,
 )
@@ -405,7 +406,7 @@ class MeilisearchMixin(DocumentMixinABC):
     @classmethod
     def _meili_prepare_request(
         cls,
-        request: SearchRequest,
+        request: SearchRequest | SearchRequestDict,
         page: int = 1,
         size: int = 20,
     ):
@@ -413,7 +414,7 @@ class MeilisearchMixin(DocumentMixinABC):
         Prepare search request
 
         Args:
-            request (SearchRequest): The search request
+            request (SearchRequest | SearchRequestDict): The search request
             page (int, optional): The page number
             size (int, optional): The number of hits per page
 
@@ -427,6 +428,9 @@ class MeilisearchMixin(DocumentMixinABC):
 
         if sortable is None:
             sortable = []
+
+        if isinstance(request, dict):
+            request = SearchRequest.model_validate(request)
 
         if request.sort and request.sort in sortable:
             sort = [f"{request.sort}:{request.order.value}"]
@@ -474,7 +478,7 @@ class MeilisearchMixin(DocumentMixinABC):
     @classmethod
     def meili_search(
         cls,
-        request: SearchRequest,
+        request: SearchRequest | SearchRequestDict,
         page: int = 1,
         size: int = 20,
         include: Optional[list[str]] = None,
@@ -484,7 +488,7 @@ class MeilisearchMixin(DocumentMixinABC):
         Search documents in Meilisearch
 
         Args:
-            request (SearchRequest): The search request
+            request (SearchRequest | SearchRequestDict): The search request
             page (int, optional): The page number
             size (int, optional): The number of hits per page
             include (list[str], optional): The fields to include in the search
@@ -516,7 +520,7 @@ class MeilisearchMixin(DocumentMixinABC):
     @classmethod
     async def ameili_search(
         cls,
-        request: SearchRequest,
+        request: SearchRequest | SearchRequestDict,
         page: int = 1,
         size: int = 20,
         include: Optional[list[str]] = None,
@@ -526,7 +530,7 @@ class MeilisearchMixin(DocumentMixinABC):
         Search documents in Meilisearch in asyncronous mode
 
         Args:
-            request (SearchRequest): The search request
+            request (SearchRequest | SearchRequestDict): The search request
             page (int, optional): The page number
             size (int, optional): The number of hits per page
             include (list[str], optional): The fields to include in the search
@@ -756,10 +760,16 @@ class MeilisearchMixin(DocumentMixinABC):
     # ....................... #
 
     @staticmethod
-    def meili_safe_create_or_update_indexes():
-        """Safe create or update indexes"""
+    def meili_safe_init(*entries: "MeilisearchMixin"):
+        """
+        Safe create or update indexes
 
-        entries: list[MeilisearchMixin] = Registry.get_by_config(MeilisearchConfig)
+        Args:
+            entries (MeilisearchMixin | list[MeilisearchMixin]): The entries to initialize
+        """
+
+        if not entries:
+            entries: list[MeilisearchMixin] = Registry.get_by_config(MeilisearchConfig)  # type: ignore[no-redef]
 
         for x in entries:
             x.meili_safe_create_or_update()
@@ -767,10 +777,17 @@ class MeilisearchMixin(DocumentMixinABC):
     # ....................... #
 
     @staticmethod
-    async def ameili_safe_create_or_update_indexes():
-        """Safe create or update indexes"""
+    async def ameili_safe_init(*entries: "MeilisearchMixin"):
+        """
+        Safe create or update indexes in asyncronous mode
 
-        entries: list[MeilisearchMixin] = Registry.get_by_config(MeilisearchConfig)
+        Args:
+            entries (MeilisearchMixin | list[MeilisearchMixin]): The entries to initialize
+        """
+
+        if not entries:
+            entries: list[MeilisearchMixin] = Registry.get_by_config(MeilisearchConfig)  # type: ignore[no-redef]
+
         tasks = [x.ameili_safe_create_or_update() for x in entries]
 
         if tasks:

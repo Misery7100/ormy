@@ -360,10 +360,16 @@ class S3Mixin(DocumentMixinABC):
     # ....................... #
 
     @staticmethod
-    def s3_create_buckets():
-        """Create buckets for all defined S3 models"""
+    def s3_safe_init(*entries: "S3Mixin"):
+        """
+        Safe create buckets for all defined S3 models
 
-        entries: list[S3Mixin] = Registry.get_by_config(S3Config)
+        Args:
+            entries (S3Mixin | list[S3Mixin]): The entries to initialize
+        """
+
+        if not entries:
+            entries: list[S3Mixin] = Registry.get_by_config(S3Config)  # type: ignore[no-redef]
 
         for x in entries:
             x._s3_create_bucket()

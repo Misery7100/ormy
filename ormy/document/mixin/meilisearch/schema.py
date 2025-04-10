@@ -3,15 +3,17 @@ from enum import StrEnum
 from typing import Annotated, Any, Literal, Optional
 
 from pydantic import BaseModel, Field
+from typing_extensions import NotRequired, TypedDict
 
+from ormy.base.decorator import json_schema_modifier, remove_description
 from ormy.base.generic import TabularData
-from ormy.base.mixin import NoDocMixin
 from ormy.base.pydantic import TableResponse
 
 # ----------------------- #
 
 
-class SortOrder(NoDocMixin, StrEnum):
+@json_schema_modifier(remove_description)
+class SortOrder(StrEnum):
     """
     Order of the sort
 
@@ -27,13 +29,13 @@ class SortOrder(NoDocMixin, StrEnum):
 # ....................... #
 
 
-class SortField(NoDocMixin, BaseModel):
+@json_schema_modifier(remove_description)
+class SortField(BaseModel):
     """
     Sort field model
 
     Attributes:
         key (str): Key of the field
-        title (str): The field title
         default (bool): Whether the Field is the default sort field
     """
 
@@ -68,7 +70,8 @@ class FilterABC(ABC, BaseModel):
 # ....................... #
 
 
-class BooleanFilter(NoDocMixin, FilterABC):
+@json_schema_modifier(remove_description)
+class BooleanFilter(FilterABC):
     """
     Boolean filter
 
@@ -92,7 +95,17 @@ class BooleanFilter(NoDocMixin, FilterABC):
 # ....................... #
 
 
-class NumberFilter(NoDocMixin, FilterABC):
+class BooleanFilterDict(TypedDict):
+    key: str
+    value: NotRequired[bool]
+    type: Literal["boolean"]
+
+
+# ....................... #
+
+
+@json_schema_modifier(remove_description)
+class NumberFilter(FilterABC):
     """
     Numeric filter
 
@@ -124,7 +137,17 @@ class NumberFilter(NoDocMixin, FilterABC):
 # ....................... #
 
 
-class DatetimeFilter(NoDocMixin, FilterABC):
+class NumberFilterDict(TypedDict):
+    key: str
+    value: NotRequired[tuple[Optional[float], Optional[float]]]
+    type: Literal["number"]
+
+
+# ....................... #
+
+
+@json_schema_modifier(remove_description)
+class DatetimeFilter(FilterABC):
     """
     Datetime filter
 
@@ -156,7 +179,17 @@ class DatetimeFilter(NoDocMixin, FilterABC):
 # ....................... #
 
 
-class ArrayFilter(NoDocMixin, FilterABC):
+class DatetimeFilterDict(TypedDict):
+    key: str
+    value: NotRequired[tuple[Optional[int], Optional[int]]]
+    type: Literal["datetime"]
+
+
+# ....................... #
+
+
+@json_schema_modifier(remove_description)
+class ArrayFilter(FilterABC):
     """
     Array filter
 
@@ -179,10 +212,25 @@ class ArrayFilter(NoDocMixin, FilterABC):
 
 # ....................... #
 
+
+class ArrayFilterDict(TypedDict):
+    key: str
+    value: NotRequired[list[Any]]
+    type: Literal["array"]
+
+
+# ....................... #
+
 AnyFilter = Annotated[
     BooleanFilter | NumberFilter | DatetimeFilter | ArrayFilter,
     Field(discriminator="type"),
 ]
+
+# ....................... #
+
+AnyFilterDict = (
+    BooleanFilterDict | NumberFilterDict | DatetimeFilterDict | ArrayFilterDict
+)
 
 # ----------------------- #
 
@@ -192,6 +240,16 @@ class SearchRequest(BaseModel):
     sort: Optional[str] = None
     order: SortOrder = SortOrder.desc
     filters: list[AnyFilter] = []
+
+
+# ....................... #
+
+
+class SearchRequestDict(TypedDict):
+    query: str
+    sort: NotRequired[str]
+    order: NotRequired[SortOrder]
+    filters: NotRequired[list[AnyFilterDict]]
 
 
 # ----------------------- #
@@ -220,7 +278,8 @@ class SearchResponse(TableResponse):
 # ....................... #
 
 
-class MeilisearchReference(NoDocMixin, BaseModel):
+@json_schema_modifier(remove_description)
+class MeilisearchReference(BaseModel):
     """
     Meilisearch reference model
 
